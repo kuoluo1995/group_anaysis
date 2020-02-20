@@ -1,0 +1,4 @@
+django
+sqlite3
+networkx
+py2neo
