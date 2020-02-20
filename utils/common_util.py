@@ -1,8 +1,7 @@
 import heapq
-from enum import Enum
 
 
-class Label(Enum):
+class Labels:
     dynasty = 'Dynasty'
     gender = 'Gender'
     person = 'Person'
