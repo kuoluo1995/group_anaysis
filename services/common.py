@@ -1,14 +1,6 @@
 import heapq
 
 
-class Labels:
-    dynasty = 'Dynasty'
-    gender = 'Gender'
-    person = 'Person'
-    status = 'Status'
-    year = 'Year'
-
-
 def maxN(elms, N=None, key=lambda elm: elm):
     if N is None:
         N = len(elms)

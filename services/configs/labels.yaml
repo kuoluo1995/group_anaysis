@@ -1,0 +1,45 @@
+node:
+    address: 'Addr'
+    address_type: 'AddrType'
+    association: 'Association'
+    associate_event: 'AssocEvent'  # 关联事件
+    dynasty: 'Dynasty'
+    entry: 'Entry'  # 入仕
+    entry_event: 'EntryEvent'
+    entry_type: 'EntryType'
+    ethnicity: 'ethnicity'  # 民族
+    gender: 'Gender'
+    house_hold: 'HouseHold'
+    note: 'Note'
+    occasion: 'Occasion'  # 场合
+    office: 'Office'
+    office_type: 'OfficeType'
+    person: 'Person'
+    post: 'Post'  # 官职
+    post_type: 'PostType'  # 任职方式
+    scholar: 'Scholar'  # 学者
+    status: 'Status'  # 社会区分
+    text: 'Text'  # 写作的内容
+    year: 'Year'
+edge:
+    address_belong: 'AddrBelong'  # 属于哪个行政区
+    address_associate_is: 'AddrAssocIs'
+    associate_belong: 'AssocBelong'  # 关联属于
+    associate_is: 'AssocIs'
+    do: 'Do'  # 做了什么官, 做了什么关联的事
+    enthnicity_is: 'EnthnicityIs'  # 是什么民族 # todo 确定没有拼错吗？
+    entry_belong: 'Entry_Belong'
+    entry_is: 'EntryIs'
+    fist_year: 'FistYear'  # ??? first_year? 任职的第一年
+    gender_is: 'GenderIs'  # 是什么性别
+    house_hold_is: 'HouseholdIs'  # 住址在哪
+    last_year: 'LastYear'  # 任职的最后一年
+    note_is: 'NoteIs'
+    occasion_is: 'OccaIs'
+    office_belong: 'OfficeBelong'
+    office_is: 'OfficeIs'
+    post_is: 'PostIs'
+    status_is: 'StatusIs'
+    text_is: 'TextIs'  # 是否写作
+    topic_is: 'TopicIs'
+    where: 'Where'
