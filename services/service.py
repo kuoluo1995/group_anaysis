@@ -6,14 +6,23 @@ from collections import defaultdict
 from services import common
 
 
+def get_init_ranges():
+    DAO = common.DAO
+    NodeLabels = common.NodeLabels
+
+    result = {NodeLabels['dynasty']: {}, NodeLabels['gender']: {}, NodeLabels['status']: {}}
+    for _label in result.keys():
+        result[_label] = DAO.get_names_by_label(_label)
+    return result
+
+
 def get_ranges_by_name(name):
     DAO = common.DAO
     NodeLabels = common.NodeLabels
 
     person_id = DAO.get_node_id_by_name(name)
-    sub_graph = DAO.get_sub_graph(person_id, max_depth=1)  # 间接关系就2个，太多了的话数据量就太大了
-    result = {NodeLabels['person']: {}, NodeLabels['dynasty']: {}, NodeLabels['year']: {}, NodeLabels['gender']: {},
-              NodeLabels['status']: {}}
+    sub_graph = DAO.get_sub_graph(person_id, max_depth=2)  # 间接关系就2个，太多了的话数据量就太大了
+    result = {NodeLabels['person']: {}, NodeLabels['dynasty']: {}, NodeLabels['gender']: {}, NodeLabels['status']: {}}
     for node_id in sub_graph.nodes():
         node_label = DAO.get_node_label_by_id(node_id)
         if node_label in result.keys():
@@ -21,10 +30,19 @@ def get_ranges_by_name(name):
     return result
 
 
-# todo 还没检测
-def get_person_by_ranges(dynastie_id, min_year, max_year, gender_id, statu_id):
+# todo 待朝代更新后再检测
+def get_person_by_ranges(dynastie, min_year, max_year, genders, status):
     DAO = common.DAO
     NodeLabels = common.NodeLabels
+
+    # 预备数据
+    dynastie_id = DAO.get_node_id_by_name(dynastie)
+    gender_ids = []
+    if genders is not None:
+        gender_ids = [DAO.get_node_id_by_name(_name) for _name in genders]
+    statu_ids = []
+    if status is not None:
+        statu_ids = [DAO.get_node_id_by_name(_name) for _name in status]
 
     sub_graph = DAO.get_sub_graph(dynastie_id, max_depth=1)
     all_person = set()
@@ -35,8 +53,6 @@ def get_person_by_ranges(dynastie_id, min_year, max_year, gender_id, statu_id):
             all_person.add(node_id)
     # 根据年代，性别和社会区分赛选
     person_ids = set()
-    min_year = DAO.get_node_name_by_id(min_year) if min_year is not None else None
-    max_year = DAO.get_node_name_by_id(max_year) if max_year is not None else None
     for _id in all_person:
         person_graph = DAO.get_sub_graph(_id, max_depth=1)
         checked = True
@@ -50,16 +66,16 @@ def get_person_by_ranges(dynastie_id, min_year, max_year, gender_id, statu_id):
                 if max_year is not None and max_year < _year:
                     checked = False
                     break
-            if node_label == NodeLabels['gender'] and gender_id is not None and node_id != gender_id:
+            if node_label == NodeLabels['gender'] and node_id not in gender_ids:
                 checked = False
                 break
-            if node_label == NodeLabels['status'] and statu_id is not None and node_id != statu_id:
+            if node_label == NodeLabels['status'] and node_id not in statu_ids:
                 checked = False
                 break
         if checked:
             person_ids.add(_id)
     # 再来筛选topic
-    return person_ids
+    return {'person_ids': list(person_ids)}
 
 
 def _get_sentences_dicts(person_ids, random_epoch=100):
@@ -93,7 +109,7 @@ def _get_node_relevancy(person_ids):  # 计算所有点的相关度
 
     # name2label = {}  # 为后期加快计算做准备
     label2names = defaultdict(list)  # 为后期加快计算做准备
-    name2count_yx = defaultdict(int)
+    # name2count_yx = defaultdict(int)
     name2relevancy = defaultdict(int)  # 相关度集合
     person_graph = {_id: DAO.get_sub_graph(_id, max_depth=2) for _id in person_ids}
     person_graph_tree = {person_id: nx.bfs_tree(sub_graph, person_id) for person_id, sub_graph in person_graph.items()}
@@ -117,9 +133,10 @@ def _get_node_relevancy(person_ids):  # 计算所有点的相关度
                     relevancy_yx += 1 / math.log(depth + 2)
             label2names[node_label].append(node_name)
             # name2label[node_name] = node_label
-            name2count_yx[node_name] += count_yx  # /len(id2p_subg.keys())
+            # name2count_yx[node_name] += count_yx  # /len(id2p_subg.keys())
             name2relevancy[node_name] += relevancy_yx
-    return label2names, name2count_yx, name2relevancy
+    # return label2names, name2count_yx, name2relevancy
+    return label2names, name2relevancy
 
 
 def _get_sentence_relevancy(sentence_, name2relevancy):
@@ -214,7 +231,8 @@ def get_topics_by_person_ids(person_ids, max_topic=15):
     person_id2sentences, sentence2person_id, all_sentences = _get_sentences_dicts(person_ids, random_epoch=100)
     # print('1:{}'.format(timeit.default_timer() - start))
     # start = timeit.default_timer()
-    label2names, name2count_yx, name2relevancy = _get_node_relevancy(person_ids)
+    # label2names, name2count_yx, name2relevancy = _get_node_relevancy(person_ids)
+    label2names, name2relevancy = _get_node_relevancy(person_ids)
     # print('2:{}'.format(timeit.default_timer() - start))
     # start = timeit.default_timer()
     sentence2relevancy = {_sentence: _get_sentence_relevancy(_sentence, name2relevancy) for _sentence in all_sentences}

@@ -7,7 +7,7 @@
 <body>
 <div>
     <h2>通过名字搜索范围</h2>
-    <form action="/search_ranges_by_name/" method="post">
+    <form action="/test_search_ranges_by_name/" method="post">
         <label for="name">name</label>
         <input type="text" name="name" id="name">
         <input type="submit" value="搜索">
@@ -15,24 +15,24 @@
 </div>
 <div>
     <h2>通过范围搜索人名</h2>
-    <form action="/search_person_by_ranges/" method="post">
-        <label for="dynastie_id">dynastie_id</label>
-        <input type="text" name="dynastie_id" id="dynastie_id">
-        <label for="min_year">min_year</label>
+    <form action="/test_search_person_by_ranges/" method="post">
+        <label for="dynastie">dynastie</label>
+        <input type="text" name="dynastie" id="dynastie">
+        <label for="min_year">min_year(整数)</label>
         <input type="text" name="min_year" id="min_year">
-        <label for="max_year">max_year</label>
+        <label for="max_year">max_year(整数)</label>
         <input type="text" name="max_year" id="max_year">
-        <label for="gender_id">gender_id</label>
-        <input type="text" name="gender_id" id="gender_id">
-        <label for="statu_id">statu_id</label>
-        <input type="text" name="statu_id" id="statu_id">
+        <label for="genders">genders(用;分开结果)</label>
+        <input type="text" name="genders" id="genders">
+        <label for="status">status(用;分开结果)</label>
+        <input type="text" name="status" id="status">
         <input type="submit" value="搜索">
     </form>
 </div>
 <div>
     <h2>通过人名id搜索topic</h2>
     <form action="/test_search_topics_by_person_ids/" method="post">
-        <label for="person_ids">person_ids</label>
+        <label for="person_ids">person_ids(用;分开结果)</label>
         <input type="text" name="person_ids" id="person_ids">
         <input type="submit" value="搜索">
     </form>

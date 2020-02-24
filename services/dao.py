@@ -1,21 +1,25 @@
 import queue
 import sqlite3
+from collections import defaultdict
+
 import networkx as nx
 
 
 class SqliteGraphDAO:
-    def __init__(self):
-        self.db_path = './dataset/graph.db'
+    def __init__(self, path):
+        self.db_path = path
         self.use_cache = True
         self.node_name2id_cache = {}
         self.node_id2name_cache = {}
         self.node_id2label_cache = {}
+        self.node_label2names_cache = defaultdict(list)
 
         self.in_edge_cache = {}
         self.out_edge_cache = {}
         self.edge_label_cache = {}
+        self._get_all_node()
 
-    def _select(self, sql, keys, params):
+    def _select(self, sql, keys, params):  # 执行查询语句
         conn = sqlite3.connect(self.db_path)
         sql_cursor = conn.cursor()
         rows = sql_cursor.execute(sql, params)
@@ -28,13 +32,23 @@ class SqliteGraphDAO:
         conn.close()
         return result
 
-    def _execute(self, sql, params):
+    def _execute(self, sql, params):  # 执行增删改语句
         conn = sqlite3.connect(self.db_path)
         sql_cursor = conn.cursor()
         rows = sql_cursor.execute(sql, params)
         conn.commit()
         conn.close()
         return rows
+
+    def _get_all_node(self):
+        if self.use_cache:
+            rows = self._select('''SELECT id, label, name FROM node2data''', ['id', 'label', 'name'], ())
+            for _row in rows:
+                _id, _label, _name = _row['id'], _row['label'], _row['name']
+                self.node_name2id_cache[_name] = _id
+                self.node_id2name_cache[_id] = _name
+                self.node_id2label_cache[_id] = _label
+                self.node_label2names_cache[_label].append(_name)
 
     def get_node_id_by_name(self, node_name):
         if node_name not in self.node_name2id_cache:
@@ -85,6 +99,12 @@ class SqliteGraphDAO:
                 return rows
             self.out_edge_cache[source_id] = rows
         return self.out_edge_cache[source_id]
+
+    def get_names_by_label(self, label_):
+        if label_ not in self.node_label2names_cache:
+            pass  # todo 未来看情况
+        return self.node_label2names_cache[label_]
+
 
     def get_sub_graph(self, node_id, max_depth=2):
         node_queue = queue.Queue()  # 宽度搜索

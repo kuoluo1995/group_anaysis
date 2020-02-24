@@ -7,7 +7,7 @@ from utils import yaml_utils
 _labels = yaml_utils.read('./services/configs/labels.yaml')
 NodeLabels = _labels['node']
 EdgeLabels = _labels['edge']
-DAO = SqliteGraphDAO()
+DAO = SqliteGraphDAO('./dataset/graph.db')
 MetaPaths = build_meta_paths('./services/configs/meta_paths.yaml')
 
 
