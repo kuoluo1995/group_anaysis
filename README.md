@@ -23,10 +23,12 @@ python manage.py runserver 127.0.0.1:8001
 ```
 
 # 前后端接口
-## 1.获取初始化参数:
-```
-https://localhost:8001/init_ranges
-```
-### 入参:
-无
-### 出参(json):
+![](./images/init_ranges.png)
+![](./images/search_ranges_by_name.png)
+![](./images/search_person_by_ranges.png)
+![](./images/search_topic_by_person_ids.png)
+# 后端自测接口
+![](./images/test_init_ranges.png)
+![](./images/test_search_ranges_by_name.png)
+![](./images/test_search_person_by_ranges.png)
+![](./images/test_search_topic_by_person_ids.png)
