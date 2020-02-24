@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>post请求测试</title>
+</head>
+<body>
+<div>
+    <h2>通过名字搜索范围</h2>
+    <form action="/search_ranges_by_name/" method="post">
+        <label for="name">name</label>
+        <input type="text" name="name" id="name">
+        <input type="submit" value="搜索">
+    </form>
+</div>
+<div>
+    <h2>通过范围搜索人名</h2>
+    <form action="/search_person_by_ranges/" method="post">
+        <label for="dynastie_id">dynastie_id</label>
+        <input type="text" name="dynastie_id" id="dynastie_id">
+        <label for="min_year">min_year</label>
+        <input type="text" name="min_year" id="min_year">
+        <label for="max_year">max_year</label>
+        <input type="text" name="max_year" id="max_year">
+        <label for="gender_id">gender_id</label>
+        <input type="text" name="gender_id" id="gender_id">
+        <label for="statu_id">statu_id</label>
+        <input type="text" name="statu_id" id="statu_id">
+        <input type="submit" value="搜索">
+    </form>
+</div>
+<div>
+    <h2>通过人名id搜索topic</h2>
+    <form action="/test_search_topics_by_person_ids/" method="post">
+        <label for="person_ids">person_ids</label>
+        <input type="text" name="person_ids" id="person_ids">
+        <input type="submit" value="搜索">
+    </form>
+</div>
+<div>
+    <h2>结果:
+        <button type="button" onclick="show()">可视化</button>
+    </h2>
+    <pre id="result">{{ result }}</pre>
+</div>
+</body>
+</html>
+
+<script type="text/javascript">
+    function show() {
+        var text = document.getElementById('result').innerText; //获取json格式内容
+        var _json = JSON.stringify(JSON.parse(text), null, 2);//将字符串转换成json对象
+        document.getElementById('result').innerText = _json;
+    }
+</script>

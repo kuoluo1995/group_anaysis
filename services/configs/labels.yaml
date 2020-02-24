@@ -27,7 +27,7 @@ edge:
     associate_belong: 'AssocBelong'  # 关联属于
     associate_is: 'AssocIs'
     do: 'Do'  # 做了什么官, 做了什么关联的事
-    enthnicity_is: 'EnthnicityIs'  # 是什么民族 # todo 确定没有拼错吗？
+    enthnicity_is: 'EnthnicityIs'  # 是什么民族
     entry_belong: 'Entry_Belong'
     entry_is: 'EntryIs'
     fist_year: 'FistYear'  # ??? first_year? 任职的第一年

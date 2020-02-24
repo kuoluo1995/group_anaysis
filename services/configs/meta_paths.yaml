@@ -1,48 +1,63 @@
-global_node:
+global_nodes:
     address_node:
         address:
-            address_belong: address
+            -   address_belong: address
 
     office_node:
         office:
-            office_belong:
-                office_type:
-                    office_belong: office_type
-path:
+            -   office_belong:
+                    office_type:
+                        -   office_belong: office_type
+paths:
     性别:
-        -   gender_is: gender
+        person:
+            -   gender_is: gender
     民族:
-        -   enthnicity_is: ethnicity
+        person:
+            -   enthnicity_is: ethnicity
     官职:
-        -   do: post:
-                    -   fist_year: year
-                    -   last_year: year
-                    -   office_is: office_node
-                    -   post_is: post_type
-                    -   where: address_node
+        person:
+            -   do:
+                    post:
+                        -   fist_year: year
+                        -   last_year: year
+                        -   office_is: office_node
+                        -   post_is: post_type
+                        -   where: address_node
     写作:
-        -   text_is: text
+        person:
+            -   text_is: text
     关系:
-        -   do: associate_event:
-                    -   associate_belong: association
-                    -   associate_is: person
-                    -   fist_year: year
-                    -   occasion_is: occasion
-                    -   topic_is: scholar
-                    -   where: address_node
+        person:
+            -   do:
+                    associate_event:
+                        -   associate_belong: association
+                        -   associate_is: person
+                        -   fist_year: year
+                        -   occasion_is: occasion
+                        -   topic_is: scholar
+                        -   where: address_node
     定位:
-        -   house_hold_is: house_hold
+        person:
+            -   house_hold_is: house_hold
     社会区分:
-        -   status_is: status
-    地点事件:
-        -   address_associate_is: address_type:
-                                      -   where: address_node
+        person:
+            -   status_is: status
+    地点事件: # todo 这里是不对的(学长的注释)
+        person:
+            -   address_associate_is:
+                    address_type:
+                        -   where: address_node
     入仕:
-        -   do: entry_event:
-                    -   entry_is: entry:
-                                      -   entry_is: entry_type:
-                                                        -   entry_belong: entry_type
-                    -   fist_year: year
-                    -   note_is: note
+        person:
+            -   do:
+                    entry_event:
+                        -   entry_is:
+                                entry:
+                                    -   entry_is:
+                                            entry_type:
+                                                -   entry_belong: entry_type
+                        -   fist_year: year
+                        -   note_is: note
 
 

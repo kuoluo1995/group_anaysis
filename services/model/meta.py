@@ -1,8 +1,7 @@
 import random
-from services.dao import sqlite_graph
-from utils import yaml_utils
 
-Labels = yaml_utils.read('./services/configs/labels.yaml')
+from services import common
+from utils import yaml_utils
 
 
 class MetaNode:
@@ -10,108 +9,73 @@ class MetaNode:
         self.label = label
         self.next_nodes = list()
 
-    def match(self, start_node):
+    def match(self, node_id):
+        DAO = common.DAO
+
         all_edges = []
-        node_label = sqlite_graph.get_node_label_by_id(start_node)
+        node_label = DAO.get_node_label_by_id(node_id)
         if node_label != self.label:
-            raise Exception(start_node, node_label, sqlite_graph.get_node_label_by_id(start_node), '不符合', self.label)
-        for _label, _node in self.next_nodes:
-            # 可以加个一定几率放弃游走
-            _edges = sqlite_graph.get_out_edges(start_node)
-            _edges = [(target, r_id) for source, target, r_id in _edges if
-                      sqlite_graph.get_edge_label_by_id(r_id) == _label and sqlite_graph.get_node_label_by_id(
-                          target) == _node.label]
-            if len(_edges) == 0:
-                continue
-            target, r_id = random.choice(_edges)  # todo 为啥要随机游走？全部遍历不可以吗？
-            all_edges.append((start_node, target, r_id))
-            all_edges += _node.match(target)
+            raise Exception(node_id, node_label, DAO.get_node_name_by_id(node_id), '不符合', self.label)
+        for next_node in self.next_nodes:
+            for edge_label, meta_node in next_node.items():
+                # 可以加个一定几率放弃游走
+                _edges = DAO.get_out_edges(node_id)
+                _edges = [(_item['target_id'], _item['edge_id']) for _item in _edges if
+                          DAO.get_edge_label_by_id(
+                              _item['edge_id']) == edge_label and DAO.get_node_label_by_id(
+                              _item['target_id']) == meta_node.label]
+                if len(_edges) == 0:
+                    continue
+                target_id, edge_id = random.choice(_edges)  # 随机游走
+                all_edges.append({'source_id': node_id, 'target_id': target_id, 'edge_id': edge_id})
+                all_edges += meta_node.match(target_id)
         return all_edges
 
     def __str__(self):
-        return str([(self.label, edge_label, _node.label) for edge_label, _node in self.next_nodes]) + str(
-            [_node for r_label, _node in self.next_nodes])
+        _str = ' '
+        for next_node in self.next_nodes:
+            for edge_label, meta_node in next_node.items():
+                _str += self.label + '_' + edge_label + '_' + meta_node.label + ':' + str(meta_node) + ';'
+        return _str
 
 
 class MetaPath:
-    def __init__(self, name):
-        self.start = MetaNode(Labels.person)
+    def __init__(self, name, start_node):
         self.name = name
+        self.start_node = start_node
 
-    def match(self, start_node):
-        return self.start.match(start_node)
+    def match(self, node_id):
+        return self.start_node.match(node_id)
 
 
-# todo 可以全自动的
-class MetaPathRule:
-    def get_address_node(self):
-        node = MetaNode(Labels.address)  # todo checked 循环？
-        node.next_nodes = [(Labels.address_belong, MetaNode(Labels.address))]
-        return node
+global_nodes = dict()
 
-    def get_office_node(self):
-        office_type = MetaNode(Labels.office_type)
-        office_type.next_nodes = [(Labels.office_belong, MetaNode(Labels.office_type))]
-        office = MetaNode(Labels.office)
-        office.next_nodes = [(Labels.office_belong, office_type)]  # todo checked
-        return office
 
-    def add_gender_path(self):
-        path = MetaPath('性别')
-        path.start.next_nodes = [(Labels.gender_is, MetaNode(Labels.gender))]
+def build_meta_nodes(node_):
+    NodeLabels = common.NodeLabels
+    EdgeLabels = common.EdgeLabels
 
-    def add_ethnicity_path(self):
-        path = MetaPath('民族')
-        path.start.next_nodes = [(Labels.enthnicity_is, MetaNode(Labels.ethnicity))]
+    for node_label, next_nodes in node_.items():
+        meta_node = MetaNode(NodeLabels[node_label])
+        for next_node in next_nodes:
+            for _edge, _node in next_node.items():
+                if isinstance(_node, dict):
+                    meta_node.next_nodes.append({EdgeLabels[_edge]: build_meta_nodes(_node)})
+                else:
+                    if _node in global_nodes.keys():
+                        next_meta_node = global_nodes.get(_node)
+                    else:
+                        next_meta_node = MetaNode(NodeLabels[_node])
+                    meta_node.next_nodes.append({EdgeLabels[_edge]: next_meta_node})
+        return meta_node
 
-    def add_post_path(self):
-        post = MetaNode(Labels.post)
-        post.next_nodes = [(Labels.fist_year, MetaNode(Labels.year)),
-                           (Labels.last_year, MetaNode(Labels.year)),
-                           (Labels.office_is, self.get_office_node()),
-                           (Labels.post_is, MetaNode(Labels.post_type)),
-                           (Labels.where, self.get_address_node())]
-        path = MetaPath('官职')
-        path.start.next_nodes = [(Labels.do, post)]
 
-    def add_write_path(self):
-        path = MetaPath('写作')
-        path.start.next_nodes = [(Labels.text_is, MetaNode(Labels.text))]
-
-    def add_associate_path(self):
-        associate_event = MetaNode(Labels.associate_event)
-        associate_event.next_nodes = [(Labels.associate_belong, MetaNode(Labels.association)),
-                                      (Labels.associate_is, MetaNode(Labels.person)),
-                                      (Labels.fist_year, MetaNode(Labels.year)),
-                                      (Labels.occasion_is, MetaNode(Labels.occasion)),
-                                      (Labels.topic_is, MetaNode(Labels.scholar)),
-                                      (Labels.where, self.get_address_node())]
-        path = MetaPath('关系')
-        path.start.next_nodes = [(Labels.do, associate_event)]
-
-    def add_house_hold_path(self):
-        path = MetaPath('定位')
-        path.start.next_nodes = [(Labels.house_hold_is, MetaNode(Labels.house_hold))]
-
-    def add_status_path(self):
-        path = MetaPath('社会区分')
-        path.start.next_nodes = [(Labels.status_is, MetaNode(Labels.status))]
-
-    def add_address_event_path(self):
-        address_type = MetaNode(Labels.address_type)  # 这里是不对的 todo
-        address_type.next_nodes = [(Labels.where, self.get_address_node())]
-        path = MetaPath('地点事件')
-        path.start.next_nodes = [(Labels.address_associate_is, address_type)]
-
-    def add_entry_event_path(self):
-        entry_type = MetaNode(Labels.entry_type) # todo checked循环？
-        entry_type.next_nodes = [(Labels.entry_belong, MetaNode(Labels.entry_type))]
-        entry = MetaNode(Labels.entry)
-        entry.next_nodes = [(Labels.entry_is, entry_type)]
-        entry_event = MetaNode(Labels.entry_event)
-        entry_event.next_nodes = [(Labels.entry_is, entry),
-                                  (Labels.fist_year, MetaNode(Labels.year)),
-                                  (Labels.note_is, MetaNode(Labels.note))]
-
-        path = MetaPath('入仕')
-        path.start.next_nodes = [(Labels.do, entry_event)]
+def build_meta_paths(path='../configs/meta_paths.yaml'):
+    rules = yaml_utils.read(path)
+    # 先定义一些公共的点
+    for _key, _item in rules['global_nodes'].items():
+        global_nodes[_key] = build_meta_nodes(_item)
+    meta_paths = list()
+    for _key, _item in rules['paths'].items():
+        meta_paths.append(MetaPath(_key, build_meta_nodes(_item)))
+    return meta_paths

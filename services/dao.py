@@ -1,8 +1,9 @@
+import queue
 import sqlite3
 import networkx as nx
 
 
-class SqliteGraph:
+class SqliteGraphDAO:
     def __init__(self):
         self.db_path = './dataset/graph.db'
         self.use_cache = True
@@ -70,7 +71,7 @@ class SqliteGraph:
     def get_in_edges(self, target_id):
         if target_id not in self.in_edge_cache:
             rows = self._select('''SELECT source, r_id FROM graph WHERE target = ?''', ['source', 'r_id'], (target_id,))
-            rows = [(row['source'], target_id, row['r_id']) for row in rows]
+            rows = [{'source_id': row['source'], 'target_id': target_id, 'edge_id': row['r_id']} for row in rows]
             if not self.use_cache:
                 return rows
             self.in_edge_cache[target_id] = rows
@@ -79,38 +80,30 @@ class SqliteGraph:
     def get_out_edges(self, source_id):
         if source_id not in self.out_edge_cache:
             rows = self._select('''SELECT target, r_id FROM graph WHERE source = ?''', ['target', 'r_id'], (source_id,))
-            rows = [(source_id, row['target'], row['r_id']) for row in rows]
+            rows = [{'source_id': source_id, 'target_id': row['target'], 'edge_id': row['r_id']} for row in rows]
             if not self.use_cache:
                 return rows
             self.out_edge_cache[source_id] = rows
         return self.out_edge_cache[source_id]
 
-    def get_edge(self, node_id):
-        return self.get_in_edges(node_id) + self.get_out_edges(node_id)
-
-    def get_out_nodes(self, node_id):
-        return [target for source, target, r_id in self.get_out_edges(node_id)]
-
-    # 还需要清理下边， 我猜我这个sub_graph有问题 todo 看一下？我的写法可以吗？
-    def get_sub_graph(self, node_id, depth=2):
-        node_queue = {node_id: 0}
-        used_nodes = set()
-
-        while len(node_queue) > 0:
-            now_node, now_depth = node_queue.popitem()
+    def get_sub_graph(self, node_id, max_depth=2):
+        node_queue = queue.Queue()  # 宽度搜索
+        node_queue.put({'node_id': node_id, 'depth': 0})
+        used_nodes = set()  # stack
+        while not node_queue.empty():
+            _item = node_queue.get()
+            now_node, now_depth = _item['node_id'], _item['depth']
+            if now_node in used_nodes:  # 遍历过的点不要
+                continue
             used_nodes.add(now_node)
-            # next_depth = node2depth[now_node] + 1
-            children_nodes = self.get_out_nodes(now_node)
+            children_nodes = [_item['target_id'] for _item in self.get_out_edges(now_node)]
             for _node in children_nodes:
-                if _node not in used_nodes and _node not in node_queue.keys() and now_depth < depth:
-                    node_queue.update({_node: now_depth + 1})
+                if _node not in used_nodes and now_depth < max_depth:
+                    node_queue.put({'node_id': _node, 'depth': now_depth + 1})
 
         sub_graph = nx.MultiDiGraph()
         for _node in used_nodes:
-            for source, target, r_id in self.get_out_edges(_node):
-                if target in used_nodes:
-                    sub_graph.add_edge(source, target, r_id=r_id)
+            for _item in self.get_out_edges(_node):
+                if _item['target_id'] in used_nodes:
+                    sub_graph.add_edge(_item['source_id'], _item['target_id'], r_id=_item['edge_id'])
         return sub_graph
-
-
-sqlite_graph = SqliteGraph()
