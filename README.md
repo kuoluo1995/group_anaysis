@@ -21,3 +21,12 @@ Password: 123456
 ```bash
 python manage.py runserver 127.0.0.1:8001
 ```
+
+# 前后端接口
+## 1.获取初始化参数:
+```
+https://localhost:8001/init_ranges
+```
+### 入参:
+无
+### 出参(json):

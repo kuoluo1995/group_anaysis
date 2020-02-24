@@ -10,7 +10,7 @@ def get_init_ranges():
     DAO = common.DAO
     NodeLabels = common.NodeLabels
 
-    result = {NodeLabels['dynasty']: {}, NodeLabels['gender']: {}, NodeLabels['status']: {}}
+    result = {NodeLabels['dynasty']: {}, NodeLabels['status']: {}}
     for _label in result.keys():
         result[_label] = DAO.get_names_by_label(_label)
     return result
@@ -22,7 +22,8 @@ def get_ranges_by_name(name):
 
     person_id = DAO.get_node_id_by_name(name)
     sub_graph = DAO.get_sub_graph(person_id, max_depth=2)  # 间接关系就2个，太多了的话数据量就太大了
-    result = {NodeLabels['person']: {}, NodeLabels['dynasty']: {}, NodeLabels['gender']: {}, NodeLabels['status']: {}}
+    result = {NodeLabels['person']: {}, NodeLabels['dynasty']: {}, NodeLabels['year']: {}, NodeLabels['gender']: {},
+              NodeLabels['status']: {}}
     for node_id in sub_graph.nodes():
         node_label = DAO.get_node_label_by_id(node_id)
         if node_label in result.keys():
