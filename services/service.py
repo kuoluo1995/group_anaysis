@@ -1,9 +1,13 @@
 import math
 import random
 import timeit
+import matplotlib.pyplot as plt
+import numpy as np
 import networkx as nx
 from collections import defaultdict
 from services import common
+from utils.analysis_utils import multidimensional_scale
+from utils.sort_utils import sort_dict2list, maxN
 
 
 def get_init_ranges():
@@ -173,11 +177,11 @@ def _get_topics(label2names, name2relevancy, all_sentences, sentence2relevancy, 
         _name2relevancy = dict()  # name2relevancy是个字典，而_name2relevancy是个计算当前结点里已有结点的相关性
         for _name in _names:
             _name2relevancy[_name] = name2relevancy[_name]  # if _name in name2relevancy.keys() else 0
-        _name2relevancy = common.sort_dict2list(_name2relevancy)[:max_topic]  # dict2list
+        _name2relevancy = sort_dict2list(_name2relevancy)[:max_topic]  # dict2list
         _topics = list()
         for (_name, _) in _name2relevancy:
             sentences = [_sentence for _sentence in all_sentences if _name in _sentence]
-            sentences = common.maxN(sentences, key=lambda item: sentence2relevancy[item])
+            sentences = maxN(sentences, key=lambda item: sentence2relevancy[item])
             _person_ids = set([sentence2person_id[_sentence] for _sentence in sentences])
             if len(_person_ids) > len_people * 0.3:  # 剃掉那些不算不上群体的
                 _topics.append(_name)
@@ -247,3 +251,34 @@ def get_topics_by_person_ids(person_ids, max_topic=15):
     # print('4:{}'.format(timeit.default_timer() - start))
     return {'all_topics': all_topics, 'pmi_node': pmi_node, 'topic2sentences': topic2sentences,
             'label2topics': label2topics}
+
+
+# 散点图
+# linux去除中文乱码
+# ch_font =  FontProperties(fname='/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc',size=20)
+# rcParams['axes.unicode_minus']=False #解决负号'-'显示为方块的问题
+# mpl.rcParams['font.sans-serif'] = ['Noto Sans CJK JP']
+
+# Windows去除中文乱码
+plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
+plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
+
+
+# todo 学习下
+def get_doc2vec(topic2sentences, num_dim=100):
+    for _topic, _sentences in topic2sentences.items():
+        num_sentence = len(_sentences)
+        if num_sentence == 0:
+            continue
+        model_vector = np.zeros((num_sentence, num_dim))
+        for i, _sentence in enumerate(_sentences):
+            model_vector[i] = common.Model.infer_vector(_sentence)
+        colors = np.random.random(num_sentence)
+        position_2d = multidimensional_scale(1, data=model_vector)
+        plt.scatter(np.zeros(num_sentence), position_2d[:, 0], alpha=0.5, c=colors)
+        # labels = [','.join(_sentence) for _sentence in _sentences]
+        for i, _pos in enumerate(position_2d):
+            s = '.'.join(_sentences[i])
+            y = _pos[0]
+            plt.text(0, y, s, fontsize=5)
+        plt.show()

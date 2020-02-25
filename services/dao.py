@@ -44,7 +44,7 @@ class SqliteGraphDAO:
         if self.use_cache:
             rows = self._select('''SELECT id, label, name FROM node2data''', ['id', 'label', 'name'], ())
             for _row in rows:
-                _id, _label, _name = _row['id'], _row['label'], _row['name']
+                _id, _label, _name = _row['id'], str(_row['label']), str(_row['name'])
                 self.node_name2id_cache[_name] = _id
                 self.node_id2name_cache[_id] = _name
                 self.node_id2label_cache[_id] = _label
@@ -62,24 +62,24 @@ class SqliteGraphDAO:
         if node_id not in self.node_id2name_cache:
             rows = self._select('''SELECT name FROM node2data WHERE id = ?''', ['name'], (node_id,))
             if not self.use_cache:
-                return rows[0]['name']
-            self.node_id2name_cache[node_id] = rows[0]['name']
+                return str(rows[0]['name'])
+            self.node_id2name_cache[node_id] = str(rows[0]['name'])
         return self.node_id2name_cache[node_id]
 
     def get_node_label_by_id(self, node_id):
         if node_id not in self.node_id2label_cache:
             rows = self._select('''SELECT label FROM node2data WHERE id = ?''', ['label'], (node_id,))
             if not self.use_cache:
-                return rows[0]['label']
-            self.node_id2label_cache[node_id] = rows[0]['label']
+                return str(rows[0]['label'])
+            self.node_id2label_cache[node_id] = str(rows[0]['label'])
         return self.node_id2label_cache[node_id]
 
     def get_edge_label_by_id(self, edge_id):
         if edge_id not in self.edge_label_cache:
             rows = self._select('''SELECT label FROM rel2data WHERE id = ?''', ['label'], (edge_id,))
             if not self.use_cache:
-                return rows[0]['label']
-            self.edge_label_cache[edge_id] = rows[0]['label']
+                return str(rows[0]['label'])
+            self.edge_label_cache[edge_id] = str(rows[0]['label'])
         return self.edge_label_cache[edge_id]
 
     def get_in_edges(self, target_id):
@@ -104,7 +104,6 @@ class SqliteGraphDAO:
         if label_ not in self.node_label2names_cache:
             pass  # todo 未来看情况
         return self.node_label2names_cache[label_]
-
 
     def get_sub_graph(self, node_id, max_depth=2):
         node_queue = queue.Queue()  # 宽度搜索
