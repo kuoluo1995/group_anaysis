@@ -93,7 +93,7 @@ python manage.py runserver 127.0.0.1:8001
 
 |— `utils` 存放所有工具
 
-|——— `analysis_utils.py` 专用来分析的工具类
+|——— `analysis_utils.py` 降维算法分析的工具类
 
 |——— `sort_utils.py` 排序的工具类
 

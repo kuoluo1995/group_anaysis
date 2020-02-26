@@ -1,7 +1,6 @@
 import math
 import random
 import timeit
-import matplotlib.pyplot as plt
 import numpy as np
 import networkx as nx
 from collections import defaultdict
@@ -197,7 +196,7 @@ def _get_topics(label2names, name2relevancy, all_sentences, sentence2relevancy, 
 def _get_topics_pmi(all_topics, person_id2sentences, topic2sentences, all_sentences):
     # 统计topic
     count_x = defaultdict(int)
-    count_xy = defaultdict(int)  # x和y
+    count_xy = defaultdict(dict)  # x和y
     for _x in all_topics:
         count_xy[_x] = defaultdict(int)
         for _sentences in person_id2sentences.values():
@@ -209,8 +208,10 @@ def _get_topics_pmi(all_topics, person_id2sentences, topic2sentences, all_senten
             for _sentences in person_id2sentences.values():
                 has_x = has_y = False
                 for _sentence in _sentences:
-                    has_x = True if _sentence in topic2sentences[_x] else False
-                    has_y = True if _sentence in topic2sentences[_y] else False
+                    if _sentence in topic2sentences[_x]:
+                        has_x = True
+                    if _sentence in topic2sentences[_y]:
+                        has_y = True
                 if has_x and has_y:
                     count_xy[_x][_y] += 1
     # 计算pmi
@@ -231,6 +232,26 @@ def _get_topics_pmi(all_topics, person_id2sentences, topic2sentences, all_senten
     return pmi_node
 
 
+def _get_doc2vec(topic2sentences, num_dim=100):
+    topic2sentence_positions = {}
+    for _topic, _sentences in topic2sentences.items():
+        num_sentence = len(_sentences)
+        if num_sentence == 0:
+            continue
+        model_vector = np.zeros((num_sentence, num_dim))
+        for i, _sentence in enumerate(_sentences):
+            model_vector[i] = common.Model.infer_vector(_sentence)
+        positions = multidimensional_scale(1, data=model_vector)
+
+        sentences_position = dict()
+        for i, _pos in enumerate(positions):
+            s = '.'.join(_sentences[i])
+            y = _pos[0]  # 一维
+            sentences_position[s] = y
+        topic2sentence_positions[_topic] = sentences_position
+    return topic2sentence_positions
+
+
 def get_topics_by_person_ids(person_ids, max_topic=15):
     # start = timeit.default_timer()
     person_id2sentences, sentence2person_id, all_sentences = _get_sentences_dicts(person_ids, random_epoch=100)
@@ -248,37 +269,7 @@ def get_topics_by_person_ids(person_ids, max_topic=15):
                                                             max_topic=max_topic)
 
     pmi_node = _get_topics_pmi(all_topics, person_id2sentences, topic2sentences, all_sentences)
+    topic2sentence_positions = _get_doc2vec(topic2sentences, num_dim=100)
     # print('4:{}'.format(timeit.default_timer() - start))
-    return {'all_topics': all_topics, 'pmi_node': pmi_node, 'topic2sentences': topic2sentences,
+    return {'all_topics': all_topics, 'pmi_node': pmi_node, 'topic2sentence_positions': topic2sentence_positions,
             'label2topics': label2topics}
-
-
-# 散点图
-# linux去除中文乱码
-# ch_font =  FontProperties(fname='/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc',size=20)
-# rcParams['axes.unicode_minus']=False #解决负号'-'显示为方块的问题
-# mpl.rcParams['font.sans-serif'] = ['Noto Sans CJK JP']
-
-# Windows去除中文乱码
-plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
-plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
-
-
-# todo 学习下
-def get_doc2vec(topic2sentences, num_dim=100):
-    for _topic, _sentences in topic2sentences.items():
-        num_sentence = len(_sentences)
-        if num_sentence == 0:
-            continue
-        model_vector = np.zeros((num_sentence, num_dim))
-        for i, _sentence in enumerate(_sentences):
-            model_vector[i] = common.Model.infer_vector(_sentence)
-        colors = np.random.random(num_sentence)
-        position_2d = multidimensional_scale(1, data=model_vector)
-        plt.scatter(np.zeros(num_sentence), position_2d[:, 0], alpha=0.5, c=colors)
-        # labels = [','.join(_sentence) for _sentence in _sentences]
-        for i, _pos in enumerate(position_2d):
-            s = '.'.join(_sentences[i])
-            y = _pos[0]
-            plt.text(0, y, s, fontsize=5)
-        plt.show()
