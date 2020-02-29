@@ -27,10 +27,10 @@ edge:
     associate_belong: 'AssocBelong'  # 关联属于
     associate_is: 'AssocIs'
     do: 'Do'  # 做了什么官, 做了什么关联的事
-    enthnicity_is: 'EnthnicityIs'  # 是什么民族
+    ethnicity_is: 'EthnicityIs'  # 是什么民族
     entry_belong: 'Entry_Belong'
     entry_is: 'EntryIs'
-    fist_year: 'FistYear'  # ??? first_year? 任职的第一年
+    first_year: 'FirstYear'  # 任职的第一年
     gender_is: 'GenderIs'  # 是什么性别
     house_hold_is: 'HouseholdIs'  # 住址在哪
     last_year: 'LastYear'  # 任职的最后一年

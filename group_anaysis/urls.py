@@ -6,11 +6,13 @@ urlpatterns = [
     # debug
     path('test_init_ranges/', view.test_init_ranges),
     path('test_search_ranges_by_name/', view.test_search_ranges_by_name),
-    path('test_search_person_by_ranges/', view.test_search_person_by_ranges),
+    path('test_search_person_by_dynastie/', view.test_search_person_by_dynastie),
+    path('test_filter_person_by_ranges/', view.test_filter_person_by_ranges),
     path('test_search_topics_by_person_ids/', view.test_search_topics_by_person_ids),
     # online
     path('init_ranges/', view.init_ranges),
     path('search_ranges_by_name/', view.search_ranges_by_name),
-    path('search_person_by_ranges/', view.search_person_by_ranges),
+    path('search_person_by_dynastie/', view.search_person_by_dynastie),
+    path('filter_person_by_ranges/', view.filter_person_by_ranges),
     path('search_topics_by_person_ids/', view.search_topics_by_person_ids),
 ]

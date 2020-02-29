@@ -14,12 +14,12 @@ paths:
             -   gender_is: gender
     民族:
         person:
-            -   enthnicity_is: ethnicity
+            -   ethnicity_is: ethnicity
     官职:
         person:
             -   do:
                     post:
-                        -   fist_year: year
+                        -   first_year: year
                         -   last_year: year
                         -   office_is: office_node
                         -   post_is: post_type
@@ -33,7 +33,7 @@ paths:
                     associate_event:
                         -   associate_belong: association
                         -   associate_is: person
-                        -   fist_year: year
+                        -   first_year: year
                         -   occasion_is: occasion
                         -   topic_is: scholar
                         -   where: address_node
@@ -57,7 +57,7 @@ paths:
                                     -   entry_is:
                                             entry_type:
                                                 -   entry_belong: entry_type
-                        -   fist_year: year
+                        -   first_year: year
                         -   note_is: note
 
 

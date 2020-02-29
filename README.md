@@ -3,17 +3,22 @@
 1. neo4j
 ## 导入数据
 ```bash
-neo4j-admin load --from=./dataset/graph_cbdb2_1.dump --database=graph.db --force
-neo4j-admin load --from=./dataset/graph_cbdb2_2.dump --database=graph.db --force
+neo4j-admin load --from=./dataset/graph_cbdb4.dump --database=graph.db --force
 ```
 ## 启动neo4j数据库
+```bash
 neo4j.bat console
+```
 ## 连接账户密码
 **connect URL:** bolt://localhost:7687
 
 **Username:**  neo4j
 
 **Password:**  123456
+## 将neo4j数据库转换成litesql数据库（先连上neo4j的数据库）
+```bash
+python dataset/build_dataset.py
+```
 
 # 后端部分
 ## 环境
@@ -22,7 +27,7 @@ neo4j.bat console
 所需要的包全在 `requirement.txt`
 ## 运行后台
 ```bash
-python manage.py runserver 127.0.0.1:8001
+python manage.py runserver 127.0.0.1:8080
 ```
 
 # 前后端接口
@@ -30,7 +35,9 @@ python manage.py runserver 127.0.0.1:8001
 
 ![](./images/search_ranges_by_name.png)
 
-![](./images/search_person_by_ranges.png)
+![](./images/search_person_by_dynastie.png)
+
+![](./images/filter_person_by_ranges.png)
 
 ![](./images/search_topic_by_person_ids.png)
 # 后端自测接口
@@ -38,7 +45,9 @@ python manage.py runserver 127.0.0.1:8001
 
 ![](./images/test_search_ranges_by_name.png)
 
-![](./images/test_search_person_by_ranges.png)
+![](./images/test_search_person_by_dynastie.png)
+
+![](./images/test_filter_person_by_ranges.png)
 
 ![](./images/test_search_topic_by_person_ids.png)
 

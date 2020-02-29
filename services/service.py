@@ -34,51 +34,57 @@ def get_ranges_by_name(name):
     return result
 
 
-# todo 待朝代更新后再检测
-def get_person_by_ranges(dynastie, min_year, max_year, genders, status):
+def get_person_by_dynastie(dynastie):
     DAO = common.DAO
     NodeLabels = common.NodeLabels
 
     # 预备数据
     dynastie_id = DAO.get_node_id_by_name(dynastie)
+    sub_graph = DAO.get_sub_graph(dynastie_id, max_depth=2)
+    person_ids = set()
+    # 根据年代，找到所有的人
+    for node_id in sub_graph.nodes():
+        node_label = DAO.get_node_label_by_id(node_id)
+        if node_label == NodeLabels['person']:
+            person_ids.add(node_id)
+    return {'person_ids': list(person_ids)}
+
+
+def delete_person_by_ranges(all_person, min_year, max_year, genders, status):
+    DAO = common.DAO
+    NodeLabels = common.NodeLabels
+
     gender_ids = []
     if genders is not None:
         gender_ids = [DAO.get_node_id_by_name(_name) for _name in genders]
     statu_ids = []
     if status is not None:
         statu_ids = [DAO.get_node_id_by_name(_name) for _name in status]
-
-    sub_graph = DAO.get_sub_graph(dynastie_id, max_depth=1)
-    all_person = set()
-    # 根据年代，找到所有的人
-    for node_id in sub_graph.nodes():
-        node_label = DAO.get_node_label_by_id(node_id)
-        if node_label == NodeLabels['person']:
-            all_person.add(node_id)
     # 根据年代，性别和社会区分赛选
     person_ids = set()
     for _id in all_person:
         person_graph = DAO.get_sub_graph(_id, max_depth=1)
-        checked = True
+        is_ok = True
         for node_id in person_graph.nodes():
             node_label = DAO.get_node_label_by_id(node_id)
             if node_label == NodeLabels['year']:
-                _year = int(DAO.get_node_name_by_id(node_id))
-                if min_year is not None and _year < min_year:
-                    checked = False
-                    break
-                if max_year is not None and max_year < _year:
-                    checked = False
-                    break
-            if node_label == NodeLabels['gender'] and node_id not in gender_ids:
-                checked = False
+                _year = DAO.get_node_name_by_id(node_id)
+                if _year != 'None':
+                    _year = int(_year)
+                    if min_year is not None and _year < min_year:
+                        is_ok = False
+                        break
+                    if max_year is not None and max_year < _year:
+                        is_ok = False
+                        break
+            if node_label == NodeLabels['gender'] and len(gender_ids) > 0 and node_id not in gender_ids:
+                is_ok = False
                 break
-            if node_label == NodeLabels['status'] and node_id not in statu_ids:
-                checked = False
+            if node_label == NodeLabels['status'] and len(statu_ids) > 0 and node_id not in statu_ids:
+                is_ok = False
                 break
-        if checked:
+        if is_ok:
             person_ids.add(_id)
-    # 再来筛选topic
     return {'person_ids': list(person_ids)}
 
 

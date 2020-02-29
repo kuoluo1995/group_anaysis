@@ -1,8 +1,10 @@
 import json
+import os
 import sqlite3
 import threading
 import time
 import networkx as nx
+from pathlib import Path
 
 from py2neo import Graph
 
@@ -12,12 +14,14 @@ password = '123456'
 
 
 def get_whole_graph():
+    print('开始读取图数据库')
+
     def multiThreadLoad(func, epoch):
         ts = []
         # 44
         for i in range(epoch):
-            if i % 10 == 0:
-                print(i)
+            if i % 10 == 0 and i != 0:
+                print('{}的第{}代:'.format(func, i))
             t = threading.Thread(target=func, args=(i,))
             t.start()
             ts.append(t)
@@ -69,15 +73,17 @@ def get_whole_graph():
     graph = nx.MultiDiGraph()
     node2data = {}
     rel2data = {}
-    multiThreadLoad(loadEdges, 3)
-    multiThreadLoad(loadNodes, 3)
-    # multiThreadLoad(loadEdges, 55)
-    # multiThreadLoad(loadNodes, 14)
-    print(graph.number_of_nodes(), graph.number_of_edges(), len(node2data))
+    # multiThreadLoad(loadEdges, 3)
+    # multiThreadLoad(loadNodes, 3)
+    multiThreadLoad(loadEdges, 100)
+    multiThreadLoad(loadNodes, 100)
+    len(node2data)
+    print('所有的点数量:{};所有的边数量{}'.format(graph.number_of_nodes(), graph.number_of_edges()))
     return graph, node2data, rel2data
 
 
 def save2sqlite(graph, node2data, rel2data, db_path):
+    print('开始保存图数据库内容到LiteSQL')
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
     c.execute('''CREATE TABLE graph
@@ -131,6 +137,24 @@ def save2sqlite(graph, node2data, rel2data, db_path):
     print('graph is save')
 
 
+# def async(f):
+#     def wrapper(*args, **kwargs):
+#         thr = threading.Thread(target=f, args=args, kwargs=kwargs)
+#         thr.start()
+#
+#     return wrapper
+#
+#
+# @async
+# def start_neo4j():
+#     os.system('nohup neo4j.bat console')
+
+
 if __name__ == "__main__":
+    # start_neo4j()  # 开启neo4j数据库
+    # time.sleep(1000)  # 等待彻底开启完毕
     whole_g, node2data, rel2data = get_whole_graph()
-    save2sqlite(whole_g, node2data, rel2data, './graph.db')
+    sql_dataset = Path('./graph.db')
+    if sql_dataset.exists():
+        sql_dataset.unlink()
+    save2sqlite(whole_g, node2data, rel2data, str(sql_dataset))
