@@ -56,7 +56,7 @@ python manage.py runserver 127.0.0.1:8080
 
 |——— `build_dataset.py` 将`Neo4j`图数据库转化成`Litesql`来快速读取数据
 
-|——— `graph.db` `Litesql`生成的库
+|——— `graph.db` `Litesql`生成的库 [下载](https://pan.baidu.com/s/1prh-6IV5E_x9i5xlMI8z7g ) 提取码:cwhx
 
 |— `group_anaysis` `Django`框架部分
 
@@ -84,9 +84,9 @@ python manage.py runserver 127.0.0.1:8080
 
 |—————— `meta.yaml` 里面包含元点和元路径实体类，可以根据`meta_paths.yaml`来自己配置所有的元路径
 
-|——— `models` 所有训练好的模型
+|——— `models` 所有训练好的模型 [下载](https://pan.baidu.com/s/1bV1u2rby8ZWwxrHhd1XAuQ) 提取码：9rb3
 
-|—————— `sentence2vec.model` 训练好的`doc2vec`的模型
+|—————— `sentence2vec.model` 训练好的`doc2vec`的模型 
 
 |—————— `sentence2vec.model.docvecs.vectors_docs.npy` 训练好的`doc2vec`的模型
 
