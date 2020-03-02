@@ -74,6 +74,14 @@ class SqliteGraphDAO:
             self.node_id2label_cache[node_id] = str(rows[0]['label'])
         return self.node_id2label_cache[node_id]
 
+    def get_names_by_label(self, label_):
+        if label_ not in self.node_label2names_cache:
+            rows = self._select('''SELECT name FROM node2data WHERE label=?''', ['name'], (label_,))
+            if not self.use_cache:
+                return [str(_row['name']) for _row in rows]
+            self.node_label2names_cache[label_] = [str(_row['name']) for _row in rows]
+        return self.node_label2names_cache[label_]
+
     def get_edge_label_by_id(self, edge_id):
         if edge_id not in self.edge_label_cache:
             rows = self._select('''SELECT label FROM rel2data WHERE id = ?''', ['label'], (edge_id,))
@@ -99,11 +107,6 @@ class SqliteGraphDAO:
                 return rows
             self.out_edge_cache[source_id] = rows
         return self.out_edge_cache[source_id]
-
-    def get_names_by_label(self, label_):
-        if label_ not in self.node_label2names_cache:
-            pass  # todo 未来看情况
-        return self.node_label2names_cache[label_]
 
     def get_sub_graph(self, node_id, max_depth=2):
         node_queue = queue.Queue()  # 宽度搜索
