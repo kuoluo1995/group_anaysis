@@ -40,7 +40,7 @@ def get_person_by_dynastie(dynastie):
 
     # 预备数据
     dynastie_id = DAO.get_node_id_by_name(dynastie)
-    sub_graph = DAO.get_sub_graph(dynastie_id, max_depth=2)
+    sub_graph = DAO.get_sub_graph(dynastie_id, max_depth=3)
     person_ids = set()
     # 根据年代，找到所有的人
     for node_id in sub_graph.nodes():
