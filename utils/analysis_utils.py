@@ -1,7 +1,6 @@
 import numpy as np
 
 
-# todo 介紹下
 def multidimensional_scale(num_component, data=None, _dist=None):
     if data is not None:
         num_vector, num_dim = data.shape

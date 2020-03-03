@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 from services import common
 from services.service import get_ranges_by_name, get_topics_by_person_ids, delete_person_by_ranges, \
     get_person_by_dynastie
@@ -20,12 +19,13 @@ if __name__ == '__main__':
     person_ids = ranges[NodeLabels['person']].keys()
     all_person = get_person_by_dynastie('宋')
     all_person = all_person['person_ids'][:50]
-    result = delete_person_by_ranges(all_person, 960, 1127, ['男', '女'], None)
+    # result = delete_person_by_ranges(all_person, 960, 1127, ['男', '女'], None)
 
     person_id2relation = {_id: len(common.DAO.get_in_edges(_id) + common.DAO.get_out_edges(_id)) for _id in person_ids}
     person_id2relation = sort_dict2list(person_id2relation)[:30]
     person_ids = [_id[0] for _id in person_id2relation]
     temp = get_topics_by_person_ids(person_ids)
+
     # 相似矩阵
     pmi_node = temp['pmi_node']
     _len = len(pmi_node)
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     plt.yticks(list(range(_len)), pmi_node.keys())
     plt.show()
 
-    # 散点图
+    # topic散点图
     topic2sentence_positions = temp['topic2sentence_positions']
     for _topic, _sentences_position in topic2sentence_positions.items():
         num_sentence = len(_sentences_position.keys())
@@ -52,6 +52,18 @@ if __name__ == '__main__':
         for _sentence, _pos in _sentences_position.items():
             plt.text(0, _pos, _sentence, fontsize=5)
         plt.show()
+
+    # 人物散点图
+    person2positions = temp['person2positions']
+    num_person = len(person2positions.keys())
+    colors = np.random.random(num_person)
+    positions = np.array([_position['position'] for person_id, _position in person2positions.items()])
+    plt.scatter(positions[:, 0], positions[:, 1], alpha=0.5, c=colors)
+    for _person_id, _items in person2positions.items():
+        _name = _items['name']
+        _position = _items['position']
+        plt.text(_position[0], _position[1], _name, fontsize=5)
+    plt.show()
 
     # 将算法的结果保存成json串，用于提供给前端快速测试
     # input_file = 'input.json'  # 输入的json

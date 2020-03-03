@@ -110,16 +110,16 @@ def filter_person_by_ranges(request):
     request.encoding = 'utf-8'
     result = {'is_success': False}
     all_person = min_year = max_year = genders = status = None
-    if 'person_ids' in request.POST and request.POST['person_ids']:
-        all_person = request.POST['person_ids']
+    if 'person_ids[]' in request.POST and request.POST['person_ids[]'] and len(request.POST['person_ids[]']) > 0:
+        all_person = request.POST.getlist('person_ids[]')
     if 'min_year' in request.POST and request.POST['min_year']:
         min_year = int(request.POST['min_year'])
     if 'max_year' in request.POST and request.POST['max_year']:
         max_year = int(request.POST['max_year'])
-    if 'genders' in request.POST and request.POST['genders'] and len(request.POST['genders']) > 0:
-        genders = request.POST['genders']
-    if 'status' in request.POST and request.POST['status'] and len(request.POST['status']) > 0:
-        status = request.POST['status']
+    if 'genders[]' in request.POST and request.POST['genders[]'] and len(request.POST['genders[]']) > 0:
+        genders = request.POST.getlist('genders[]')
+    if 'status[]' in request.POST and request.POST['status[]'] and len(request.POST['status[]']) > 0:
+        status = request.POST.getlist('status[]')
     if all_person is not None and len(all_person) > 0:
         try:
             result = delete_person_by_ranges(all_person, min_year, max_year, genders, status)
@@ -134,9 +134,8 @@ def filter_person_by_ranges(request):
 def search_topics_by_person_ids(request):
     request.encoding = 'utf-8'
     result = {'is_success': False}
-    # if 'person_ids' in request.POST and request.POST['person_ids'] and len(request.POST['person_ids']) > 0:
-    person_ids = request.POST.getlist('person_ids[]')
-    if person_ids is not None and len(person_ids) > 0:
+    if 'person_ids[]' in request.POST and request.POST['person_ids[]'] and len(request.POST['person_ids[]']) > 0:
+        person_ids = request.POST.getlist('person_ids[]')
         try:
             result = get_topics_by_person_ids(person_ids)
             result['is_success'] = True
