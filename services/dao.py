@@ -112,16 +112,18 @@ class SqliteGraphDAO:
         node_queue = queue.Queue()  # 宽度搜索
         node_queue.put({'node_id': node_id, 'depth': 0})
         used_nodes = set()  # stack
+        used_children_nodes = set()
         while not node_queue.empty():
             _item = node_queue.get()
             now_node, now_depth = _item['node_id'], _item['depth']
-            if now_node in used_nodes:  # 遍历过的点不要
+            if now_node in used_nodes or now_depth >= max_depth:  # 遍历过的点不要
                 continue
             used_nodes.add(now_node)
             children_nodes = [_item['target_id'] for _item in self.get_out_edges(now_node)]
             for _node in children_nodes:
-                if _node not in used_nodes and now_depth < max_depth:
+                if _node not in used_nodes and now_depth < max_depth and _node not in used_children_nodes:
                     node_queue.put({'node_id': _node, 'depth': now_depth + 1})
+                    used_children_nodes.add(_node)
 
         sub_graph = nx.MultiDiGraph()
         for _node in used_nodes:
