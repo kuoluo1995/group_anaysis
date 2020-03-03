@@ -295,7 +295,7 @@ def _get_person2position2d_1(sentence2vector_, person_id2sentences_, topic2sente
     person2positions = dict()
     for _person_id, _ in person_id2vector.items():
         name = DAO.get_node_name_by_id(_person_id)
-        person2positions[_person_id] = {'name': name, 'position': positions[_i]}
+        person2positions[_person_id] = {'name': name, 'position': (positions[_i][0], positions[_i][1])}
         _i += 1
     return person2positions
 
