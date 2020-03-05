@@ -6,7 +6,7 @@ import numpy as np
 from services import common
 from services.service import get_ranges_by_name, get_topics_by_person_ids, get_person_by_dynastie, \
     delete_person_by_ranges
-from utils.sort_utils import sort_dict2list
+from tools.sort_utils import sort_dict2list
 
 # linux去除中文乱码
 # ch_font =  FontProperties(fname='/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc',size=20)

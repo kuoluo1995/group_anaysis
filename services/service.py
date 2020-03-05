@@ -5,8 +5,8 @@ import numpy as np
 import networkx as nx
 from collections import defaultdict
 from services import common
-from utils.analysis_utils import multidimensional_scale
-from utils.sort_utils import sort_dict2list, maxN, mean_vectors, cos_dict
+from tools.analysis_utils import multidimensional_scale
+from tools.sort_utils import sort_dict2list, maxN, mean_vectors, cos_dict
 
 
 def get_init_ranges():

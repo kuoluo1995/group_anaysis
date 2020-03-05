@@ -100,7 +100,7 @@ python manage.py runserver 127.0.0.1:8080
 
 |——— `test_post.html` 测试`post`请求的页面
 
-|— `utils` 存放所有工具
+|— `tools` 存放所有工具
 
 |——— `analysis_utils.py` 降维算法分析的工具类
 
