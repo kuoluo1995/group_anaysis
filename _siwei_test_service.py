@@ -16,15 +16,12 @@ from tools.sort_utils import sort_dict2list
 plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
 plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 if __name__ == '__main__':
-    DAO = common.DAO
     NodeLabels = common.NodeLabels
     ranges = get_ranges_by_name('王安石')
     person_ids = ranges[NodeLabels['person']].keys()
     start = timeit.default_timer()
     all_person = get_person_by_dynastie('宋')
     print('1:{}'.format(timeit.default_timer() - start))
-    for _person_id in all_person['person_ids']:
-        print({_person_id: DAO.get_node_name_by_id(_person_id)})
     all_person = all_person['person_ids']
     start = timeit.default_timer()
     result = delete_person_by_ranges(all_person, 960, 1127, ['男', '女'], None)

@@ -2,7 +2,7 @@ from gensim.models import Doc2Vec
 
 from services.dao import SqliteGraphDAO
 from services.entity.meta import build_meta_paths
-from utils import yaml_utils
+from tools import yaml_utils
 
 _labels = yaml_utils.read('./services/configs/labels.yaml')
 NodeLabels = _labels['node']
