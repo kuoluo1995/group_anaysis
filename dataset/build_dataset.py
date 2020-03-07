@@ -43,13 +43,13 @@ def get_whole_graph():
             r_type = node_data['type(r)']
             r_id = node_data['id(r)']
             r_name = node_data['r.name']
-
+            r_en_name = ''  # todo feture in english
             graph.add_edge(n1_id, n2_id, r_id=r_id)
-            rel2data[r_id] = (r_type, r_name, '')
+            rel2data[r_id] = (r_type, r_name, r_en_name)
 
     def loadNodes(time, num_per_time=100000):
         query = ''' MATCH (n)
-                    RETURN id(n), labels(n), n.name, n.en_name
+                    RETURN id(n), labels(n), n.name, n.en_name, n.code
                     SKIP {} LIMIT {} '''.format(time * num_per_time, num_per_time)
         results = neo_graph.run(query).data()
         for node_data in results:
@@ -65,9 +65,10 @@ def get_whole_graph():
                 n_type = labels[0]
             n_name = node_data['n.name']
             n_en_name = node_data['n.en_name']
+            n_code = node_data['n.code']
             if n_id in node2data:
-                print(node2data[n_id], (n_type, n_name, n_en_name,), n_id, '重复了')
-            node2data[n_id] = (n_type, n_name, n_en_name,)
+                print(node2data[n_id], (n_type, n_name, n_en_name, n_code), n_id, '重复了')
+            node2data[n_id] = (n_type, n_name, n_en_name, n_code)
 
     neo_graph = Graph('bolt://localhost:7687', username='neo4j', password='123456')
     graph = nx.MultiDiGraph()
@@ -100,6 +101,7 @@ def save2sqlite(graph, node2data, rel2data, db_path):
                     label TEXT NOT NULL,
                     name TEXT,
                     en_name TEXT,
+                    code BIGINT,
                     data TEXT NOT NULL
                 );
             ''')
@@ -117,7 +119,9 @@ def save2sqlite(graph, node2data, rel2data, db_path):
     c.execute('''CREATE INDEX source_index ON graph (source)''')
     c.execute('''CREATE INDEX target_index ON graph (target)''')
     c.execute('''CREATE INDEX r_id_index ON graph (r_id)''')
+    c.execute('''CREATE INDEX node_code_index ON node2data (code)''')
     c.execute('''CREATE INDEX node_label_index ON node2data (label)''')
+    c.execute('''CREATE INDEX node_label_code_index ON node2data (label, code)''')
     c.execute('''CREATE INDEX rel_label_index ON rel2data (label)''')
 
     for source, target, key in graph.edges(keys=True):
@@ -126,8 +130,8 @@ def save2sqlite(graph, node2data, rel2data, db_path):
         c.execute("INSERT INTO graph VALUES (?,?,?,?)", (source, target, r_id, json.dumps({})))
 
     for _id in node2data:
-        label, name, en_name = node2data[_id]
-        c.execute("INSERT INTO node2data VALUES (?,?,?,?,?)", (_id, label, name, en_name, json.dumps({})))
+        label, name, en_name, n_code = node2data[_id]
+        c.execute("INSERT INTO node2data VALUES (?,?,?,?,?,?)", (_id, label, name, en_name, n_code, json.dumps({})))
 
     for _id in rel2data:
         label, name, en_name = rel2data[_id]

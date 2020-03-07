@@ -14,34 +14,45 @@
     </form>
 </div>
 <div>
-    <h2>通过朝代搜索人群</h2>
-    <form action="/test_search_person_by_dynastie/" method="post">
-        <label for="name">dynastie</label>
-        <input type="text" name="dynastie" id="dynastie">
+    <h2>通过范围搜索人名</h2>
+    <form action="/test_search_person_by_ranges/" method="post">
+        <label>dynasties:</label>
+        <label><input name="dynasties[]" type="checkbox" value="575">宋</label>
+        <label><input name="dynasties[]" type="checkbox" value="406">唐</label>
+        <label for="min_year">min_year(整数)</label>
+        <input type="number" name="min_year" id="min_year">
+        <label for="max_year">max_year(整数)</label>
+        <input type="number" name="max_year" id="max_year">
+        <label>genders:</label>
+        <label><input name="genders[]" type="checkbox" value="男">男</label>
+        <label><input name="genders[]" type="checkbox" value="女">女</label>
+        <label>status:</label>
+        <label><input name="status[]" type="checkbox" value="[為官者：文]">[為官者：文]</label>
+        <label><input name="status[]" type="checkbox" value="[武官]">[武官]</label>
         <input type="submit" value="搜索">
     </form>
 </div>
 <div>
-    <h2>通过范围搜索人名</h2>
-    <form action="/test_filter_person_by_ranges/" method="post">
-        <label for="person_ids">all_person(用;分开结果)</label>
-        <input type="text" name="person_ids" id="person_ids">
-        <label for="min_year">min_year(整数)</label>
-        <input type="text" name="min_year" id="min_year">
-        <label for="max_year">max_year(整数)</label>
-        <input type="text" name="max_year" id="max_year">
-        <label for="genders">genders(用;分开结果)</label>
-        <input type="text" name="genders" id="genders">
-        <label for="status">status(用;分开结果)</label>
-        <input type="text" name="status" id="status">
+    <h2>通过人名id搜索地址</h2>
+    <form action="/test_search_address_by_person_ids/" method="post">
+        <label>person_ids:</label>
+        <label><input name="person_ids[]" type="checkbox" value="1447">朱明之</label>
+        <label><input name="person_ids[]" type="checkbox" value="2287">吕嘉问</label>
+        <label><input name="person_ids[]" type="checkbox" value="2773">王安礼</label>
+        <label><input name="person_ids[]" type="checkbox" value="2775">王安石</label>
+        <label><input name="person_ids[]" type="checkbox" value="2658">蔡京</label>
         <input type="submit" value="搜索">
     </form>
 </div>
 <div>
     <h2>通过人名id搜索topic</h2>
     <form action="/test_search_topics_by_person_ids/" method="post">
-        <label for="person_ids">person_ids(用;分开结果)</label>
-        <input type="text" name="person_ids" id="person_ids">
+        <label>person_ids:</label>
+        <label><input name="person_ids[]" type="checkbox" value="1447">朱明之</label>
+        <label><input name="person_ids[]" type="checkbox" value="2287">吕嘉问</label>
+        <label><input name="person_ids[]" type="checkbox" value="2773">王安礼</label>
+        <label><input name="person_ids[]" type="checkbox" value="2775">王安石</label>
+        <label><input name="person_ids[]" type="checkbox" value="2658">蔡京</label>
         <input type="submit" value="搜索">
     </form>
 </div>
@@ -49,15 +60,15 @@
     <h2>结果:
         <button type="button" onclick="show()">可视化</button>
     </h2>
-    <pre id="result">{{ result }}</pre>
+    <pre id="response">{{ response }}</pre>
 </div>
 </body>
 </html>
 
 <script type="text/javascript">
     function show() {
-        var text = document.getElementById('result').innerText; //获取json格式内容
-        var _json = JSON.stringify(JSON.parse(text), null, 2);//将字符串转换成json对象
-        document.getElementById('result').innerText = _json;
+        var _content = document.getElementById('response').innerText; //获取json格式内容
+        _content = JSON.stringify(JSON.parse(_content), null, 2);//将字符串转换成json对象
+        document.getElementById('response').innerText = _content;
     }
 </script>

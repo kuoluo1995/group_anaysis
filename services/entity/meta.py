@@ -10,7 +10,7 @@ class MetaNode:
         self.next_nodes = list()
 
     def match(self, node_id):
-        DAO = common.DAO
+        DAO = common.GRAPH_DAO
 
         all_edges = []
         node_label = DAO.get_node_label_by_id(node_id)
@@ -70,7 +70,7 @@ def build_meta_nodes(node_):
         return meta_node
 
 
-def build_meta_paths(path='../configs/meta_paths.yaml'):
+def build_meta_paths(path):
     rules = yaml_utils.read(path)
     # 先定义一些公共的点
     for _key, _item in rules['global_nodes'].items():

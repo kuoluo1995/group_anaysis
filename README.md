@@ -35,28 +35,24 @@ python manage.py runserver 127.0.0.1:8080
 
 ![](./images/search_ranges_by_name.png)
 
-![](./images/search_person_by_dynastie.png)
+![](./images/search_person_by_ranges.png)
 
-![](./images/filter_person_by_ranges.png)
+![](./images/search_address_by_person_ids.png)
 
 ![](./images/search_topic_by_person_ids.png)
 # 后端自测接口
-![](./images/test_init_ranges.png)
-
-![](./images/test_search_ranges_by_name.png)
-
-![](./images/test_search_person_by_dynastie.png)
-
-![](./images/test_filter_person_by_ranges.png)
-
-![](./images/test_search_topic_by_person_ids.png)
+```
+http://127.0.0.1:8080/test_init_ranges/
+```
 
 # 后端框架介绍
 |— `dataset` 存放所有的数据集
 
 |——— `build_dataset.py` 将`Neo4j`图数据库转化成`Litesql`来快速读取数据
 
-|——— `graph.db` `Litesql`生成的库 [下载](https://pan.baidu.com/s/1prh-6IV5E_x9i5xlMI8z7g ) 提取码:cwhx
+|——— `graph.db` `Litesql`生成的库 [下载](https://pan.baidu.com/s/1nta1-lgHu-YUtZ8SJVqYog) 提取码:dvp0
+
+|——— `CBDB_20190424.db` `Litesql`生成的库 [下载](https://pan.baidu.com/s/1eH04dDlycyl_-uKoYTOQ8Q) 提取码:9loi
 
 |— `group_anaysis` `Django`框架部分
 
@@ -90,9 +86,15 @@ python manage.py runserver 127.0.0.1:8080
 
 |—————— `sentence2vec.model.docvecs.vectors_docs.npy` 训练好的`doc2vec`的模型
 
-|——— `common.py` 里面包含所有常量类和常量数据
+|——— `dao` 负责与数据库直接接触，包含了所有的基础查询语句
 
-|——— `dao.py` 负责与数据库直接接触，包含了所有的基础查询语句
+|—————— `base_dao.py` 基础的dao(sqlite数据库)
+
+|—————— `cbdb_dao.py` CBDB数据库的dao
+
+|—————— `graph_dao.py` GRAPH的dao
+
+|——— `common.py` 里面包含所有常量类和常量数据
 
 |——— `sevice.py` 业务逻辑实现部分
 

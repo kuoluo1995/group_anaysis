@@ -10,86 +10,81 @@ from tools.sort_utils import sort_dict2list, maxN, mean_vectors, cos_dict
 
 
 def get_init_ranges():
-    DAO = common.DAO
+    CBDB_DAO = common.CBDB_DAO
+    GRAPH_DAO = common.GRAPH_DAO
     NodeLabels = common.NodeLabels
 
-    result = {NodeLabels['dynasty']: {}, NodeLabels['status']: {}}
-    for _label in result.keys():
-        result[_label] = DAO.get_names_by_label(_label)
-    return result
+    dynasties = CBDB_DAO.get_all_dynasties()
+    dynasties_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['dynasty'], dynasties.keys())
+    dynasties = {_id: GRAPH_DAO.get_node_name_by_id(_id) for _id in dynasties_ids}
+    status = CBDB_DAO.get_all_status()
+    status_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['status'], status.keys())
+    status = {_id: GRAPH_DAO.get_node_name_by_id(_id) for _id in status_ids}
+
+    init_ranges = {NodeLabels['dynasty']: dynasties, NodeLabels['status']: status}
+    return init_ranges
 
 
 def get_ranges_by_name(name):
-    DAO = common.DAO
+    GRAPH_DAO = common.GRAPH_DAO
     NodeLabels = common.NodeLabels
 
-    person_id = DAO.get_node_id_by_name(name)
-    sub_graph = DAO.get_sub_graph(person_id, max_depth=2)  # 间接关系就2个，太多了的话数据量就太大了
+    if name is None or type(name) != str or name == '':
+        raise Exception('get_ranges_by_name({})'.format(name))
+
+    person_ids = GRAPH_DAO.get_node_ids_by_name(name)
     result = {NodeLabels['person']: {}, NodeLabels['dynasty']: {}, NodeLabels['year']: {}, NodeLabels['gender']: {},
               NodeLabels['status']: {}}
-    for node_id in sub_graph.nodes():
-        node_label = DAO.get_node_label_by_id(node_id)
-        if node_label in result.keys():
-            result[node_label][node_id] = DAO.get_node_name_by_id(node_id)
+    for _id in person_ids:
+        sub_graph = GRAPH_DAO.get_sub_graph(_id, max_depth=2)  # 间接关系就2个，太多了的话数据量就太大了
+        for node_id in sub_graph.nodes():
+            node_label = GRAPH_DAO.get_node_label_by_id(node_id)
+            if node_label in result.keys():
+                result[node_label][node_id] = GRAPH_DAO.get_node_name_by_id(node_id)
     return result
 
 
-def get_person_by_dynastie(dynastie):
-    DAO = common.DAO
+def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids):
+    CBDB_DAO = common.CBDB_DAO
+    GRAPH_DAO = common.GRAPH_DAO
+    NodeLabels = common.NodeLabels
+    if dynasty_ids is not None:
+        for i, _id in enumerate(dynasty_ids):
+            dynasty_ids[i] = GRAPH_DAO.get_node_code_by_id(int(_id))
+    if min_year is not None:
+        min_year = int(min_year)
+    if max_year is not None:
+        max_year = int(max_year)
+    if is_female is not None and type(is_female) != bool:
+        raise Exception('get_person_by_ranges({})'.format(is_female))
+    if statu_ids is not None:
+        for i, _id in enumerate(statu_ids):
+            statu_ids[i] = GRAPH_DAO.get_node_code_by_id(int(_id))
+
+    person = CBDB_DAO.get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids)
+    person_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['person'], person.keys())
+    person = {_id: GRAPH_DAO.get_node_name_by_id(_id) for _id in person_ids}
+    return {NodeLabels['person']: person}
+
+
+def get_address_by_person_ids(person_ids):
+    CBDB_DAO = common.CBDB_DAO
+    GRAPH_DAO = common.GRAPH_DAO
     NodeLabels = common.NodeLabels
 
-    # 预备数据
-    dynastie_id = DAO.get_node_id_by_name(dynastie)
-    sub_graph = DAO.get_sub_graph(dynastie_id, max_depth=3)
-    person_ids = set()
-    # 根据年代，找到所有的人
-    for node_id in sub_graph.nodes():
-        node_label = DAO.get_node_label_by_id(node_id)
-        if node_label == NodeLabels['person']:
-            person_ids.add(node_id)
-    return {'person_ids': list(person_ids)}
+    if person_ids is not None:
+        person_ids = list(person_ids)
+        for i, _id in enumerate(person_ids):
+            person_ids[i] = GRAPH_DAO.get_node_code_by_id(_id)
 
-
-def delete_person_by_ranges(all_person, min_year, max_year, genders, status):
-    DAO = common.DAO
-    NodeLabels = common.NodeLabels
-
-    gender_ids = []
-    if genders is not None:
-        gender_ids = [DAO.get_node_id_by_name(_name) for _name in genders]
-    statu_ids = []
-    if status is not None:
-        statu_ids = [DAO.get_node_id_by_name(_name) for _name in status]
-    # 根据年代，性别和社会区分赛选
-    person_ids = set()
-    for _id in all_person:
-        person_graph = DAO.get_sub_graph(_id, max_depth=1)
-        is_ok = True
-        for node_id in person_graph.nodes():
-            node_label = DAO.get_node_label_by_id(node_id)
-            if node_label == NodeLabels['year']:
-                _year = DAO.get_node_name_by_id(node_id)
-                if _year != 'None':
-                    _year = int(_year)
-                    if min_year is not None and _year < min_year:
-                        is_ok = False
-                        break
-                    if max_year is not None and max_year < _year:
-                        is_ok = False
-                        break
-            if node_label == NodeLabels['gender'] and len(gender_ids) > 0 and node_id not in gender_ids:
-                is_ok = False
-                break
-            if node_label == NodeLabels['status'] and len(statu_ids) > 0 and node_id not in statu_ids:
-                is_ok = False
-                break
-        if is_ok:
-            person_ids.add(_id)
-    return {'person_ids': list(person_ids)}
+    address = CBDB_DAO.get_address_by_person_codes(person_ids)
+    address = {GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['person'], [_code])[0]: _item for _code, _item in
+               address.items()}
+    return {NodeLabels['address']: address}
 
 
 def _get_sentences_dicts(person_ids, random_epoch=100):
-    DAO = common.DAO
+    GRAPH_DAO = common.GRAPH_DAO
     MetaPaths = common.MetaPaths
 
     person_id2sentence = {}  # 描述
@@ -103,9 +98,9 @@ def _get_sentences_dicts(person_ids, random_epoch=100):
             if len(sentence_ids) > 0:
                 _sentence = []
                 for sentence_id in sentence_ids:
-                    _sentence += [DAO.get_node_name_by_id(sentence_id['source_id']),
-                                  DAO.get_edge_label_by_id(sentence_id['edge_id']),
-                                  DAO.get_node_name_by_id(sentence_id['target_id'])]
+                    _sentence += [GRAPH_DAO.get_node_name_by_id(sentence_id['source_id']),
+                                  GRAPH_DAO.get_edge_label_by_id(sentence_id['edge_id']),
+                                  GRAPH_DAO.get_node_name_by_id(sentence_id['target_id'])]
                 _sentence = tuple(_sentence)  # list没法hash，所以要转化成元组
                 _sentences.add(_sentence)
                 sentence2person_id[_sentence] = person_id
@@ -115,25 +110,23 @@ def _get_sentences_dicts(person_ids, random_epoch=100):
 
 
 def _get_node_relevancy(person_ids):  # 计算所有点的相关度
-    DAO = common.DAO
+    GRAPH_DAO = common.GRAPH_DAO
+
     _start = timeit.default_timer()
     # name2label = {}  # 为后期加快计算做准备
     label2names = defaultdict(list)  # 为后期加快计算做准备
     # name2count_yx = defaultdict(int)
     name2relevancy = defaultdict(int)  # 相关度集合
-    person_graph = {_id: DAO.get_sub_graph(_id, max_depth=2) for _id in person_ids}
+    person_graph = {_id: GRAPH_DAO.get_sub_graph(_id, max_depth=2) for _id in person_ids}
     person_graph_tree = {person_id: nx.bfs_tree(sub_graph, person_id) for person_id, sub_graph in person_graph.items()}
 
     print('2.1:{}'.format(timeit.default_timer() - _start))
-    _start = timeit.default_timer()
     # 得到所有相关结点, NodeView没法直接hashable，所以加了list
     all_related_node_ids = []
     for _, _graph in person_graph.items():
         all_related_node_ids += _graph.nodes()
     all_related_node_ids = set(all_related_node_ids)
-    print('2.2:{}'.format(timeit.default_timer() - _start))
 
-    _start = timeit.default_timer()
     for _id in all_related_node_ids:
         is_need, node_name, node_label = _get_filtered_name_label(_id)
         if is_need:  # 检测是否被过滤掉了？
@@ -151,7 +144,6 @@ def _get_node_relevancy(person_ids):  # 计算所有点的相关度
             # name2count_yx[node_name] += count_yx  # /len(id2p_subg.keys())
             name2relevancy[node_name] += relevancy_yx
     # return label2names, name2count_yx, name2relevancy
-    print('2.3:{}'.format(timeit.default_timer() - _start))
     return label2names, name2relevancy
 
 
@@ -164,15 +156,15 @@ def _get_sentence_relevancy(sentence_, name2relevancy):
 
 # 筛选结点,进行加快计算 这里有两块地方都用了
 def _get_filtered_name_label(id_=None, name_=None, label_=None):
-    DAO = common.DAO
+    GRAPH_DAO = common.GRAPH_DAO
     NodeLabels = common.NodeLabels
 
     if id_ is not None and name_ is None:
-        name_ = DAO.get_node_name_by_id(id_)
+        name_ = GRAPH_DAO.get_node_name_by_id(id_)
     if name_ in [None, 'None', '0', '未详', '[未详]']:
         return False, None, None
     if id_ is not None and label_ is None:
-        label_ = DAO.get_node_label_by_id(id_)
+        label_ = GRAPH_DAO.get_node_label_by_id(id_)
     if label_ in [NodeLabels['post_type'], NodeLabels['address_type']]:  # 这几个label做topic没意义
         return False, None, None
     return True, name_, label_
@@ -271,7 +263,7 @@ def _get_topic2sentence_position(sentence2vector_, topic2sentences_):
 
 # 计算人物相似度方案一(学长)
 def _get_person2position2d_1(sentence2vector_, person_id2sentences_, topic2sentences_, num_dim=100, **kwargs):
-    DAO = common.DAO
+    GRAPH_DAO = common.GRAPH_DAO
 
     num_topic = len(topic2sentences_.keys())
     person_id2vector = {person_id: np.zeros(num_topic * num_dim) for person_id in person_id2sentences_.keys()}
@@ -294,7 +286,7 @@ def _get_person2position2d_1(sentence2vector_, person_id2sentences_, topic2sente
     _i = 0
     person2positions = dict()
     for _person_id, _ in person_id2vector.items():
-        name = DAO.get_node_name_by_id(_person_id)
+        name = GRAPH_DAO.get_node_name_by_id(_person_id)
         person2positions[_person_id] = {'name': name, 'position': (positions[_i][0], positions[_i][1])}
         _i += 1
     return person2positions
@@ -302,7 +294,7 @@ def _get_person2position2d_1(sentence2vector_, person_id2sentences_, topic2sente
 
 # 计算人物相似度方案二
 def _get_person2position2d_2(sentence2vector_, person_id2sentences_, **kwargs):
-    DAO = common.DAO
+    GRAPH_DAO = common.GRAPH_DAO
 
     _vectors = list()
     for _, _sentences in person_id2sentences_.items():
@@ -314,7 +306,7 @@ def _get_person2position2d_2(sentence2vector_, person_id2sentences_, **kwargs):
     _i = 0
     person2positions = dict()
     for _person_id, _ in person_id2sentences_.items():
-        person2positions[_person_id] = {'name': DAO.get_node_name_by_id(_person_id), 'position': _position2ds[_i]}
+        person2positions[_person_id] = {'name': GRAPH_DAO.get_node_name_by_id(_person_id), 'position': _position2ds[_i]}
         _i += 1
     return person2positions
 
@@ -329,30 +321,18 @@ def get_topics_by_person_ids(person_ids, max_topic=15):
     label2names, name2relevancy = _get_node_relevancy(person_ids)
     print('2:{}'.format(timeit.default_timer() - start))
 
-    start = timeit.default_timer()
     sentence2relevancy = {_sentence: _get_sentence_relevancy(_sentence, name2relevancy) for _sentence in all_sentences}
-    print('3:{}'.format(timeit.default_timer() - start))
 
-    start = timeit.default_timer()
     label2topics, topic2sentences, all_topics = _get_topics(label2names, name2relevancy, all_sentences,
                                                             sentence2relevancy, sentence2person_id, len(person_ids),
                                                             max_topic=max_topic)
-    print('4:{}'.format(timeit.default_timer() - start))
 
-    start = timeit.default_timer()
     pmi_node = _get_topics_pmi(all_topics, person_id2sentences, topic2sentences, all_sentences)
-    print('5:{}'.format(timeit.default_timer() - start))
 
-    start = timeit.default_timer()
     sentence2vector = _get_sentence2vector(all_sentences)
-    print('6:{}'.format(timeit.default_timer() - start))
 
-    start = timeit.default_timer()
     topic2sentence_positions = _get_topic2sentence_position(sentence2vector, topic2sentences)
-    print('7:{}'.format(timeit.default_timer() - start))
 
-    start = timeit.default_timer()
     person2positions = _get_person2position2d_1(sentence2vector, person_id2sentences, topic2sentences_=topic2sentences)
-    print('8:{}'.format(timeit.default_timer() - start))
     return {'all_topics': all_topics, 'label2topics': label2topics, 'pmi_node': pmi_node,
             'topic2sentence_positions': topic2sentence_positions, 'person2positions': person2positions}

@@ -1,11 +1,9 @@
-import timeit
-
 import matplotlib.pyplot as plt
 import numpy as np
 
 from services import common
-from services.service import get_ranges_by_name, get_topics_by_person_ids, get_person_by_dynastie, \
-    delete_person_by_ranges
+from services.service import get_ranges_by_name, get_topics_by_person_ids, get_init_ranges, get_person_by_ranges, \
+    get_address_by_person_ids
 from tools.sort_utils import sort_dict2list
 
 # linux去除中文乱码
@@ -16,23 +14,27 @@ from tools.sort_utils import sort_dict2list
 plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
 plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 if __name__ == '__main__':
-    DAO = common.DAO
+    GRAPH_DAO = common.GRAPH_DAO
     NodeLabels = common.NodeLabels
+
+    init_ranges = get_init_ranges()
+
     ranges = get_ranges_by_name('王安石')
-    person_ids = ranges[NodeLabels['person']].keys()
-    start = timeit.default_timer()
-    all_person = get_person_by_dynastie('宋')
-    print('1:{}'.format(timeit.default_timer() - start))
-    for _person_id in all_person['person_ids']:
-        print({_person_id: DAO.get_node_name_by_id(_person_id)})
-    all_person = all_person['person_ids']
-    start = timeit.default_timer()
-    result = delete_person_by_ranges(all_person, 960, 1127, ['男', '女'], None)
-    print('1:{}'.format(timeit.default_timer() - start))
-    person_id2relation = {_id: len(common.DAO.get_in_edges(_id) + common.DAO.get_out_edges(_id)) for _id in person_ids}
+
+    person = get_person_by_ranges([575, 406], 980, 1120, False, [633480, 633500])
+
+    address = get_address_by_person_ids(person[NodeLabels['person']].keys())
+
+    person_id2relation = {_id: len(GRAPH_DAO.get_in_edges(_id) + GRAPH_DAO.get_out_edges(_id)) for _id in
+                          person[NodeLabels['person']].keys()}
     person_id2relation = sort_dict2list(person_id2relation)
     person_ids = [_id[0] for _id in person_id2relation]
-    temp = get_topics_by_person_ids(person_ids)
+    print(500)
+    temp = get_topics_by_person_ids(person_ids[:500])
+    print(1000)
+    temp = get_topics_by_person_ids(person_ids[:1000])
+    print(2000)
+    temp = get_topics_by_person_ids(person_ids[:2000])
 
     # 相似矩阵
     pmi_node = temp['pmi_node']
