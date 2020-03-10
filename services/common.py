@@ -12,3 +12,4 @@ CBDB_DAO = CBDBDAO('./dataset/CBDB_20190424.db')
 GRAPH_DAO = GraphDAO('./dataset/graph.db')
 MetaPaths = build_meta_paths('./services/configs/meta_paths.yaml')
 Model = Doc2Vec.load('./services/models/sentence2vec.model')
+Model_DIM = 100  # 模型的num维度

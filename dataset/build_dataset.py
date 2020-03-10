@@ -1,5 +1,4 @@
 import json
-import os
 import sqlite3
 import threading
 import time
@@ -43,7 +42,7 @@ def get_whole_graph():
             r_type = node_data['type(r)']
             r_id = node_data['id(r)']
             r_name = node_data['r.name']
-            r_en_name = ''  # todo feture in english
+            r_en_name = ''  # todo feature in english
             graph.add_edge(n1_id, n2_id, r_id=r_id)
             rel2data[r_id] = (r_type, r_name, r_en_name)
 
@@ -70,15 +69,14 @@ def get_whole_graph():
                 print(node2data[n_id], (n_type, n_name, n_en_name, n_code), n_id, '重复了')
             node2data[n_id] = (n_type, n_name, n_en_name, n_code)
 
-    neo_graph = Graph('bolt://localhost:7687', username='neo4j', password='123456')
+    neo_graph = Graph(ip, username=username, password=password)
     graph = nx.MultiDiGraph()
     node2data = {}
     rel2data = {}
     # multiThreadLoad(loadEdges, 3)
     # multiThreadLoad(loadNodes, 3)
-    multiThreadLoad(loadEdges, 100)
-    multiThreadLoad(loadNodes, 100)
-    len(node2data)
+    multiThreadLoad(loadEdges, 55)
+    multiThreadLoad(loadNodes, 14)
     print('所有的点数量:{};所有的边数量{}'.format(graph.number_of_nodes(), graph.number_of_edges()))
     return graph, node2data, rel2data
 

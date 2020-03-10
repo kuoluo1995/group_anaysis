@@ -1,5 +1,7 @@
 import sqlite3
 
+import gc
+
 
 class SqliteDAO:
     def __init__(self, path, use_cache):
@@ -14,6 +16,7 @@ class SqliteDAO:
         for row in rows:
             cols = {_key: row[i] for i, _key in enumerate(keys)}
             result.append(cols)
+
         conn.close()
         return result
 

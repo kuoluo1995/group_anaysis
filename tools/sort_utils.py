@@ -1,4 +1,6 @@
 import heapq
+
+import gc
 import numpy as np
 
 
@@ -25,6 +27,7 @@ def mean_vectors(vectors):
     _sum = np.zeros(vectors[0].shape)
     for vector in vectors:
         _sum += vector
+
     return _sum / vectors.shape[0]
 
 

@@ -1,3 +1,4 @@
+import gc
 import random
 
 from services import common
@@ -20,14 +21,14 @@ class MetaNode:
             for edge_label, meta_node in next_node.items():
                 # 可以加个一定几率放弃游走
                 _edges = DAO.get_out_edges(node_id)
-                _edges = [(_item['target_id'], _item['edge_id']) for _item in _edges if
-                          DAO.get_edge_label_by_id(
-                              _item['edge_id']) == edge_label and DAO.get_node_label_by_id(
-                              _item['target_id']) == meta_node.label]
+                _edges = [(_target_id, _edge_id) for _source_id, _target_id, _edge_id in _edges if
+                          DAO.get_edge_label_by_id(_edge_id) == edge_label and DAO.get_node_label_by_id(
+                              _target_id) == meta_node.label]
                 if len(_edges) == 0:
                     continue
                 target_id, edge_id = random.choice(_edges)  # 随机游走
-                all_edges.append({'source_id': node_id, 'target_id': target_id, 'edge_id': edge_id})
+                # all_edges.append({'source_id': node_id, 'target_id': target_id, 'edge_id': edge_id})
+                all_edges.append((node_id, edge_id, target_id))
                 all_edges += meta_node.match(target_id)
         return all_edges
 

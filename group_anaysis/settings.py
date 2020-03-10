@@ -98,4 +98,5 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 CORS_ALLOW_CREDENTIALS = True
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 999999  # 传递的参数过多了
 # APPEND_SLASH = False  # 解决 RuntimeError: You called this URL via POST
