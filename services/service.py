@@ -18,10 +18,10 @@ def get_init_ranges():
 
     Returns
     -------
-    dynasties: dict{int:string}
-        朝代的id（node_id）： 朝代的名字(node_name)
-    status: dict{string:string}
-        社会区分的id（node_id）： 社会区分的名字(node_name)
+    dynasties: dict{int:dict{string:string}}
+        朝代的id（node_id）： {'name':中文的名字(node_name),'en_name': 英文名字(node_en_name)}
+    status: dict{int:dict{string:string}}
+        社会区分的id（node_id）： {'name':中文的名字(node_name),'en_name': 英文名字(node_en_name)}
     """
     CBDB_DAO = common.CBDB_DAO
     GRAPH_DAO = common.GRAPH_DAO
@@ -29,10 +29,12 @@ def get_init_ranges():
 
     dynasties = CBDB_DAO.get_all_dynasties()
     dynasties_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['dynasty'], dynasties.keys())
-    dynasties = {_id: GRAPH_DAO.get_node_name_by_id(_id) for _id in dynasties_ids}
+    dynasties = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for
+                 _id in dynasties_ids}
     status = CBDB_DAO.get_all_status()
     status_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['status'], status.keys())
-    status = {_id: GRAPH_DAO.get_node_name_by_id(_id) for _id in status_ids}
+    status = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for
+              _id in status_ids}
 
     return dynasties, status
 
@@ -51,9 +53,9 @@ def get_ranges_by_name(labels, person_name):
 
     Returns
     -------
-    ranges: dict{int:dict{int:string}}
+    ranges: dict{string:dict{int:dict{string:string}}}
         node_label to node_id to node_name
-        node_label 是参数传过来要查询的
+        {node_label: {(node_id): {'name': 中文的名字(node_name), 'en_name': 英文名字(node_en_name)}}}
     """
     GRAPH_DAO = common.GRAPH_DAO
 
@@ -68,7 +70,8 @@ def get_ranges_by_name(labels, person_name):
         for node_id in sub_graph.nodes():
             node_label = GRAPH_DAO.get_node_label_by_id(node_id)
             if node_label in labels:
-                ranges[node_label][node_id] = GRAPH_DAO.get_node_name_by_id(node_id)
+                ranges[node_label][node_id] = {'name': GRAPH_DAO.get_node_name_by_id(node_id),
+                                               'en_name': GRAPH_DAO.get_node_en_name_by_id(node_id)}
 
     return ranges
 
@@ -91,8 +94,8 @@ def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids):
 
     Returns
     -------
-    person: dict{int, string}
-        人的id和对应的name
+    person: dict{int: dict{string:string}}
+        人的id 对应的name和en_name
     """
     CBDB_DAO = common.CBDB_DAO
     GRAPH_DAO = common.GRAPH_DAO
@@ -111,10 +114,10 @@ def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids):
         for i, _id in enumerate(statu_ids):
             statu_ids[i] = GRAPH_DAO.get_node_code_by_id(int(_id))
 
-
     person = CBDB_DAO.get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids)
     person_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['person'], person.keys())
-    person = {_id: GRAPH_DAO.get_node_name_by_id(_id) for _id in person_ids}
+    person = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for
+              _id in person_ids}
     return person
 
 
@@ -141,7 +144,6 @@ def get_address_by_person_ids(person_ids):
         person_ids = list(person_ids)
         for i, _id in enumerate(person_ids):
             person_ids[i] = GRAPH_DAO.get_node_code_by_id(_id)
-
 
     address = CBDB_DAO.get_address_by_person_codes(person_ids)
     address = {GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['person'], [_code])[0]: _item for _code, _item in
