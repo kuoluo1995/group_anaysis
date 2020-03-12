@@ -165,7 +165,7 @@ def get_topic_id_dict(node_label2ids, relevancy_dict, all_sentence_ids, sentence
     return label2topic_ids, topic_id2sentence_ids, all_topic_ids
 
 
-def get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_id2sentence_ids, all_sentence_ids):
+def get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_id2sentence_ids, num_all_sentences):
     """计算所有topic的pmi 标签之间的相关性，每个Topic的连线，越高先关系越大 pmi点互信息（概率论）
 
     Parameters
@@ -176,8 +176,8 @@ def get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_id2sentence_ids, 
         人的id对应到描述的id
     topic_id2sentence_ids: dict{int: list(int)}
         topic_id对应的所有描述，以及描述是由list组成的。里面是(node_id,edge_id,node_id。。。。)组成
-    all_sentence_ids: list(list(int))
-        所有的描述，描述是(node_id,edge_id,node_id。。。。)组成
+    num_all_sentences: int
+        所有的描述数量
 
     Returns
     -------
@@ -187,12 +187,12 @@ def get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_id2sentence_ids, 
     # 统计topic
     count_x, count_xy = defaultdict(int), defaultdict(dict)
     for _x in all_topic_ids:
-        count_xy[_x] = defaultdict(int)
         for _sentence_ids in person_id2sentence_ids.values():
             for _sentence_id in _sentence_ids:
                 if _sentence_id in topic_id2sentence_ids[_x]:  # 每一个topic对于所有的描述
                     count_x[_x] += 1
                     break
+        count_xy[_x] = defaultdict(int)
         for _y in all_topic_ids:
             for _sentence_ids in person_id2sentence_ids.values():
                 has_x = has_y = False
@@ -212,7 +212,7 @@ def get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_id2sentence_ids, 
                 pmi_node[_x][_y] = 0
                 continue
             p_xy = count_xy[_x][_y] / count_x[_y]  # p(x|y)
-            p_x = count_x[_x] / len(all_sentence_ids)  # p(x)
+            p_x = count_x[_x] / num_all_sentences  # p(x)
             pmi = p_xy / p_x
             pmi_node[_x][_y] = 0 if pmi == 0 or _x == _y else math.log(pmi)
     return pmi_node

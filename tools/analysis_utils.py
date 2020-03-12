@@ -5,7 +5,7 @@ import numpy as np
 def multidimensional_scale(num_component, data=None, _dist=None):
     if data is not None:
         num_vector, num_dim = data.shape
-        _dist = np.zeros((num_vector, num_vector))  # todo
+        _dist = np.zeros((num_vector, num_vector))
         for i in range(num_vector):
             _dist[i] = np.sum(np.square(data[i] - data), axis=1).reshape(1, num_vector)
 

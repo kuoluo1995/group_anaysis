@@ -5,7 +5,7 @@ from collections import defaultdict
 from services import common
 from services.common import Model_DIM
 from services.tools.graph_tool import get_node_relevancy, get_graph_dict
-from services.tools.person_tool import get_person_id2position2d
+from services.tools.person_tool import get_person_id2position2d, get_person_pmi
 from services.tools.sentence_topic_tool import get_sentence_ids_dict, get_sentence_id2relevancy, get_sentence_id2vector, \
     get_topic_id_dict, get_topic_pmi, get_sentence_id2position1d
 
@@ -202,6 +202,7 @@ def get_topics_by_person_ids(person_ids, random_epoch=100, max_topic=15, populat
 
     person_id2sentence_ids, sentence_id2person_id, all_sentence_ids = get_sentence_ids_dict(person_ids,
                                                                                             random_epoch=random_epoch)
+    person_pmi = get_person_pmi(person_ids, person_id2sentence_ids, len(all_sentence_ids))
 
     sentence_id2relevancy = {_sentence_id: get_sentence_id2relevancy(_sentence_id, node_id2relevancy) for _sentence_id
                              in all_sentence_ids}
@@ -218,14 +219,14 @@ def get_topics_by_person_ids(person_ids, random_epoch=100, max_topic=15, populat
                                        topic_id, _sentence_ids in topic_id2sentence_ids.items() if
                                        len(_sentence_ids) != 0}
 
-    topic_pmi = get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_id2sentence_ids, all_sentence_ids)
+    topic_pmi = get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_id2sentence_ids, len(all_sentence_ids))
 
     person_id2position2d = get_person_id2position2d(sentence_id2vector, person_id2sentence_ids,
                                                     topic_id2sentence_ids_=topic_id2sentence_ids, num_dim=Model_DIM)
 
     node_dict, edge_dict = get_graph_dict(all_sentence_ids)
     GRAPH_DAO.close_connect()
-    return all_topic_ids, label2topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict
+    return all_topic_ids, label2topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_pmi, person_id2position2d, node_dict, edge_dict
 
 
 def get_community_by_num_node_links(num_node, links):

@@ -80,23 +80,31 @@ def get_person_id2position2d_2(sentence_id2vector, person_id2sentence_ids, **kwa
     return person_id2positions2d
 
 
-def get_person_pmi(all_person_ids, sentence_id2person_id, person_id2sentence_ids, **kwargs):
-    # todo 刚刚加的。没测试。如果后端要计算person_pmi大概这样些？
-    count_x, count_xy = defaultdict(int), defaultdict(dict)
+def get_person_pmi(all_person_ids, person_id2sentence_ids, num_all_sentences):
+    """计算所有person的pmi
+
+    Parameters
+    ----------
+    all_person_ids: list(int)
+        topic其实就是name, 所以就是node_name对应的id集合
+    person_id2sentence_ids: dict{int: list(int)}
+        人的id对应到描述的id
+    num_all_sentences: int
+        所有的描述数量
+
+    Returns
+    -------
+    pmi_node: dict{int: dict{int: float}}
+        person的pmi矩阵 标签之间的相关性，越高先关系越大 pmi点互信息（概率论）
+    """
+    # 统计person
+    count_x, count_xy = dict(), defaultdict(dict)
     for _x in all_person_ids:
+        count_x[_x] = len(person_id2sentence_ids[_x])
         count_xy[_x] = defaultdict(int)
-        for _person_id in sentence_id2person_id.values():
-            if _person_id in person_id2sentence_ids[_x]:  # 每一个topic对于所有的描述
-                count_x[_x] += 1
-                break
         for _y in all_person_ids:
-            for _person_id in sentence_id2person_id.values():
-                has_x = has_y = False
-                if _person_id in person_id2sentence_ids[_x]:
-                    has_x = True
-                if _person_id in person_id2sentence_ids[_y]:
-                    has_y = True
-                if has_x and has_y:
+            for _sentence_id in person_id2sentence_ids[_x]:
+                if _y in _sentence_id:
                     count_xy[_x][_y] += 1
     # 计算pmi
     pmi_node = {}
@@ -107,7 +115,7 @@ def get_person_pmi(all_person_ids, sentence_id2person_id, person_id2sentence_ids
                 pmi_node[_x][_y] = 0
                 continue
             p_xy = count_xy[_x][_y] / count_x[_y]  # p(x|y)
-            p_x = count_x[_x] / len(all_person_ids)  # p(x)
+            p_x = count_x[_x] / num_all_sentences  # p(x)
             pmi = p_xy / p_x
             pmi_node[_x][_y] = 0 if pmi == 0 or _x == _y else math.log(pmi)
     return pmi_node

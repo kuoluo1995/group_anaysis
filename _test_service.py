@@ -38,25 +38,38 @@ if __name__ == '__main__':
                           ranges[NodeLabels['person']]}
     print('查询所有人的相关性:{}'.format(timeit.default_timer() - start))
     GRAPH_DAO.close_connect()
+
     person_id2relation = sort_dict2list(person_id2relation)[:15]
     person_ids = [_id[0] for _id in person_id2relation]
+
     start = timeit.default_timer()
-    all_topic_ids, label2topic_ids, topic_id2sentence_id2position1d, pmi_node, person_id2position2d, node_dict, edge_dict = get_topics_by_person_ids(
+    all_topic_ids, label2topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_pmi, person_id2position2d, node_dict, edge_dict = get_topics_by_person_ids(
         person_ids)
     print('查询所有topic的相关性:{}'.format(timeit.default_timer() - start))
-    # 相似矩阵
+    # topic 相似矩阵
     pmi_names = list()
-    _len = len(pmi_node)
+    _len = len(topic_pmi)
     _matrix = np.zeros((_len, _len))
-    for i, x_id in enumerate(pmi_node):
-        pmi_names.append(node_dict[x_id])
-        for j, y_id in enumerate(pmi_node):
-            _matrix[i][j] = pmi_node[x_id][y_id]
+    for i, x_id in enumerate(topic_pmi):
+        pmi_names.append(node_dict[x_id]['name'])
+        for j, y_id in enumerate(topic_pmi):
+            _matrix[i][j] = topic_pmi[x_id][y_id]
     plt.matshow(_matrix)
     plt.xticks(list(range(_len)), pmi_names)
     plt.yticks(list(range(_len)), pmi_names)
     plt.show()
-
+    # person 相似矩阵
+    pmi_names = list()
+    _len = len(person_pmi)
+    _matrix = np.zeros((_len, _len))
+    for i, x_id in enumerate(person_pmi):
+        pmi_names.append(node_dict[x_id]['name'])
+        for j, y_id in enumerate(person_pmi):
+            _matrix[i][j] = person_pmi[x_id][y_id]
+    plt.matshow(_matrix)
+    plt.xticks(list(range(_len)), pmi_names)
+    plt.yticks(list(range(_len)), pmi_names)
+    plt.show()
     # topic散点图
     for _topic_id, _sentences_id2position1d in topic_id2sentence_id2position1d.items():
         num_sentence = len(_sentences_id2position1d.keys())
