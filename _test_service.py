@@ -1,3 +1,5 @@
+import timeit
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -21,20 +23,27 @@ if __name__ == '__main__':
 
     labels = [NodeLabels['person'], NodeLabels['dynasty'], NodeLabels['year'], NodeLabels['gender'],
               NodeLabels['status']]
+    start = timeit.default_timer()
     ranges = get_ranges_by_name(labels, '王安石')
-
+    print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
+    start = timeit.default_timer()
     person = get_person_by_ranges([575], 980, 1120, False, [633480])
-
+    print('查询范围内的所有人耗时:{}'.format(timeit.default_timer() - start))
+    start = timeit.default_timer()
     address = get_address_by_person_ids(person.keys())
-
+    print('查询地址耗时:{}'.format(timeit.default_timer() - start))
+    GRAPH_DAO.start_connect()
+    start = timeit.default_timer()
     person_id2relation = {_id: len(GRAPH_DAO.get_in_edges(_id) + GRAPH_DAO.get_out_edges(_id)) for _id in
                           ranges[NodeLabels['person']]}
+    print('查询所有人的相关性:{}'.format(timeit.default_timer() - start))
+    GRAPH_DAO.close_connect()
     person_id2relation = sort_dict2list(person_id2relation)[:15]
     person_ids = [_id[0] for _id in person_id2relation]
-
+    start = timeit.default_timer()
     all_topic_ids, label2topic_ids, topic_id2sentence_id2position1d, pmi_node, person_id2position2d, node_dict, edge_dict = get_topics_by_person_ids(
         person_ids)
-
+    print('查询所有topic的相关性:{}'.format(timeit.default_timer() - start))
     # 相似矩阵
     pmi_names = list()
     _len = len(pmi_node)

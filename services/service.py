@@ -26,6 +26,8 @@ def get_init_ranges():
     CBDB_DAO = common.CBDB_DAO
     GRAPH_DAO = common.GRAPH_DAO
     NodeLabels = common.NodeLabels
+    CBDB_DAO.start_connect()
+    GRAPH_DAO.start_connect()
 
     dynasties = CBDB_DAO.get_all_dynasties()
     dynasties_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['dynasty'], dynasties.keys())
@@ -35,7 +37,8 @@ def get_init_ranges():
     status_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['status'], status.keys())
     status = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for
               _id in status_ids}
-
+    GRAPH_DAO.close_connect()
+    CBDB_DAO.close_connect()
     return dynasties, status
 
 
@@ -58,7 +61,7 @@ def get_ranges_by_name(labels, person_name):
         {node_label: {(node_id): {'name': 中文的名字(node_name), 'en_name': 英文名字(node_en_name)}}}
     """
     GRAPH_DAO = common.GRAPH_DAO
-
+    GRAPH_DAO.start_connect()
     if person_name is None or type(person_name) != str or person_name == '':
         raise Exception('get_ranges_by_name({})'.format(person_name))
 
@@ -72,7 +75,7 @@ def get_ranges_by_name(labels, person_name):
             if node_label in labels:
                 ranges[node_label][node_id] = {'name': GRAPH_DAO.get_node_name_by_id(node_id),
                                                'en_name': GRAPH_DAO.get_node_en_name_by_id(node_id)}
-
+    GRAPH_DAO.close_connect()
     return ranges
 
 
@@ -100,6 +103,8 @@ def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids):
     CBDB_DAO = common.CBDB_DAO
     GRAPH_DAO = common.GRAPH_DAO
     NodeLabels = common.NodeLabels
+    CBDB_DAO.start_connect()
+    GRAPH_DAO.start_connect()
     if dynasty_ids is not None:
         for i, _id in enumerate(dynasty_ids):
             dynasty_ids[i] = GRAPH_DAO.get_node_code_by_id(int(_id))
@@ -118,6 +123,8 @@ def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids):
     person_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['person'], person.keys())
     person = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for
               _id in person_ids}
+    GRAPH_DAO.close_connect()
+    CBDB_DAO.close_connect()
     return person
 
 
@@ -139,6 +146,8 @@ def get_address_by_person_ids(person_ids):
     CBDB_DAO = common.CBDB_DAO
     GRAPH_DAO = common.GRAPH_DAO
     NodeLabels = common.NodeLabels
+    CBDB_DAO.start_connect()
+    GRAPH_DAO.start_connect()
 
     if person_ids is not None:
         person_ids = list(person_ids)
@@ -148,6 +157,8 @@ def get_address_by_person_ids(person_ids):
     address = CBDB_DAO.get_address_by_person_codes(person_ids)
     address = {GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['person'], [_code])[0]: _item for _code, _item in
                address.items()}
+    GRAPH_DAO.close_connect()
+    CBDB_DAO.close_connect()
     return address
 
 
@@ -185,6 +196,8 @@ def get_topics_by_person_ids(person_ids, random_epoch=100, max_topic=15, populat
     edge_dict: dict{int:dict{string: string}}
         边字典: {edge_id: {'name': name, 'label': label, 'en_name': en_name}}
     """
+    GRAPH_DAO = common.GRAPH_DAO
+    GRAPH_DAO.start_connect()
     node_label2ids, node_id2relevancy = get_node_relevancy(person_ids)
 
     person_id2sentence_ids, sentence_id2person_id, all_sentence_ids = get_sentence_ids_dict(person_ids,
@@ -211,7 +224,7 @@ def get_topics_by_person_ids(person_ids, random_epoch=100, max_topic=15, populat
                                                     topic_id2sentence_ids_=topic_id2sentence_ids, num_dim=Model_DIM)
 
     node_dict, edge_dict = get_graph_dict(all_sentence_ids)
-
+    GRAPH_DAO.close_connect()
     return all_topic_ids, label2topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict
 
 
