@@ -6,6 +6,7 @@ import networkx as nx
 from collections import defaultdict
 
 from services.dao.base_dao import SqliteDAO
+import json
 
 
 class GraphDAO(SqliteDAO):
@@ -22,10 +23,41 @@ class GraphDAO(SqliteDAO):
         self.edge_label_cache = {}
         self.edge_name_cache = {}
         self.edge_en_name_cache = {}
+
+        self.nid2has_topic_p_cache = {}
         if self.use_cache:  # todo 如果电脑性能允许的话，为了加快运行速度可以考虑提前载入数据
             self.start_connect()
             self.__import_all_data()
             self.close_connect()
+
+    def getAllPersons(self):
+        self.start_connect()
+        rows = self.conn.cursor().execute('''SELECT id FROM node2data WHERE label = "Person"''')
+        result = [row[0] for row in rows]
+        self.close_connect()
+        return result
+    
+    # siwei: 找到描述中包含节点的人(必须是总描述数量超过5个的人)
+    def getHasNodePeople(self, nid):
+        nid2has_topic_p_cache = self.nid2has_topic_p_cache
+        
+        if nid not in nid2has_topic_p_cache:
+            # print((nid, ))
+            rows = self._select("SELECT pids FROM reverse_index_person_5 WHERE name = ?", ['pids'], (nid, ))
+            if len(rows) == 0:
+                print(nid, self.get_node_name_by_id(nid) ,'没有对应的pids')
+                # raise Exception(nid, name, '没有对应的pids')
+                pids = []
+            else:
+                # print(1, rows)
+                pids = rows[0]['pids']
+                pids = list(json.loads(pids).keys())
+                pids = set([int(pid) for pid in pids])
+            if not self.use_cache:
+                return pids
+            nid2has_topic_p_cache[nid] = pids
+        return list(nid2has_topic_p_cache[nid])
+
 
     def __import_all_data(self):
         sql_str = '''SELECT DISTINCT id, name, code, label, en_name FROM node2data'''

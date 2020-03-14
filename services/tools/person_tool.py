@@ -7,7 +7,7 @@ from tools.analysis_utils import multidimensional_scale
 from tools.sort_utils import mean_vectors, cos_dict
 
 
-def get_person_id2position2d(sentence_id2vector, person_id2sentence_ids, **kwargs):
+def get_person_id2position2d(topic_id2sentence_ids2vec100d, person_id2sentence_ids, **kwargs):
     """根据人的id查询所有的地址及坐标
     Notes
     ----------
@@ -30,29 +30,51 @@ def get_person_id2position2d(sentence_id2vector, person_id2sentence_ids, **kwarg
     person_id2position2d: dict{int: (int, int)}
         { person_id: (x,y)}
     """
-    return get_person_id2position2d_1(sentence_id2vector, person_id2sentence_ids, **kwargs)  # 学长的方案
+    return get_person_id2position2d_1(topic_id2sentence_ids2vec100d, person_id2sentence_ids, **kwargs)  # 学长的方案
     # return get_person_id2position2d_2(sentence_id2vector, person_id2sentence_ids, **kwargs) # 我的方案
 
+from sklearn.manifold import MDS
 
 # 计算人物相似度方案一(学长)
-def get_person_id2position2d_1(sentence_id2vector, person_id2sentence_ids, topic_id2sentence_ids_, num_dim, **kwargs):
-    num_topic = len(topic_id2sentence_ids_.keys())
-    person_id2vector = {person_id: np.zeros(num_topic * num_dim) for person_id in person_id2sentence_ids.keys()}
+def get_person_id2position2d_1(topic_id2sentence_ids2vec100d, person_id2sentence_ids, num_dim, **kwargs):
+
+    num_topic = len(topic_id2sentence_ids2vec100d.keys())
+    person_id2vector = {
+        person_id: np.zeros(num_topic * num_dim) 
+        for person_id in person_id2sentence_ids.keys()
+    }
     _i = 0
-    for _topic_id, _sentence_ids in topic_id2sentence_ids_.items():
-        _topic_vectors = np.array([sentence_id2vector[_sentence_id] for _sentence_id in _sentence_ids])
+    for _topic_id, sentence_id2vector in topic_id2sentence_ids2vec100d.items():
+        _topic_vectors = np.array([
+            sentence_id2vector[_sentence_id] 
+            for _sentence_id in sentence_id2vector
+        ])
+        
         _mean = mean_vectors(_topic_vectors)
+        # print('t',_topic_vectors.shape, _mean.shape)
         for person_id in person_id2sentence_ids.keys():
             max_vector = _mean
-            _vectors = [sentence_id2vector[_sentence_id] for _sentence_id in person_id2sentence_ids[person_id] if
-                        _sentence_id in _sentence_ids]
+            _vectors = [
+                sentence_id2vector[_sentence_id] 
+                for _sentence_id in person_id2sentence_ids[person_id] 
+                if _sentence_id in sentence_id2vector
+            ]
             if len(_vectors) > 0:
                 max_vector = max(_vectors, key=lambda item: cos_dict(item, _mean))
             # 可以在这里加个维度的权重参数
+            # print('n', person_id2vector[person_id].shape, max_vector.shape, num_dim)
             person_id2vector[person_id][_i * num_dim:(_i + 1) * num_dim] = max_vector
         _i += 1
-    _vectors = np.array([_vector for _, _vector in person_id2vector.items()])
-    positions = multidimensional_scale(2, data=_vectors)
+    _vectors = np.array([
+        _vector 
+        for _, _vector in person_id2vector.items()
+    ])
+    mds = MDS(n_components=2,)
+    mds.fit(_vectors)
+    # a = 
+    positions = mds.embedding_
+    # positions /= mean_vectors(positions)
+    # positions = multidimensional_scale(2, data=_vectors)
 
     _i = 0
     person_id2position2d = dict()

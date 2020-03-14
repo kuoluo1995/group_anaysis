@@ -6,7 +6,7 @@ from collections import defaultdict
 from services import common
 from services.tools.graph_tool import graph_id2string, get_filtered_node
 from tools.analysis_utils import multidimensional_scale
-from tools.sort_utils import sort_dict2list, maxN
+from tools.sort_utils import sort_dict2list, maxN, mds, mean_vectors
 
 """
 Sentence 部分
@@ -77,8 +77,11 @@ def get_sentence_id2relevancy(sentence_id_, node_id2relevancy):
             sentence_id2relevancy += node_id2relevancy[_id]
     return sentence_id2relevancy / len(sentence_id_) * 1.5  # 排除掉边， node edge node
 
+# siwei
+from gensim import corpora, models, similarities
+import gensim
 
-def get_sentence_id2vector(all_sentence_ids):
+def get_sentence_id2vector(topic_id2sentence_ids, all_topic_ids):
     """计算描述的相似度
 
     Parameters
@@ -91,13 +94,53 @@ def get_sentence_id2vector(all_sentence_ids):
     _sentence_id2vector: dict{list(int): array}
         根据描述得到相似度字典
     """
-    model = common.Model
 
-    _sentence_id2vector = {}
-    for _sentence_id in all_sentence_ids:
-        _sentence = graph_id2string(_sentence_id)
-        _sentence_id2vector[_sentence_id] = model.infer_vector(_sentence)
-    return _sentence_id2vector
+    topic_id2sentence_ids2vec2d = defaultdict(dict)
+    topic_id2sentence_ids2vec1d = defaultdict(dict)
+    for topic in all_topic_ids:
+        # GRAPH_DAO = common.GRAPH_DAO
+        sentences = topic_id2sentence_ids[topic]
+        index2sentence = {
+            index: sentence
+            for index, sentence in enumerate(sentences)
+        }
+        corpus = [
+            set([str(w) for index, w in enumerate(sentence) if index % 3 != 1])
+            for sentence in sentences
+        ]
+        sentences_l = len(sentences)
+        # print(topic, sentences_l)
+    
+        dictionary= corpora.Dictionary(corpus)
+        corpus = [dictionary.doc2bow(item) for item in corpus]
+
+        tfidf = models.TfidfModel(corpus)
+
+        sim_index = similarities.SparseMatrixSimilarity(tfidf[corpus], num_features= len(dictionary.keys())) 
+
+        s_dist = np.zeros((sentences_l, sentences_l))
+        for index, sentence in enumerate(corpus):
+            s_dist[index] = 1 - sim_index[tfidf[sentence]]
+
+        # s_dist太少了降维会失败，应该是函数的问题
+        vec2d = mds(2, dist=s_dist)
+        vec1d = mds(1, dist=s_dist)
+        # print(vec2d)
+        # vec2d /= mean_vectors(vec2d)
+        # vec1d /= mean_vectors(vec1d)
+
+        for index, vec in enumerate(vec2d):
+            sentence = index2sentence[index]
+            topic_id2sentence_ids2vec2d[topic][sentence] = vec2d[index]
+            topic_id2sentence_ids2vec1d[topic][sentence] = vec1d[index]
+
+    # model = common.Model
+
+    # _sentence_id2vector = {}
+    # for _sentence_id in all_sentence_ids:
+    #     _sentence = graph_id2string(_sentence_id)
+    #     _sentence_id2vector[_sentence_id] = model.infer_vector(_sentence)
+    return topic_id2sentence_ids2vec2d, topic_id2sentence_ids2vec1d
 
 
 """
@@ -106,10 +149,9 @@ Topic
     下面是关于Topic的所有函数
 """
 
-
+# sentence_id2relevancy, 
 # 多少能算显著特性
-def get_topic_id_dict(node_label2ids, relevancy_dict, all_sentence_ids, sentence_id2relevancy, sentence_id2person_id,
-                      len_person, max_topic=15, populate_ratio=0.3):
+def get_topic_id_dict(node_label2ids, relevancy_dict, all_sentence_ids, sentence_id2person_id, len_person, nid2sentences, max_topic=15, populate_ratio=0.3):
     """根据相关的人和描述，得到所有有关的topic， topic其实就是node_name
 
     Parameters
@@ -140,29 +182,34 @@ def get_topic_id_dict(node_label2ids, relevancy_dict, all_sentence_ids, sentence
     all_topic_ids: list(int)
         topic其实就是name, 所以就是node_name对应的id集合
     """
-    label2topic_ids, topic_id2sentence_ids, all_topic_ids = {}, {}, list()
+    topic2person_ids,topic_id2sentence_ids, all_topic_ids = defaultdict(set), defaultdict(set), list()
     for _label, _ids in node_label2ids.items():
         _node_id2relevancy = dict()  # node_id2relevancy是个计算当前结点里已有结点的相关性
         for _id in _ids:
             _node_id2relevancy[_id] = relevancy_dict[_id]
         _node_id2relevancy = sort_dict2list(_node_id2relevancy)
+        # print(_ids)
         popular_node_ids = []
         for (_node_id, _) in _node_id2relevancy:
+            # print('n', _node_id)
             is_need, _id = get_filtered_node(_node_id)
             if is_need:
                 popular_node_ids.append(_id)
-        popular_node_ids = np.array(popular_node_ids)[:max_topic]
+        popular_node_ids = popular_node_ids[:max_topic]
         topic_ids = list()
         for _node_id in popular_node_ids:
-            sentence_ids = [_sentence_id for _sentence_id in all_sentence_ids if _node_id in _sentence_id]
-            sentence_ids = maxN(sentence_ids, key=lambda item: sentence_id2relevancy[item])
+            topic_id = (_node_id, )
+            sentence_ids = nid2sentences[_node_id]
+            # print(sentence_ids)
+            # siwei: 这里有问题
             person_ids = set([sentence_id2person_id[_sentence_id] for _sentence_id in sentence_ids])
+            #  if _sentence_id in sentence_id2person_id]
             if len(person_ids) > len_person * populate_ratio:  # 剃掉那些不算不上群体的
-                topic_ids.append(_node_id)
-                topic_id2sentence_ids[_node_id] = sentence_ids  # 小圆点
-        label2topic_ids[_label] = topic_ids
+                topic_ids.append(topic_id)
+                topic_id2sentence_ids[topic_id] = sentence_ids  # 小圆点
+                topic2person_ids[topic_id] = person_ids
         all_topic_ids += topic_ids
-    return label2topic_ids, topic_id2sentence_ids, all_topic_ids
+    return  topic2person_ids, topic_id2sentence_ids, all_topic_ids
 
 
 def get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_id2sentence_ids, num_all_sentences):
@@ -189,9 +236,11 @@ def get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_id2sentence_ids, 
     for _x in all_topic_ids:
         for _sentence_ids in person_id2sentence_ids.values():
             for _sentence_id in _sentence_ids:
-                if _sentence_id in topic_id2sentence_ids[_x]:  # 每一个topic对于所有的描述
+                if _sentence_id in topic_id2sentence_ids[_x]:  
+                    # 每一个topic对于所有的描述
                     count_x[_x] += 1
                     break
+                
         count_xy[_x] = defaultdict(int)
         for _y in all_topic_ids:
             for _sentence_ids in person_id2sentence_ids.values():

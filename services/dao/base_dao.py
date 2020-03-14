@@ -17,6 +17,7 @@ class SqliteDAO:
 
     def _select(self, sql, keys, params):  # 执行查询语句
         sql_cursor = self.conn.cursor()
+        # print(params, sql)
         rows = sql_cursor.execute(sql, params)
         result = list()
         for row in rows:
