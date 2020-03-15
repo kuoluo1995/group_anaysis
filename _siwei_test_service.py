@@ -4,7 +4,7 @@ import numpy as np
 from services import common
 from services.service import get_ranges_by_name, get_topics_by_person_ids, get_init_ranges, get_person_by_ranges, \
     get_address_by_person_ids
-from tools.sort_utils import sort_dict2list, intersect
+from tools.sort_utils import sort_dict2list
 import math
 from collections import defaultdict
 
@@ -33,30 +33,32 @@ if __name__ == '__main__':
     # address = get_address_by_person_ids(person.keys())
     print('range end')
     GRAPH_DAO.start_connect()
-    person_id2relation = {_id: len(GRAPH_DAO.get_in_edges(_id) + GRAPH_DAO.get_out_edges(_id)) for _id in ranges[NodeLabels['person']]}
+    person_id2relation = {_id: len(GRAPH_DAO.get_in_edges(_id) + GRAPH_DAO.get_out_edges(_id)) for _id in
+                          ranges[NodeLabels['person']]}
     person_id2relation = sort_dict2list(person_id2relation)[:30]
     person_ids = [_id[0] for _id in person_id2relation]
-    
 
     print('filter end')
     # label2topic_ids 也不需要了
-    all_topic_ids, topic_id2sentence_id2position1d, pmi_node, person_id2position2d, node_dict, edge_dict = get_topics_by_person_ids(person_ids)
+    all_topic_ids, topic_id2sentence_id2position1d, pmi_node, person_id2position2d, node_dict, edge_dict = get_topics_by_person_ids(
+        person_ids)
 
 
     def findHasTopic(topic):
-        has_topic_pids = None
+        has_topic_pids = set()
         for nid in topic:
-            temp_pids = GRAPH_DAO.getHasNodePeople(nid)
-            if has_topic_pids is None:
+            temp_pids = GRAPH_DAO.get_person_ids_by_node_id(nid)
+            if len(has_topic_pids) > 0:
                 has_topic_pids = temp_pids
                 continue
-            has_topic_pids = intersect(has_topic_pids, temp_pids)
+            has_topic_pids.intersection_update(temp_pids)
         return has_topic_pids
-    
+
+
     # 计算LRS
     def LRS(topic, pids):
         ALL_PEOPLE_NUM = 11813
-        m_z = len(pids)/ALL_PEOPLE_NUM
+        m_z = len(pids) / ALL_PEOPLE_NUM
         m_f = 1 - m_z
 
         has_topic_ps = findHasTopic(topic)
@@ -65,23 +67,25 @@ if __name__ == '__main__':
         if has_topic_ps_len == 0:
             return 0
         # print(topic, has_topic_ps)
-        # 
-        m_gz = len([pid for pid in pids if pid in has_topic_ps] )/has_topic_ps_len
+        #
+        m_gz = len([pid for pid in pids if pid in has_topic_ps]) / has_topic_ps_len
         m_gf = 1 - m_gz
 
         # print(m_z, m_f, m_gz, m_gf)
-        return 2 * (m_gz*math.log(m_gz/m_z) + m_gf*math.log(m_gf/m_f)) * has_topic_ps_len
+        return 2 * (m_gz * math.log(m_gz / m_z) + m_gf * math.log(m_gf / m_f)) * has_topic_ps_len
+
 
     GRAPH_DAO.start_connect()
     topic2lrs = {}  # siwei: 这个以后也要发给前端
     for topic in all_topic_ids:
         topic2lrs[topic] = LRS(topic, person_ids)
     GRAPH_DAO.close_connect()
-  
+
+
     # GRAPH_DAO.close_connect()
 
     # siwei: 找到所有相似的人, 要做成一个接口
-    def findAllSimPeople(now_pids, all_topics, topic2lrs, N = 20):
+    def findAllSimPeople(now_pids, all_topics, topic2lrs, N=20):
         pid2topic_num = defaultdict(int)
         for topic in all_topics:
             has_topic_pids = findHasTopic(topic)
@@ -90,6 +94,7 @@ if __name__ == '__main__':
                     continue
                 pid2topic_num[pid] += topic2lrs[topic]
         return [pid for pid, _ in sort_dict2list(pid2topic_num, N=N)]
+
 
     sim_pids = findAllSimPeople(person_ids, all_topic_ids, topic2lrs)
     # print(1, [GRAPH_DAO.get_node_name_by_id(pid) for pid in sim_pids])
