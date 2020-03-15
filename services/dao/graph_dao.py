@@ -1,4 +1,4 @@
-import gc
+import json
 import queue
 import timeit
 
@@ -6,7 +6,6 @@ import networkx as nx
 from collections import defaultdict
 
 from services.dao.base_dao import SqliteDAO
-import json
 
 
 class GraphDAO(SqliteDAO):
@@ -24,40 +23,11 @@ class GraphDAO(SqliteDAO):
         self.edge_name_cache = {}
         self.edge_en_name_cache = {}
 
-        self.nid2has_topic_p_cache = {}
+        self.node_id2has_topic_person_cache = {}
         if self.use_cache:  # todo 如果电脑性能允许的话，为了加快运行速度可以考虑提前载入数据
             self.start_connect()
             self.__import_all_data()
             self.close_connect()
-
-    def getAllPersons(self):
-        self.start_connect()
-        rows = self.conn.cursor().execute('''SELECT id FROM node2data WHERE label = "Person"''')
-        result = [row[0] for row in rows]
-        self.close_connect()
-        return result
-    
-    # siwei: 找到描述中包含节点的人(必须是总描述数量超过5个的人)
-    def getHasNodePeople(self, nid):
-        nid2has_topic_p_cache = self.nid2has_topic_p_cache
-        
-        if nid not in nid2has_topic_p_cache:
-            # print((nid, ))
-            rows = self._select("SELECT pids FROM reverse_index_person_5 WHERE name = ?", ['pids'], (nid, ))
-            if len(rows) == 0:
-                print(nid, self.get_node_name_by_id(nid) ,'没有对应的pids')
-                # raise Exception(nid, name, '没有对应的pids')
-                pids = []
-            else:
-                # print(1, rows)
-                pids = rows[0]['pids']
-                pids = list(json.loads(pids).keys())
-                pids = set([int(pid) for pid in pids])
-            if not self.use_cache:
-                return pids
-            nid2has_topic_p_cache[nid] = pids
-        return list(nid2has_topic_p_cache[nid])
-
 
     def __import_all_data(self):
         sql_str = '''SELECT DISTINCT id, name, code, label, en_name FROM node2data'''
@@ -139,9 +109,31 @@ class GraphDAO(SqliteDAO):
         return self.node_id2label_cache[node_id]
 
     def get_node_ids_by_name(self, node_name):  # 非年份的所有结点
-        sql_str = '''SELECT id, label, code, en_name FROM node2data WHERE name = ?'''
-        rows = self._select(sql_str, ['id', 'label', 'code', 'en_name'], (node_name,))
+        sql_str = '''SELECT id FROM node2data WHERE name = ?'''
+        rows = self._select(sql_str, ['id'], (node_name,))
         return [int(cols['id']) for cols in rows]
+
+    def get_node_ids_by_label(self, node_label):
+        sql_str = '''SELECT id FROM node2data WHERE label = ?'''
+        rows = self._select(sql_str, ['id'], (node_label,))
+        return [int(cols['id']) for cols in rows]
+
+    # siwei: 找到描述中包含节点的人(必须是总描述数量超过5个的人)
+    def get_person_ids_by_node_id(self, node_id):  # todo 这里有些不匹配？id 查询的时候却是name
+        if node_id not in self.node_id2has_topic_person_cache:
+            sql_str = '''SELECT pids FROM reverse_index_person_5 WHERE name = ?'''
+            rows = self._select(sql_str, ['pids'], (node_id,))
+            if len(rows) == 0:
+                print(node_id, self.get_node_name_by_id(node_id), '没有对应的pids')
+                person_ids = []
+            else:
+                person_ids = rows[0]['pids']
+                person_ids = list(json.loads(person_ids).keys())
+                person_ids = set([int(_id) for _id in person_ids])
+            if not self.use_cache:
+                return person_ids
+            self.node_id2has_topic_person_cache[node_id] = person_ids
+        return self.node_id2has_topic_person_cache[node_id]
 
     def get_edge_label_by_id(self, edge_id):
         # edge_id = int(edge_id)

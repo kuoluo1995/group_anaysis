@@ -1,18 +1,16 @@
-# import cylouvain
-import gc
+import cylouvain
 import networkx as nx
 from collections import defaultdict
 from services import common
-from services.common import Model_DIM
 from services.tools.graph_tool import get_node_relevancy, get_graph_dict
-from services.tools.person_tool import get_person_id2position2d, get_person_pmi
-from services.tools.sentence_topic_tool import get_sentence_ids_dict, get_sentence_id2relevancy, get_sentence_id2vector, \
-    get_topic_id_dict, get_topic_pmi, get_sentence_id2position1d
-import copy
+from services.tools import person_tool
+from services.tools.sentence_topic_tool import get_sentence_dict, get_sentence_id2vector, get_topic_pmi, get_topic_dict
+from tools.sort_utils import sort_dict2list, LRS
 
 
 def get_init_ranges():
     """得到初始化的环境参数，目前需要的只是
+
     Notes
     ----------
     这里的范围是通过CBDB数据库的内容查询的,但是整个函数传出来的id全是以图数据库为准
@@ -32,7 +30,8 @@ def get_init_ranges():
 
     dynasties = CBDB_DAO.get_all_dynasties()
     dynasties_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['dynasty'], dynasties.keys())
-    dynasties = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for _id in dynasties_ids}
+    dynasties = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for
+                 _id in dynasties_ids}
     status = CBDB_DAO.get_all_status()
     status_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['status'], status.keys())
     status = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for
@@ -42,9 +41,9 @@ def get_init_ranges():
     return dynasties, status
 
 
-# 为啥这要跑45秒呀
 def get_ranges_by_name(labels, person_name):
     """根据person_name和所需要的范围label来得到范围所包含的值(name)
+
     Notes
     ----------
     这里的范围是通过图数据库的内容查询的
@@ -82,6 +81,7 @@ def get_ranges_by_name(labels, person_name):
 
 def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids):
     """根据范围查询到所有的人群
+
     Notes
     ----------
     这里是通过CBDB数据库的内容查询的,但是整个函数传出来的id全是以图数据库为准
@@ -131,6 +131,7 @@ def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids):
 
 def get_address_by_person_ids(person_ids):
     """根据人的id查询所有的地址及坐标
+
     Notes
     ----------
     这里是通过CBDB数据库的内容查询的,但是整个函数传出来的id全是以图数据库为准
@@ -165,6 +166,7 @@ def get_address_by_person_ids(person_ids):
 
 def get_topics_by_person_ids(person_ids, random_epoch=100, max_topic=15, populate_ratio=0.3):
     """根据人的id查询所有的topic
+
     Notes
     ----------
     这里是通过CBDB数据库的内容查询的,但是整个函数传出来的id全是以图数据库为准
@@ -200,123 +202,31 @@ def get_topics_by_person_ids(person_ids, random_epoch=100, max_topic=15, populat
     GRAPH_DAO = common.GRAPH_DAO
     GRAPH_DAO.start_connect()
 
-    person_id2sentence_ids, sentence_id2person_id, all_sentence_ids = get_sentence_ids_dict(person_ids, random_epoch=random_epoch)
+    person_id2sentence_ids, sentence_id2person_id, all_sentence_ids = get_sentence_dict(person_ids,
+                                                                                        random_epoch=random_epoch)
+    # todo word_id_count
+    node_label2ids, node_id2relevancy, node_id2sentence_ids = get_node_relevancy(person_id2sentence_ids)
 
-    # for s in all_sentence_ids:
-    #     sentence_id2person_id[s]
-    # for p, ss in person_id2sentence_ids.items():
-    #     for s in ss:
-    #         sentence_id2person_id[s]
+    topic_ids2person_ids, topic_ids2sentence_ids, all_topic_ids = get_topic_dict(node_label2ids, node_id2relevancy,
+                                                                                 sentence_id2person_id,
+                                                                                 node_id2sentence_ids, len(person_ids),
+                                                                                 len(all_sentence_ids),
+                                                                                 max_topic=max_topic,
+                                                                                 populate_ratio=populate_ratio)
 
-    node_label2ids, node_id2relevancy, nid2sentences = get_node_relevancy(person_ids, person_id2sentence_ids)
+    # sentence_id2vector
+    topic_id2sentence_id2vector2d, topic_id2sentence_id2vector1d = get_sentence_id2vector(all_topic_ids,
+                                                                                          topic_ids2sentence_ids)
 
-    # for nid in nid2sentences:
-    #     for s in nid2sentences[nid]:
-    #         if s not in all_sentence_ids:
-    #             raise Exception()
-    #         if s not in sentence_id2person_id:
-    #             raise Exception()
+    person_id2position2d = person_tool.get_person_id2position2d(topic_id2sentence_id2vector2d, person_id2sentence_ids,
+                                                                num_dim=2)
 
-
-    # sentence_id2relevancy = {_sentence_id: get_sentence_id2relevancy(_sentence_id, node_id2relevancy) for _sentence_id in all_sentence_ids}
-
-    topic2person_ids, topic_id2sentence_ids, all_topic_ids = get_topic_id_dict(node_label2ids, node_id2relevancy, all_sentence_ids, sentence_id2person_id, len(person_ids), nid2sentences, max_topic=max_topic, populate_ratio=populate_ratio)
-
-    # 结算他们之间的合并
-
-    # print(all_topic_ids)
-    
-    def intersect(set_a, set_b):
-        return set([elm for elm in set_a if elm in set_b])
-
-    def addInverseIndexValue(topic):
-        has_topic_index = None
-        # 其实可以再优化的, 但估计不是性能瓶颈
-        for sub_topic in topic:
-            sub_topic = (sub_topic,)
-            if has_topic_index is None:
-                has_topic_index = topic_id2sentence_ids[sub_topic]
-                continue
-            has_topic_index = intersect(has_topic_index, topic_id2sentence_ids[sub_topic])
-        topic_id2sentence_ids[topic] = has_topic_index
-        
-
-    def addInverseIndexP(topic):
-        has_topic_sentences = topic_id2sentence_ids[topic]
-        has_topic_p = set()
-        # print(has_topic_index, topic)
-        for sentence in has_topic_sentences:
-            pid = sentence_id2person_id[sentence]
-            has_topic_p.add(pid)
-        topic2person_ids[topic] = has_topic_p
-
-    def sortTopic(topic):
-        topic = sorted(list(set(topic)))
-        return tuple(topic)
-
-    all_topic_ids = set(all_topic_ids)
-    for i in range(3):
-        temp_all_topics = copy.deepcopy(all_topic_ids)
-        for topic1 in all_topic_ids:
-            for topic2 in all_topic_ids:
-                if topic1 == topic2:
-                    continue
-                new_topic = list(topic1) + list(topic2)
-                new_topic = sortTopic(new_topic)
-                new_topic = tuple(new_topic)
-                if new_topic in all_topic_ids:
-                    continue
-
-                addInverseIndexValue(new_topic)
-                addInverseIndexP(new_topic)
-
-                support_p = len(topic2person_ids[new_topic])/len(person_ids)
-
-                support_t1 = len(topic_id2sentence_ids[topic1])/len(all_sentence_ids)
-                support_t2 = len(topic_id2sentence_ids[topic2])/len(all_sentence_ids)
-                lift_v = len(topic_id2sentence_ids[new_topic])/len(all_sentence_ids)/support_t1/support_t2
-                
-                if support_p > populate_ratio:
-                    # print(new_topic, lift_v, support_p)
-                    temp_all_topics.add(new_topic)
-        all_topic_ids = temp_all_topics
-
-    # print(all_topic_ids)
-
-    
-
-    # sentence_id2vector 
-    topic_id2sentence_id2position2d, topic_id2sentence_id2position1d = get_sentence_id2vector(topic_id2sentence_ids, all_topic_ids)
-
-    # print(topic_id2sentence_id2position2d, )
-    # def firstId(elm):
-    #     return list(elm)[0]
-    # a = topic_id2sentence_id2position2d[firstId(topic_id2sentence_id2position2d)]
-    # b = a[firstId(a)]
-    # print(11111, b.shape)
-    # print(topic_id2sentence_ids2vec)
-    # exit()
-
-    # topic_id2sentence_id2position1d = {
-    #     topic_id: get_sentence_id2position1d(_sentence_ids, sentence_id2vector) 
-    #     for topic_id, _sentence_ids in topic_id2sentence_ids.items() 
-    #     if len(_sentence_ids) != 0
-    # }
-
-
-    person_id2position2d = get_person_id2position2d(topic_id2sentence_id2position2d, person_id2sentence_ids, num_dim = 2)
-    # print(person_id2position2d)
-    # exit()
-
-    topic_pmi = get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_id2sentence_ids, len(all_sentence_ids))
+    topic_pmi = get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_ids2sentence_ids, len(all_sentence_ids))
 
     node_dict, edge_dict = get_graph_dict(all_sentence_ids)
     GRAPH_DAO.close_connect()
 
-    # print(node_dict, edge_dict)
-    # person_pmi = get_person_pmi(person_ids, person_id2sentence_ids, len(all_sentence_ids))
-
-    return all_topic_ids, topic_id2sentence_id2position1d,  topic_pmi, person_id2position2d, node_dict, edge_dict
+    return all_topic_ids, topic_id2sentence_id2vector1d, topic_pmi, person_id2position2d, node_dict, edge_dict
 
 
 def get_community_by_num_node_links(num_node, links):
@@ -341,6 +251,25 @@ def get_community_by_num_node_links(num_node, links):
         link = link.split('_')
         node_links.append((link[0], link[1]))  # cylouvain
     graph.add_edges_from(node_links)
-    # partition = cylouvain.best_partition(graph)
-    partition = None #暂时注释掉
+    partition = cylouvain.best_partition(graph)
+    # partition = None  # 暂时注释掉
     return partition
+
+
+def get_all_similar_person(person_ids, all_topic_ids, N=20):
+    GRAPH_DAO = common.GRAPH_DAO
+    GRAPH_DAO.start_connect()
+    topic_id2lrs = {}  # siwei: 这个以后也要发给前端
+    for topic_id in all_topic_ids:
+        topic_id2lrs[topic_id] = LRS(topic_id, person_ids)
+    # siwei: 找到所有相似的人, 要做成一个接口
+    person_id2num_topic = defaultdict(int)
+    for topic_id in all_topic_ids:
+        has_topic_person_ids = person_tool.get_person_ids_by_topic_id(topic_id)
+        for _id in has_topic_person_ids:
+            if _id in person_ids:
+                continue
+            person_id2num_topic[_id] += topic_id2lrs[topic_id]
+    similar_person_ids = [_id for _id, _ in sort_dict2list(person_id2num_topic, N=N)]
+    GRAPH_DAO.close_connect()
+    return topic_id2lrs, similar_person_ids

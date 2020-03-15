@@ -6,7 +6,55 @@ from collections import defaultdict
 from services import common
 
 
-def get_node_relevancy(person_ids, person_id2sentence_ids):
+# def get_node_relevancy(person_ids):
+#     """计算所有人的节点的相关度
+#     Notes
+#     ----------
+#     这里的范围是通过图数据库的内容查询的
+#
+#     Parameters
+#     ----------
+#     person_ids: list(int)
+#
+#     Returns
+#     -------
+#     node_label2ids: dict{string: list(int)}
+#         同一个label里所有的id。为后期找topic做准备，id可以对应到topic的name
+#     node_id2relevancy: dict{int: float}
+#         节点对应的先相关度用于
+#     """
+#     GRAPH_DAO = common.GRAPH_DAO
+#     person_graph = {_id: GRAPH_DAO.getSubGraph(_id, depth=3) for _id in person_ids}
+#     # person_graph = {_id: GRAPH_DAO.get_sub_graph(_id, max_depth=3) for _id in person_ids}
+#     person_graph_tree = {person_id: nx.bfs_tree(sub_graph, person_id) for person_id, sub_graph in person_graph.items()}
+#
+#     # 得到所有相关结点, NodeView没法直接hashable，所以加了list
+#     all_related_node_ids = []
+#     for _, _graph in person_graph.items():
+#         all_related_node_ids += _graph.nodes()
+#     all_related_node_ids = set(all_related_node_ids)
+#
+#     node_label2ids = defaultdict(list)  # 为后期加快计算做准备
+#     node_id2relevancy = defaultdict(int)  # 相关度集合
+#     for _id in all_related_node_ids:
+#         # name_ = GRAPH_DAO.get_node_name_by_id(_id)
+#         is_need, _id = get_filtered_node(_id)
+#         if is_need:  # 检测是否被过滤掉了？
+#             # 计算结点的相关值
+#             count_yx = 0  # count(y,x)
+#             relevancy_yx = 0  # 相关度值
+#             for _person_id, _sub_graph in person_graph.items():
+#                 _sub_graph_tree = person_graph_tree[_person_id]
+#                 if _id in _sub_graph:
+#                     count_yx += 1
+#                     depth = nx.shortest_path_length(_sub_graph_tree, _person_id, _id)
+#                     relevancy_yx += 1 / math.log(depth + 2)
+#             node_label = GRAPH_DAO.get_node_label_by_id(_id)
+#             node_label2ids[node_label].append(_id)
+#             node_id2relevancy[_id] += relevancy_yx
+#     return node_label2ids, node_id2relevancy
+
+def get_node_relevancy(person_id2sentence_ids, **kwargs):
     """计算所有人的节点的相关度
     Notes
     ----------
@@ -14,72 +62,41 @@ def get_node_relevancy(person_ids, person_id2sentence_ids):
 
     Parameters
     ----------
-    person_ids: list(int)
-
+    person_id2sentence_ids: dict{int: list(int)}
+        {person_id : [sentence_id]} 其中sentence_id: node_id, edge_id, node_id由组成
     Returns
     -------
     node_label2ids: dict{string: list(int)}
         同一个label里所有的id。为后期找topic做准备，id可以对应到topic的name
-    node_id2relevancy: dict{int: float}
-        节点对应的先相关度用于
+    node_id_count: dict{int: int}
+        每个节点出现的次数
+    node_id2sentence_ids： dict{int: list(int)}
+        每个结点所在的句子中的列表
     """
     GRAPH_DAO = common.GRAPH_DAO
 
     # siwei
-    nid_count = defaultdict(int)
-    nid2sentences = defaultdict(set)
+    node_id_count = defaultdict(int)
+    node_id2sentence_ids = defaultdict(set)
 
-    for pid, s_ids in person_id2sentence_ids.items():
-        temp_nids = set()
-        for s_id in s_ids:
-            for index, nid in enumerate(s_id):
-                if index % 3 == 1:
+    for _, sentence_ids in person_id2sentence_ids.items():
+        temp_word_ids = set()
+        for sentence_id in sentence_ids:
+            for _i, word_id in enumerate(sentence_id):
+                if _i % 3 == 1:
                     continue
-                temp_nids.add(nid)
-                nid2sentences[nid].add(s_id)
-        for nid in temp_nids:
-            nid_count[nid] += 1
-            # s = all_sentence_ids[s_ids]
+                temp_word_ids.add(word_id)
+                node_id2sentence_ids[word_id].add(sentence_id)
+        for word_id in temp_word_ids:
+            node_id_count[word_id] += 1
 
     node_label2ids = defaultdict(set)
-    for nid in nid_count:
-        node_label = GRAPH_DAO.get_node_label_by_id(nid)
-        node_label2ids[node_label].add(nid)
-    
+    for word_id in node_id_count.keys():
+        node_label = GRAPH_DAO.get_node_label_by_id(word_id)
+        node_label2ids[node_label].add(word_id)
+
     # siwei: 加了一个节点到描述的倒排索引
-    return node_label2ids, nid_count, nid2sentences
-
-
-    # GRAPH_DAO = common.GRAPH_DAO
-    # person_graph = {_id: GRAPH_DAO.getSubGraph(_id, depth=3) for _id in person_ids}
-    # # person_graph = {_id: GRAPH_DAO.get_sub_graph(_id, max_depth=3) for _id in person_ids}
-    # person_graph_tree = {person_id: nx.bfs_tree(sub_graph, person_id) for person_id, sub_graph in person_graph.items()}
-
-    # # 得到所有相关结点, NodeView没法直接hashable，所以加了list
-    # all_related_node_ids = []
-    # for _, _graph in person_graph.items():
-    #     all_related_node_ids += _graph.nodes()
-    # all_related_node_ids = set(all_related_node_ids)
-
-    # node_label2ids = defaultdict(list)  # 为后期加快计算做准备
-    # node_id2relevancy = defaultdict(int)  # 相关度集合
-    # for _id in all_related_node_ids:
-    #     # name_ = GRAPH_DAO.get_node_name_by_id(_id)
-    #     is_need, _id = get_filtered_node(_id)
-    #     if is_need:  # 检测是否被过滤掉了？
-    #         # 计算结点的相关值
-    #         count_yx = 0  # count(y,x)
-    #         relevancy_yx = 0  # 相关度值
-    #         for _person_id, _sub_graph in person_graph.items():
-    #             _sub_graph_tree = person_graph_tree[_person_id]
-    #             if _id in _sub_graph:
-    #                 count_yx += 1
-    #                 depth = nx.shortest_path_length(_sub_graph_tree, _person_id, _id)
-    #                 relevancy_yx += 1 / math.log(depth + 2)
-    #         node_label = GRAPH_DAO.get_node_label_by_id(_id)
-    #         node_label2ids[node_label].append(_id)
-    #         node_id2relevancy[_id] += relevancy_yx  # todo
-    # return node_label2ids, node_id2relevancy
+    return node_label2ids, node_id_count, node_id2sentence_ids
 
 
 def graph_id2string(graph_ids):
@@ -135,10 +152,10 @@ def get_filtered_node(id_=None, name_=None, label_=None):
         name_ = GRAPH_DAO.get_node_name_by_id(id_)
     if name_ in ['None', '0', '未详', '[未详]']:
         return False, None
-    # if id_ is not None and label_ is None:
-    #     label_ = GRAPH_DAO.get_node_label_by_id(id_)
-    # if label_ in [NodeLabels['post_type'], NodeLabels['address_type']]:  # 这几个label做topic没意义
-    #     return False, None
+    if id_ is not None and label_ is None:
+        label_ = GRAPH_DAO.get_node_label_by_id(id_)
+    if label_ in [NodeLabels['post_type'], NodeLabels['address_type']]:  # 这几个label做topic没意义
+        return False, None
     return True, id_
 
 

@@ -4,4 +4,5 @@
 *.dump
 *.model
 *.npy
+*.pyc
 */__pychache__/

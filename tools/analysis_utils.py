@@ -1,4 +1,3 @@
-import gc
 import numpy as np
 
 
@@ -30,3 +29,39 @@ def multidimensional_scale(num_component, data=None, _dist=None):
     v_selected = v[:, index]
     z = v_selected.dot(diag_lamda)  # 点积
     return z
+
+
+class MyMDS:
+    def __init__(self, n_components):
+        self.n_components = n_components
+
+    def fit(self, data=None, dist=None):
+        if data is not None:
+            m, n = data.shape
+            dist = np.zeros((m, m))
+            for i in range(m):
+                dist[i] = np.sum(np.square(data[i] - data), axis=1).reshape(1, m)
+        if dist is not None:
+            m, m = dist.shape
+
+        disti = np.zeros(m)
+        distj = np.zeros(m)
+        B = np.zeros((m, m))
+
+        for i in range(m):
+            disti[i] = np.mean(dist[i, :])
+            distj[i] = np.mean(dist[:, i])
+        distij = np.mean(dist)
+        for i in range(m):
+            for j in range(m):
+                B[i, j] = -0.5 * (dist[i, j] - disti[i] - distj[j] + distij)
+        lamda, V = np.linalg.eigh(B)
+        index = np.argsort(-lamda)[:self.n_components]
+        diag_lamda = np.sqrt(np.diag(-np.sort(-lamda)[:self.n_components]))
+        V_selected = V[:, index]
+        Z = V_selected.dot(diag_lamda)
+        return Z
+
+
+def mds(n_components, data=None, dist=None):
+    return MyMDS(n_components).fit(data=data, dist=dist)

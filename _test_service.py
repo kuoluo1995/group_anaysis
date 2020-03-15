@@ -5,7 +5,7 @@ import numpy as np
 
 from services import common
 from services.service import get_ranges_by_name, get_topics_by_person_ids, get_init_ranges, get_person_by_ranges, \
-    get_address_by_person_ids
+    get_address_by_person_ids, get_all_similar_person
 from tools.sort_utils import sort_dict2list
 
 # linux去除中文乱码
@@ -43,9 +43,12 @@ if __name__ == '__main__':
     person_ids = [_id[0] for _id in person_id2relation]
 
     start = timeit.default_timer()
-    all_topic_ids, label2topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_pmi, person_id2position2d, node_dict, edge_dict = get_topics_by_person_ids(
+    all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict = get_topics_by_person_ids(
         person_ids)
     print('查询所有topic的相关性:{}'.format(timeit.default_timer() - start))
+    start = timeit.default_timer()
+    topic_id2lrs, similar_person_ids = get_all_similar_person(person_ids, all_topic_ids)
+    print('查询所有相关的人:{}'.format(timeit.default_timer() - start))
     # topic 相似矩阵
     pmi_names = list()
     _len = len(topic_pmi)
@@ -58,18 +61,18 @@ if __name__ == '__main__':
     plt.xticks(list(range(_len)), pmi_names)
     plt.yticks(list(range(_len)), pmi_names)
     plt.show()
-    # person 相似矩阵
-    pmi_names = list()
-    _len = len(person_pmi)
-    _matrix = np.zeros((_len, _len))
-    for i, x_id in enumerate(person_pmi):
-        pmi_names.append(node_dict[x_id]['name'])
-        for j, y_id in enumerate(person_pmi):
-            _matrix[i][j] = person_pmi[x_id][y_id]
-    plt.matshow(_matrix)
-    plt.xticks(list(range(_len)), pmi_names)
-    plt.yticks(list(range(_len)), pmi_names)
-    plt.show()
+    # # person 相似矩阵
+    # pmi_names = list()
+    # _len = len(person_pmi)
+    # _matrix = np.zeros((_len, _len))
+    # for i, x_id in enumerate(person_pmi):
+    #     pmi_names.append(node_dict[x_id]['name'])
+    #     for j, y_id in enumerate(person_pmi):
+    #         _matrix[i][j] = person_pmi[x_id][y_id]
+    # plt.matshow(_matrix)
+    # plt.xticks(list(range(_len)), pmi_names)
+    # plt.yticks(list(range(_len)), pmi_names)
+    # plt.show()
     # topic散点图
     for _topic_id, _sentences_id2position1d in topic_id2sentence_id2position1d.items():
         num_sentence = len(_sentences_id2position1d.keys())
