@@ -80,6 +80,7 @@ def get_sentence_id2relevancy(sentence_id_, node_id2relevancy):
 # siwei
 from gensim import corpora, models, similarities
 import gensim
+from sklearn import manifold
 
 def get_sentence_id2vector(topic_id2sentence_ids, all_topic_ids):
     """计算描述的相似度
@@ -95,7 +96,7 @@ def get_sentence_id2vector(topic_id2sentence_ids, all_topic_ids):
         根据描述得到相似度字典
     """
 
-    topic_id2sentence_ids2vec2d = defaultdict(dict)
+    topic_id2sentence_ids2vec5d = defaultdict(dict)
     topic_id2sentence_ids2vec1d = defaultdict(dict)
     for topic in all_topic_ids:
         # GRAPH_DAO = common.GRAPH_DAO
@@ -122,16 +123,22 @@ def get_sentence_id2vector(topic_id2sentence_ids, all_topic_ids):
         for index, sentence in enumerate(corpus):
             s_dist[index] = 1 - sim_index[tfidf[sentence]]
 
+        # print(s_dist.shape, topic)
         # s_dist太少了降维会失败，应该是函数的问题
-        vec2d = mds(2, dist=s_dist)
+        vec5d = mds(5, dist=s_dist)
+
+        # tsne = manifold.TSNE(n_components=2, init='pca', random_state=0)
+        # vec1d = tsne.fit_transform(vec5d)  # 转换后的输出
+
+        # vec1d = mds(1, dist=s_dist)
         vec1d = mds(1, dist=s_dist)
-        # print(vec2d)
-        # vec2d /= mean_vectors(vec2d)
+        # print(vec5d)
+        # vec5d /= mean_vectors(vec5d)
         # vec1d /= mean_vectors(vec1d)
 
-        for index, vec in enumerate(vec2d):
+        for index, vec in enumerate(vec5d):
             sentence = index2sentence[index]
-            topic_id2sentence_ids2vec2d[topic][sentence] = vec2d[index]
+            topic_id2sentence_ids2vec5d[topic][sentence] = vec5d[index]
             topic_id2sentence_ids2vec1d[topic][sentence] = vec1d[index]
 
     # model = common.Model
@@ -140,7 +147,7 @@ def get_sentence_id2vector(topic_id2sentence_ids, all_topic_ids):
     # for _sentence_id in all_sentence_ids:
     #     _sentence = graph_id2string(_sentence_id)
     #     _sentence_id2vector[_sentence_id] = model.infer_vector(_sentence)
-    return topic_id2sentence_ids2vec2d, topic_id2sentence_ids2vec1d
+    return topic_id2sentence_ids2vec5d, topic_id2sentence_ids2vec1d
 
 
 """
@@ -151,7 +158,7 @@ Topic
 
 # sentence_id2relevancy, 
 # 多少能算显著特性
-def get_topic_id_dict(node_label2ids, relevancy_dict, all_sentence_ids, sentence_id2person_id, len_person, nid2sentences, max_topic=15, populate_ratio=0.3):
+def get_topic_id_dict(node_label2ids, relevancy_dict, all_sentence_ids, sentence_id2person_id, len_person, nid2sentences, max_topic=15, populate_ratio=0.4):
     """根据相关的人和描述，得到所有有关的topic， topic其实就是node_name
 
     Parameters

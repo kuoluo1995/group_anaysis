@@ -92,21 +92,25 @@ if __name__ == '__main__':
         return [pid for pid, _ in sort_dict2list(pid2topic_num, N=N)]
 
     sim_pids = findAllSimPeople(person_ids, all_topic_ids, topic2lrs)
+
+    # todo: 试下svm
+
+
     # print(1, [GRAPH_DAO.get_node_name_by_id(pid) for pid in sim_pids])
 
     # 相似矩阵
     # print(pmi_node)
-    pmi_names = list()
-    _len = len(pmi_node)
-    _matrix = np.zeros((_len, _len))
-    for i, x_id in enumerate(pmi_node):
-        pmi_names.append(','.join([GRAPH_DAO.get_node_name_by_id(nid) for nid in x_id]))
-        for j, y_id in enumerate(pmi_node):
-            _matrix[i][j] = pmi_node[x_id][y_id]
-    plt.matshow(_matrix)
-    plt.xticks(list(range(_len)), pmi_names)
-    plt.yticks(list(range(_len)), pmi_names)
-    plt.show()
+    # pmi_names = list()
+    # _len = len(pmi_node)
+    # _matrix = np.zeros((_len, _len))
+    # for i, x_id in enumerate(pmi_node):
+    #     pmi_names.append(','.join([GRAPH_DAO.get_node_name_by_id(nid) for nid in x_id]))
+    #     for j, y_id in enumerate(pmi_node):
+    #         _matrix[i][j] = pmi_node[x_id][y_id]
+    # plt.matshow(_matrix)
+    # plt.xticks(list(range(_len)), pmi_names)
+    # plt.yticks(list(range(_len)), pmi_names)
+    # plt.show()
 
     # topic散点图
     for _topic_id, _sentences_id2position1d in topic_id2sentence_id2position1d.items():
@@ -118,14 +122,25 @@ if __name__ == '__main__':
             position1d[_index] = _pos1d
             _index += 1
         plt.scatter(np.zeros(num_sentence), position1d, alpha=0.5, c=colors)
+
+        # position2d = np.zeros((num_sentence, 2))
+        # _index = 0
+        # for _, _pos2d in _sentences_id2position1d.items():
+        #     position2d[_index] = _pos2d
+        #     _index += 1
+        # plt.scatter(position2d[:,0], position2d[:,1], alpha=0.5, c=colors)
+
         for _sentence_id, _pos1d in _sentences_id2position1d.items():
             sentence = ''  # 描述
             for i, _id in enumerate(_sentence_id):
                 if i % 3 == 0 or i % 3 == 2:
-                    sentence += ' ' + node_dict[_id]['name']
+                    # ' ' + 
+                    sentence += node_dict[_id]['name']
                 else:
-                    sentence += ' ' + edge_dict[_id]['name']
+                    # ' ' + 
+                    sentence += edge_dict[_id]['name']
             plt.text(0, _pos1d, sentence, fontsize=5)
+            # plt.text(_pos1d[0], _pos1d[1], sentence, fontsize=5)
         plt.show()
 
     # 人物散点图

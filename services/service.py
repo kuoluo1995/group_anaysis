@@ -6,8 +6,7 @@ from services import common
 from services.common import Model_DIM
 from services.tools.graph_tool import get_node_relevancy, get_graph_dict
 from services.tools.person_tool import get_person_id2position2d, get_person_pmi
-from services.tools.sentence_topic_tool import get_sentence_ids_dict, get_sentence_id2relevancy, get_sentence_id2vector, \
-    get_topic_id_dict, get_topic_pmi, get_sentence_id2position1d
+from services.tools.sentence_topic_tool import get_sentence_ids_dict, get_sentence_id2relevancy, get_sentence_id2vector, get_topic_id_dict, get_topic_pmi, get_sentence_id2position1d
 import copy
 
 
@@ -163,7 +162,7 @@ def get_address_by_person_ids(person_ids):
     return address
 
 
-def get_topics_by_person_ids(person_ids, random_epoch=100, max_topic=15, populate_ratio=0.3):
+def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, populate_ratio=0.4):
     """根据人的id查询所有的topic
     Notes
     ----------
@@ -202,29 +201,13 @@ def get_topics_by_person_ids(person_ids, random_epoch=100, max_topic=15, populat
 
     person_id2sentence_ids, sentence_id2person_id, all_sentence_ids = get_sentence_ids_dict(person_ids, random_epoch=random_epoch)
 
-    # for s in all_sentence_ids:
-    #     sentence_id2person_id[s]
-    # for p, ss in person_id2sentence_ids.items():
-    #     for s in ss:
-    #         sentence_id2person_id[s]
+
 
     node_label2ids, node_id2relevancy, nid2sentences = get_node_relevancy(person_ids, person_id2sentence_ids)
-
-    # for nid in nid2sentences:
-    #     for s in nid2sentences[nid]:
-    #         if s not in all_sentence_ids:
-    #             raise Exception()
-    #         if s not in sentence_id2person_id:
-    #             raise Exception()
-
 
     # sentence_id2relevancy = {_sentence_id: get_sentence_id2relevancy(_sentence_id, node_id2relevancy) for _sentence_id in all_sentence_ids}
 
     topic2person_ids, topic_id2sentence_ids, all_topic_ids = get_topic_id_dict(node_label2ids, node_id2relevancy, all_sentence_ids, sentence_id2person_id, len(person_ids), nid2sentences, max_topic=max_topic, populate_ratio=populate_ratio)
-
-    # 结算他们之间的合并
-
-    # print(all_topic_ids)
     
     def intersect(set_a, set_b):
         return set([elm for elm in set_a if elm in set_b])
@@ -255,7 +238,9 @@ def get_topics_by_person_ids(person_ids, random_epoch=100, max_topic=15, populat
         return tuple(topic)
 
     all_topic_ids = set(all_topic_ids)
-    for i in range(3):
+    while True:
+        has_not_add = True
+
         temp_all_topics = copy.deepcopy(all_topic_ids)
         for topic1 in all_topic_ids:
             for topic2 in all_topic_ids:
@@ -277,34 +262,33 @@ def get_topics_by_person_ids(person_ids, random_epoch=100, max_topic=15, populat
                 lift_v = len(topic_id2sentence_ids[new_topic])/len(all_sentence_ids)/support_t1/support_t2
                 
                 if support_p > populate_ratio:
+                    has_not_add = False
                     # print(new_topic, lift_v, support_p)
                     temp_all_topics.add(new_topic)
-        all_topic_ids = temp_all_topics
 
+                    # 把可以合并的子序列删去
+                    if support_p > 0.9 * support_t1 and topic1 in temp_all_topics:
+                        # print('r')
+                        temp_all_topics.remove(topic1)
+                    if support_p > 0.9 * support_t2 and topic2 in temp_all_topics:
+                        temp_all_topics.remove(topic2)
+
+        all_topic_ids = temp_all_topics
+        if has_not_add:
+            break
+
+    print([[(elm, GRAPH_DAO.get_node_name_by_id(elm), GRAPH_DAO.get_node_label_by_id(elm))  for elm in t] for t in all_topic_ids])
+    # exit()
     # print(all_topic_ids)
 
     
 
     # sentence_id2vector 
-    topic_id2sentence_id2position2d, topic_id2sentence_id2position1d = get_sentence_id2vector(topic_id2sentence_ids, all_topic_ids)
-
-    # print(topic_id2sentence_id2position2d, )
-    # def firstId(elm):
-    #     return list(elm)[0]
-    # a = topic_id2sentence_id2position2d[firstId(topic_id2sentence_id2position2d)]
-    # b = a[firstId(a)]
-    # print(11111, b.shape)
-    # print(topic_id2sentence_ids2vec)
-    # exit()
-
-    # topic_id2sentence_id2position1d = {
-    #     topic_id: get_sentence_id2position1d(_sentence_ids, sentence_id2vector) 
-    #     for topic_id, _sentence_ids in topic_id2sentence_ids.items() 
-    #     if len(_sentence_ids) != 0
-    # }
+    topic_id2sentence_id2position5d, topic_id2sentence_id2position1d = get_sentence_id2vector(topic_id2sentence_ids, all_topic_ids)
 
 
-    person_id2position2d = get_person_id2position2d(topic_id2sentence_id2position2d, person_id2sentence_ids, num_dim = 2)
+    # todo:这里还要有个topic的权重
+    person_id2position2d = get_person_id2position2d(topic_id2sentence_id2position5d, person_id2sentence_ids, num_dim = 5)
     # print(person_id2position2d)
     # exit()
 

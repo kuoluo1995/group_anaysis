@@ -90,8 +90,8 @@ def search_topics_by_person_ids(request):
         person_ids = request.POST.getlist('person_ids[]')
         try:
             person_ids = [int(_id) for _id in person_ids]
-            all_topic_ids, label2topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_pmi, person_id2position2d, node_dict, edge_dict = get_topics_by_person_ids(
-                person_ids)
+            all_topic_ids, label2topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_pmi, person_id2position2d, node_dict, edge_dict = get_topics_by_person_ids(person_ids)
+            
             # todo 未来可以考虑去掉？可以通过topic2sentence_positions来获取？
             result['all_topic_ids'] = [int(_id) for _id in all_topic_ids]
             label2topic_ids_json = {}

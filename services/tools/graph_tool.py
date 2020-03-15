@@ -133,8 +133,9 @@ def get_filtered_node(id_=None, name_=None, label_=None):
 
     if id_ is not None and name_ is None:
         name_ = GRAPH_DAO.get_node_name_by_id(id_)
-    if name_ in ['None', '0', '未详', '[未详]']:
+    if name_ in ['None', '0', '未详', '[未详]'] or id_ == 502573:  #不能是年份为1
         return False, None
+
     # if id_ is not None and label_ is None:
     #     label_ = GRAPH_DAO.get_node_label_by_id(id_)
     # if label_ in [NodeLabels['post_type'], NodeLabels['address_type']]:  # 这几个label做topic没意义

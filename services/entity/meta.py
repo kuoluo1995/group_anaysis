@@ -60,6 +60,7 @@ def build_meta_nodes(node_):
         meta_node = MetaNode(NodeLabels[node_label])
         for next_node in next_nodes:
             for _edge, _node in next_node.items():
+                # print(node_label, _edge, _node)
                 if isinstance(_node, dict):
                     meta_node.next_nodes.append({EdgeLabels[_edge]: build_meta_nodes(_node)})
                 else:
@@ -73,10 +74,12 @@ def build_meta_nodes(node_):
 
 def build_meta_paths(path):
     rules = yaml_utils.read(path)
+    # print(rules)
     # 先定义一些公共的点
     for _key, _item in rules['global_nodes'].items():
         global_nodes[_key] = build_meta_nodes(_item)
     meta_paths = list()
     for _key, _item in rules['paths'].items():
+        # print(_key)
         meta_paths.append(MetaPath(_key, build_meta_nodes(_item)))
     return meta_paths

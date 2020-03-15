@@ -1,14 +1,34 @@
 global_nodes:
     address_node:
         address:
-            -   address_belong: address
+            -   address_belong:
+                    address:
+                        -   address_belong: address
 
     office_node:
         office:
             -   office_belong:
                     office_type:
                         -   office_belong: office_type
+    
+    year_node:
+        year:
+            -   nian_hao_is: nian_hao
+            -   next: year
+
+    inst_node:
+        inst:
+            -   inst_belong: inst_type
+            -   where: address_node
+
 paths:
+    # siwei
+    角色:
+        person:
+            -   do:
+                    role:
+                        -   where: inst_node
+
     性别:
         person:
             -   gender_is: gender
@@ -19,8 +39,8 @@ paths:
         person:
             -   do:
                     post:
-                        -   first_year: year
-                        -   last_year: year
+                        -   first_year: year_node
+                        -   last_year: year_node
                         -   office_is: office_node
                         -   post_is: post_type
                         -   where: address_node
@@ -31,12 +51,18 @@ paths:
         person:
             -   do:
                     associate_event:
-                        -   associate_belong: association
+                        -   associate_belong:
+                                association:
+                                    -   associate_belong:
+                                            assoc_type:
+                                                -   assoc_is: assoc_type
                         -   associate_is: person
-                        -   first_year: year
+                        -   first_year: year_node
                         -   occasion_is: occasion
                         -   topic_is: scholar
                         -   where: address_node
+                        -   occa_is: occasion
+                        -   when: nian_hao
     定位:
         person:
             -   house_hold_is: house_hold
@@ -57,7 +83,7 @@ paths:
                                     -   entry_is:
                                             entry_type:
                                                 -   entry_belong: entry_type
-                        -   first_year: year
+                        -   first_year: year_node
                         -   note_is: note
 
 
