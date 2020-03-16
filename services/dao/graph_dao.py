@@ -118,17 +118,17 @@ class GraphDAO(SqliteDAO):
         rows = self._select(sql_str, ['id'], (node_label,))
         return [int(cols['id']) for cols in rows]
 
-    # siwei: 找到描述中包含节点的人(必须是总描述数量超过5个的人)
-    def get_person_ids_by_node_id(self, node_id):  # todo 这里有些不匹配？id 查询的时候却是name
+    # siwei: 找到描述中包含节点的人(必须是总描述数量超过10个的人)
+    def get_person_ids_by_node_id(self, node_id):
         if node_id not in self.node_id2has_topic_person_cache:
+            # sql_str = '''SELECT person_id2count FROM node2person2count WHERE node_id = ?'''
             sql_str = '''SELECT pids FROM reverse_index_person_5 WHERE name = ?'''
-            rows = self._select(sql_str, ['pids'], (node_id,))
+            rows = self._select(sql_str, ['person_id2count'], (node_id,))
             if len(rows) == 0:
-                print(node_id, self.get_node_name_by_id(node_id), '没有对应的pids')
-                person_ids = []
+                print(node_id, self.get_node_name_by_id(node_id), '没有对应的person_id2count')
+                person_ids = set()
             else:
-                person_ids = rows[0]['pids']
-                person_ids = list(json.loads(person_ids).keys())
+                person_ids = json.loads(rows[0]['person_id2count']).keys()
                 person_ids = set([int(_id) for _id in person_ids])
             if not self.use_cache:
                 return person_ids

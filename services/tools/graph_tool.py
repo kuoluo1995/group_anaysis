@@ -54,8 +54,9 @@ from services import common
 #             node_id2relevancy[_id] += relevancy_yx
 #     return node_label2ids, node_id2relevancy
 
-def get_node_relevancy(person_id2sentence_ids, **kwargs):
+def get_node_relevancy(person_id2sentence_ids):
     """计算所有人的节点的相关度
+
     Notes
     ----------
     这里的范围是通过图数据库的内容查询的
@@ -76,27 +77,27 @@ def get_node_relevancy(person_id2sentence_ids, **kwargs):
     GRAPH_DAO = common.GRAPH_DAO
 
     # siwei
-    node_id_count = defaultdict(int)
+    node_id2count = defaultdict(int)
     node_id2sentence_ids = defaultdict(set)
 
     for _, sentence_ids in person_id2sentence_ids.items():
-        temp_word_ids = set()
+        temp_node_ids = set()
         for sentence_id in sentence_ids:
             for _i, word_id in enumerate(sentence_id):
                 if _i % 3 == 1:
                     continue
-                temp_word_ids.add(word_id)
+                temp_node_ids.add(word_id)
                 node_id2sentence_ids[word_id].add(sentence_id)
-        for word_id in temp_word_ids:
-            node_id_count[word_id] += 1
+        for node_id in temp_node_ids:
+            node_id2count[node_id] += 1
 
     node_label2ids = defaultdict(set)
-    for word_id in node_id_count.keys():
-        node_label = GRAPH_DAO.get_node_label_by_id(word_id)
-        node_label2ids[node_label].add(word_id)
+    for node_id in node_id2count.keys():
+        node_label = GRAPH_DAO.get_node_label_by_id(node_id)
+        node_label2ids[node_label].add(node_id)
 
     # siwei: 加了一个节点到描述的倒排索引
-    return node_label2ids, node_id_count, node_id2sentence_ids
+    return node_label2ids, node_id2count, node_id2sentence_ids
 
 
 def graph_id2string(graph_ids):
@@ -150,7 +151,7 @@ def get_filtered_node(id_=None, name_=None, label_=None):
 
     if id_ is not None and name_ is None:
         name_ = GRAPH_DAO.get_node_name_by_id(id_)
-    if name_ in ['None', '0', '未详', '[未详]']:
+    if name_ in ['None', '0', '未详', '[未详]'] or id_ == 502573:  # 不能是年份为1
         return False, None
     if id_ is not None and label_ is None:
         label_ = GRAPH_DAO.get_node_label_by_id(id_)

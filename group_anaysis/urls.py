@@ -15,4 +15,5 @@ urlpatterns = [
     path('search_person_by_ranges/', view.search_person_by_ranges),
     path('search_address_by_person_ids/', view.search_address_by_person_ids),
     path('search_topics_by_person_ids/', view.search_topics_by_person_ids),
+    path('search_community_by_links/', view.search_community_by_links),
 ]

@@ -1,7 +1,5 @@
 import sqlite3
 
-import gc
-
 
 class SqliteDAO:
     def __init__(self, path, use_cache):

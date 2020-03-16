@@ -1,3 +1,5 @@
+import copy
+
 import math
 import random
 import numpy as np
@@ -7,7 +9,7 @@ from gensim import corpora, similarities
 from services import common
 from services.tools.graph_tool import get_filtered_node
 from services.tools.person_tool import get_person_ids_by_topic_ids
-from tools.analysis_utils import multidimensional_scale, mds
+from tools.analysis_utils import multidimensional_scale
 from tools.sort_utils import sort_dict2list
 
 """
@@ -63,7 +65,7 @@ def get_sentence_ids_by_topic_ids(topic_id1, topic_id2, _topic_id2sentence_ids):
     通过给定的topics来得到相应的sentence_ids，这里的sentence_ids是经过去重的
 
     :param topic_id1: tuple
-    :param topic_id1: tuple
+    :param topic_id2: tuple
     :param _topic_id2sentence_ids: dict{int: list(list(int))} sentence_id是由node_id, edge_id, node_id。。。组成
     :return: set() 对应的所有的描述
     """
@@ -118,26 +120,25 @@ def get_sentence_id2position1d(sentence_ids, sentence_id2vector):
     return sentence_id2position1d
 
 
-def get_sentence_id2vector(all_topic_ids, topic_ids2sentence_ids):
+def get_sentence_id2vector(all_topic_ids, topic_id2sentence_ids, num_dims):
     """计算描述的相似度
 
     Parameters
     ----------
-    all_sentence_ids: list(list(int))
+    all_topic_ids: list(list(int))
         所有的描述的id
-
+    topic_id2sentence_ids: dict{int: list(list(int))}
+    num_dims: list()
     Returns
     -------
     _sentence_id2vector: dict{list(int): array}
         根据描述得到相似度字典
     """
-    topic_id2sentence_ids2vec2d = defaultdict(dict)
-    topic_id2sentence_ids2vec1d = defaultdict(dict)
-    for topic_ids in all_topic_ids:
-        sentences_ids = topic_ids2sentence_ids[topic_ids]
-        sentences_ids = list(sentences_ids)
+    dim2topic_ids2sentence_ids2vector = defaultdict(lambda **arg: defaultdict(dict))
+    vectors = {}
+    for topic_id in all_topic_ids:
+        sentences_ids = list(topic_id2sentence_ids[topic_id])
         corpus = [set([str(w) for _i, w in enumerate(sentence_id) if _i % 3 != 1]) for sentence_id in sentences_ids]
-        # todo 需要学习，以及为何这里是id而不是name?
         dictionary = corpora.Dictionary(corpus)
         corpus = [dictionary.doc2bow(list(_item)) for _item in corpus]
         model = common.Model(corpus)
@@ -148,26 +149,18 @@ def get_sentence_id2vector(all_topic_ids, topic_ids2sentence_ids):
         for _i, _node_ids in enumerate(corpus):
             sentence_dist[_i] = 1 - sim_index[model[_node_ids]]
 
-        # s_dist太少了降维会失败，应该是函数的问题
-        # vec2d = mds(2, dist=s_dist)
-        # vec1d = mds(1, dist=s_dist)
-        # print(vec2d)
-        # vec2d /= mean_vectors(vec2d)
-        # vec1d /= mean_vectors(vec1d)
-        vec2d = multidimensional_scale(2, _dist=sentence_dist)
-        vec1d = multidimensional_scale(1, _dist=sentence_dist)
-
-        for _i, vec in enumerate(vec2d):
-            sentence = sentences_ids[_i]
-            topic_id2sentence_ids2vec2d[topic_ids][sentence] = vec2d[_i]
-            topic_id2sentence_ids2vec1d[topic_ids][sentence] = vec1d[_i]
-    return topic_id2sentence_ids2vec2d, topic_id2sentence_ids2vec1d
-    # model = common.Model
-
-    # _sentence_id2vector = {}
-    # for _sentence_id in all_sentence_ids:
-    #     _sentence = graph_id2string(_sentence_id)
-    #     _sentence_id2vector[_sentence_id] = model.infer_vector(_sentence)
+        # sentence_dist太少了降维会失败，应该是函数的问题
+        for _dim in num_dims:
+            vectors[_dim] = multidimensional_scale(_dim, _dist=sentence_dist)
+        for _i, sentence_id in enumerate(sentences_ids):
+            for _dim in num_dims:
+                # topic_id2sentence_ids2vector = dim2topic_ids2sentence_ids2vector[_dim]
+                # sentence_id2vector = topic_id2sentence_ids2vector[topic_id]
+                # sentence_id2vector[sentence_id] = vectors[_dim][_i]
+                # topic_id2sentence_ids2vector[topic_id] = sentence_id2vector
+                # dim2topic_ids2sentence_ids2vector[_dim] = topic_id2sentence_ids2vector
+                dim2topic_ids2sentence_ids2vector[_dim][topic_id][sentence_id] = vectors[_dim][_i]
+    return dim2topic_ids2sentence_ids2vector
 
 
 """
@@ -178,7 +171,7 @@ Topic
 
 
 def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_id2sentence_ids, num_persons,
-                   num_sentences, max_topic=10, populate_ratio=0.3):
+                   num_sentences, min_sentences=5, max_topic=15, populate_ratio=0.4):
     """根据相关的人和描述，得到所有有关的topic， topic其实就是node_name
 
     Parameters
@@ -191,8 +184,10 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
         描述的id及其对应的person_id
     node_id2sentence_ids: dict{int: list(list(int))}
         node_id 里所有的描述
-    num_person: int
+    num_persons: int
         所有相关人的人数
+    num_sentences: int
+    min_sentences: int
     max_topic: int
         最多多少个topic
     populate_ratio: float
@@ -219,30 +214,38 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
             if is_need:
                 popular_node_ids.append(_id)
         popular_node_ids = popular_node_ids[:max_topic]
-        # topic_ids = []
+
         for _node_id in popular_node_ids:
             topic_id = (_node_id,)
             sentence_ids = node_id2sentence_ids[_node_id]
             person_ids = set([sentence_id2person_id[_sentence_id] for _sentence_id in sentence_ids])
-            if len(person_ids) > num_persons * populate_ratio:  # 剃掉那些不算不上群体的
-                # topic_ids.append(topic_id)
-                all_topic_ids.add(topic_id)
+            if len(person_ids) > num_persons * populate_ratio and len(sentence_ids) > min_sentences:  # 剃掉那些不算不上群体的
                 topic_id2sentence_ids[topic_id] = sentence_ids  # 小圆点
                 topic_id2person_ids[topic_id] = person_ids
-        # all_topic_ids += topic_ids
+                all_topic_ids.add(topic_id)
+
     topic_ids2sentence_ids, topic_ids2person_ids, all_topic_ids = _topic_id2topic_ids(all_topic_ids,
                                                                                       topic_id2sentence_ids,
                                                                                       topic_id2person_ids, num_persons,
-                                                                                      num_sentences, populate_ratio)
+                                                                                      num_sentences, min_sentences,
+                                                                                      populate_ratio)
+    # topic_ids2sentence_ids, topic_ids2person_ids, all_topic_ids = _topic_id2topic_ids2(all_topic_ids,
+    #                                                                                    topic_id2sentence_ids,
+    #                                                                                    topic_id2person_ids, num_persons,
+    #                                                                                    num_sentences, min_sentences,
+    #                                                                                    populate_ratio,
+    #                                                                                    sentence_id2person_id)
+    print('总topic数量:{}'.format(len(all_topic_ids)))
     return topic_ids2person_ids, topic_ids2sentence_ids, all_topic_ids
 
 
 def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_ids, num_persons, num_sentences,
-                        populate_ratio):
-    i = 0  # todo 最新更新
+                        min_sentences, populate_ratio):
+    i = 0
     while True:
         no_used_topic = set()
         new_topic_ids = set()
+        remove_topic_ids = set()
         for topic_id1 in all_topic_ids:
             for topic_id2 in all_topic_ids:
                 if topic_id1 == topic_id2:
@@ -259,23 +262,106 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_id
                 if len(person_ids) == 0:
                     no_used_topic.add(new_topic_id)
                     continue
-                topic_id2sentence_ids[new_topic_id] = sentence_ids
-                topic_id2person_ids[new_topic_id] = person_ids
-                support_persons = len(topic_id2person_ids[new_topic_id]) / num_persons
-
-                # support_t1 = len(topic_id2sentence_ids[topic_id1]) / num_sentences
-                # support_t2 = len(topic_id2sentence_ids[topic_id2]) / num_sentences
-                # lift_v = len(topic_id2sentence_ids[new_topic_id]) / num_sentences / support_t1 / support_t2
-
-                if support_persons > populate_ratio:
+                support_persons = len(person_ids) / num_persons
+                support_topic1 = len(topic_id2sentence_ids[topic_id1]) / num_sentences
+                support_topic2 = len(topic_id2sentence_ids[topic_id2]) / num_sentences
+                # lift_v = len(topic_id2sentence_ids[new_topic_id]) / num_sentences / support_topic1 / support_topic2
+                if populate_ratio < support_persons and len(sentence_ids) > min_sentences:
+                    # 把可以合并的子序列删去
                     new_topic_ids.add(new_topic_id)
+                    topic_id2person_ids[new_topic_id] = person_ids
+                    topic_id2sentence_ids[new_topic_id] = sentence_ids
+                    if support_persons > 0.9 * support_topic1:
+                        remove_topic_ids.add(topic_id1)
+                    if support_persons > 0.9 * support_topic2:
+                        remove_topic_ids.add(topic_id2)
                 else:
                     no_used_topic.add(new_topic_id)
+
         i += 1
-        print('循环次数:{}, 新增topic数量:{}'.format(i, len(new_topic_ids)))
+        print('循环次数:{}, 新增topic数量:{}, 删除topic数量:{}'.format(i, len(new_topic_ids), len(remove_topic_ids)))
+        all_topic_ids.update(new_topic_ids)
+        for topic_id in remove_topic_ids:
+            all_topic_ids.remove(topic_id)
         if len(new_topic_ids) == 0:
             break
-        all_topic_ids.update(new_topic_ids)
+    removed_topic_ids = set(topic_id2sentence_ids.keys())
+    removed_topic_ids.difference_update(all_topic_ids)
+    for _id in remove_topic_ids:
+        topic_id2sentence_ids.pop(_id)
+        topic_id2person_ids.pop(_id)
+    return topic_id2sentence_ids, topic_id2person_ids, all_topic_ids
+
+
+def _topic_id2topic_ids2(all_topic_ids, topic_id2sentence_ids, topic_id2person_ids, num_persons, num_sentences,
+                         min_sentences, populate_ratio, sentence_id2person_id):
+    # 学长的实现方式
+    def intersect(set_a, set_b):
+        return set([elm for elm in set_a if elm in set_b])
+
+    def addInverseIndexValue(topic):
+        has_topic_index = None
+        # 其实可以再优化的, 但估计不是性能瓶颈
+        for sub_topic in topic:
+            sub_topic = (sub_topic,)
+            if has_topic_index is None:
+                has_topic_index = topic_id2sentence_ids[sub_topic]
+                continue
+            has_topic_index = intersect(has_topic_index, topic_id2sentence_ids[sub_topic])
+        topic_id2sentence_ids[topic] = has_topic_index
+
+    def addInverseIndexP(topic):
+        has_topic_sentences = topic_id2sentence_ids[topic]
+        has_topic_p = set()
+        for sentence in has_topic_sentences:
+            pid = sentence_id2person_id[sentence]
+            has_topic_p.add(pid)
+        topic_id2person_ids[topic] = has_topic_p
+
+    def sortTopic(topic):
+        topic = sorted(list(set(topic)))
+        return tuple(topic)
+
+    all_topic_ids = set(all_topic_ids)
+    _i = 0
+    while True:
+        has_not_add = True
+
+        temp_all_topics = copy.deepcopy(all_topic_ids)
+        for topic1 in all_topic_ids:
+            for topic2 in all_topic_ids:
+                if topic1 == topic2:
+                    continue
+                new_topic = list(topic1) + list(topic2)
+                new_topic = sortTopic(new_topic)
+                new_topic = tuple(new_topic)
+                if new_topic in all_topic_ids:
+                    continue
+
+                addInverseIndexValue(new_topic)
+                addInverseIndexP(new_topic)
+
+                support_p = len(topic_id2person_ids[new_topic]) / num_persons
+
+                support_t1 = len(topic_id2sentence_ids[topic1]) / num_sentences
+                support_t2 = len(topic_id2sentence_ids[topic2]) / num_sentences
+                lift_v = len(topic_id2sentence_ids[new_topic]) / num_sentences / support_t1 / support_t2
+
+                if support_p > populate_ratio:
+                    has_not_add = False
+                    temp_all_topics.add(new_topic)
+
+                    # 把可以合并的子序列删去
+                    if support_p > 0.9 * support_t1 and topic1 in temp_all_topics:
+                        # print('r')
+                        temp_all_topics.remove(topic1)
+                    if support_p > 0.9 * support_t2 and topic2 in temp_all_topics:
+                        temp_all_topics.remove(topic2)
+        _i += 1
+        print('循环次数:{}, 新增topic数量:{}'.format(_i, len(temp_all_topics) - len(all_topic_ids)))
+        all_topic_ids = temp_all_topics
+        if has_not_add:
+            break
     return topic_id2sentence_ids, topic_id2person_ids, all_topic_ids
 
 

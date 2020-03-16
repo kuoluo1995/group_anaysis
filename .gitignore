@@ -5,4 +5,5 @@
 *.model
 *.npy
 *.pyc
-*/__pychache__/
+.vscode
+__pychache__/

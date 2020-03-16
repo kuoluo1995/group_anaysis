@@ -4,8 +4,9 @@ from collections import defaultdict
 from services import common
 from services.tools.graph_tool import get_node_relevancy, get_graph_dict
 from services.tools import person_tool
+from services.tools.person_tool import get_all_similar_person
+from services.tools.pruning_tool import lrs
 from services.tools.sentence_topic_tool import get_sentence_dict, get_sentence_id2vector, get_topic_pmi, get_topic_dict
-from tools.sort_utils import sort_dict2list, LRS
 
 
 def get_init_ranges():
@@ -164,7 +165,7 @@ def get_address_by_person_ids(person_ids):
     return address
 
 
-def get_topics_by_person_ids(person_ids, random_epoch=100, max_topic=15, populate_ratio=0.3):
+def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, populate_ratio=0.4):
     """根据人的id查询所有的topic
 
     Notes
@@ -204,29 +205,33 @@ def get_topics_by_person_ids(person_ids, random_epoch=100, max_topic=15, populat
 
     person_id2sentence_ids, sentence_id2person_id, all_sentence_ids = get_sentence_dict(person_ids,
                                                                                         random_epoch=random_epoch)
-    # todo word_id_count
+
     node_label2ids, node_id2relevancy, node_id2sentence_ids = get_node_relevancy(person_id2sentence_ids)
 
     topic_ids2person_ids, topic_ids2sentence_ids, all_topic_ids = get_topic_dict(node_label2ids, node_id2relevancy,
                                                                                  sentence_id2person_id,
                                                                                  node_id2sentence_ids, len(person_ids),
                                                                                  len(all_sentence_ids),
+                                                                                 min_sentences=10,
                                                                                  max_topic=max_topic,
                                                                                  populate_ratio=populate_ratio)
 
     # sentence_id2vector
-    topic_id2sentence_id2vector2d, topic_id2sentence_id2vector1d = get_sentence_id2vector(all_topic_ids,
-                                                                                          topic_ids2sentence_ids)
-
-    person_id2position2d = person_tool.get_person_id2position2d(topic_id2sentence_id2vector2d, person_id2sentence_ids,
-                                                                num_dim=2)
+    dim2topic_id2sentence_ids2vector = get_sentence_id2vector(all_topic_ids, topic_ids2sentence_ids, num_dims=[1, 5])
+    # todo:这里还要有个topic的权重
+    person_id2position2d = person_tool.get_person_id2vector2d(dim2topic_id2sentence_ids2vector[5],
+                                                              person_id2sentence_ids, num_dim=5)
 
     topic_pmi = get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_ids2sentence_ids, len(all_sentence_ids))
 
     node_dict, edge_dict = get_graph_dict(all_sentence_ids)
+
+    topic_id2lrs = {_id: lrs(_id, person_ids) for _id in all_topic_ids}  # siwei: 这个以后也要发给前端
+    similar_person_ids = get_all_similar_person(person_ids, topic_id2lrs)
     GRAPH_DAO.close_connect()
 
-    return all_topic_ids, topic_id2sentence_id2vector1d, topic_pmi, person_id2position2d, node_dict, edge_dict
+    return all_topic_ids, dim2topic_id2sentence_ids2vector[
+        1], topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids
 
 
 def get_community_by_num_node_links(num_node, links):
@@ -254,22 +259,3 @@ def get_community_by_num_node_links(num_node, links):
     partition = cylouvain.best_partition(graph)
     # partition = None  # 暂时注释掉
     return partition
-
-
-def get_all_similar_person(person_ids, all_topic_ids, N=20):
-    GRAPH_DAO = common.GRAPH_DAO
-    GRAPH_DAO.start_connect()
-    topic_id2lrs = {}  # siwei: 这个以后也要发给前端
-    for topic_id in all_topic_ids:
-        topic_id2lrs[topic_id] = LRS(topic_id, person_ids)
-    # siwei: 找到所有相似的人, 要做成一个接口
-    person_id2num_topic = defaultdict(int)
-    for topic_id in all_topic_ids:
-        has_topic_person_ids = person_tool.get_person_ids_by_topic_id(topic_id)
-        for _id in has_topic_person_ids:
-            if _id in person_ids:
-                continue
-            person_id2num_topic[_id] += topic_id2lrs[topic_id]
-    similar_person_ids = [_id for _id, _ in sort_dict2list(person_id2num_topic, N=N)]
-    GRAPH_DAO.close_connect()
-    return topic_id2lrs, similar_person_ids

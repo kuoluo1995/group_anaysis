@@ -2,10 +2,15 @@ import json
 import sqlite3
 import threading
 import time
+from collections import defaultdict
+
 import networkx as nx
 from pathlib import Path
 
 from py2neo import Graph
+
+from services import common
+from services.tools.sentence_topic_tool import get_sentence_dict
 
 ip = 'bolt://localhost:7687'
 username = 'neo4j'
@@ -75,7 +80,8 @@ def get_whole_graph():
     rel2data = {}
     # multiThreadLoad(loadEdges, 3)
     # multiThreadLoad(loadNodes, 3)
-    multiThreadLoad(loadEdges, 55)
+    multiThreadLoad(loadEdges, 60)
+    print('所有边加载完')
     multiThreadLoad(loadNodes, 14)
     print('所有的点数量:{};所有的边数量{}'.format(graph.number_of_nodes(), graph.number_of_edges()))
     return graph, node2data, rel2data
@@ -112,7 +118,12 @@ def save2sqlite(graph, node2data, rel2data, db_path):
                     data TEXT NOT NULL
                 );
             ''')
-
+    c.execute('''CREATE TABLE node2person2count
+                (
+                    node_id BIGINT PRIMARY KEY,
+                    person_id2count TEXT NOT NULL
+                );
+            ''')
     # 还要加个name的
     c.execute('''CREATE INDEX source_index ON graph (source)''')
     c.execute('''CREATE INDEX target_index ON graph (target)''')
@@ -139,24 +150,39 @@ def save2sqlite(graph, node2data, rel2data, db_path):
     print('graph is save')
 
 
-# def async(f):
-#     def wrapper(*args, **kwargs):
-#         thr = threading.Thread(target=f, args=args, kwargs=kwargs)
-#         thr.start()
-#
-#     return wrapper
-#
-#
-# @async
-# def start_neo4j():
-#     os.system('nohup neo4j.bat console')
+def insert_node2person2count(db_path):
+    # 建立反向查询表
+    GRAPH_DAO = common.GRAPH_DAO
+    NodeLabels = common.NodeLabels
+    GRAPH_DAO.start_connect()
+    node_id2person_ids = defaultdict(lambda **arg: defaultdict(int))
+    person_ids = GRAPH_DAO.get_node_ids_by_label(NodeLabels['person'])
+    num_persons = len(person_ids)
+    for _i, person_id in enumerate(person_ids):
+        if (_i + 1) % 1000 == 0:
+            print('{}/{}'.format(_i + 1, num_persons))
+        person_id2sentence_ids, _, _ = get_sentence_dict([person_id], random_epoch=1000)
+        sentence_ids = person_id2sentence_ids[person_id]
+        if len(sentence_ids) < 10:
+            continue
+        for sentence_id in sentence_ids:
+            node_ids = set([word_id for _j, word_id in enumerate(sentence_id) if _j % 3 != 1])
+            for node_id in node_ids:
+                node_id2person_ids[node_id][person_id] += 1
+    GRAPH_DAO.close_connect()
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+    for node_id, person_id2count in node_id2person_ids.items():
+        c.execute("INSERT INTO node2person2count VALUES (?,?)", (int(node_id), json.dumps(person_id2count)))
+    conn.commit()
 
 
 if __name__ == "__main__":
     # start_neo4j()  # 开启neo4j数据库
     # time.sleep(1000)  # 等待彻底开启完毕
     whole_g, node2data, rel2data = get_whole_graph()
-    sql_dataset = Path('./graph.db')
+    sql_dataset = Path('./dataset/graph3.db')
     if sql_dataset.exists():
         sql_dataset.unlink()
     save2sqlite(whole_g, node2data, rel2data, str(sql_dataset))
+    insert_node2person2count(str(sql_dataset))

@@ -1,12 +1,10 @@
 import json
-
-import gc
 from django.http import HttpResponse
 from django.shortcuts import render
 
 from services import common
 from services.service import get_ranges_by_name, get_topics_by_person_ids, get_person_by_ranges, get_init_ranges, \
-    get_address_by_person_ids, get_community_by_num_node_links
+    get_address_by_person_ids, get_community_by_num_node_links, get_all_similar_person
 
 
 def init_ranges(request):
@@ -46,7 +44,7 @@ def search_person_by_ranges(request):
     request.encoding = 'utf-8'
     result = {'is_success': False}
     dynasty_ids = min_year = max_year = is_female = statu_ids = None
-    if 'dynasty_ids[]' in request.POST and request.POST['dynasty_ids[]'] and len(request.POST['dynasty_ids[]']) > 0:
+    if 'dynasty_ids[]' in request.POST and request.POST['dynasty_ids[]']:
         dynasty_ids = request.POST.getlist('dynasty_ids[]')
     if 'min_year' in request.POST and request.POST['min_year']:
         min_year = request.POST['min_year']
@@ -54,7 +52,7 @@ def search_person_by_ranges(request):
         max_year = request.POST['max_year']
     if 'genders[]' in request.POST and request.POST['genders[]'] and len(request.POST['genders[]']) == 1:
         is_female = (request.POST.getlist('genders[]')[0] == '女')
-    if 'statu_ids[]' in request.POST and request.POST['statu_ids[]'] and len(request.POST['statu_ids[]']) > 0:
+    if 'statu_ids[]' in request.POST and request.POST['statu_ids[]']:
         statu_ids = request.POST.getlist('statu_ids[]')
     try:
         person = get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids)
@@ -71,7 +69,7 @@ def search_address_by_person_ids(request):
     NodeLabels = common.NodeLabels
     request.encoding = 'utf-8'
     result = {'is_success': False}
-    if 'person_ids[]' in request.POST and request.POST['person_ids[]'] and len(request.POST['person_ids[]']) > 0:
+    if 'person_ids[]' in request.POST and request.POST['person_ids[]']:
         person_ids = request.POST.getlist('person_ids[]')
         try:
             address = get_address_by_person_ids(person_ids)
@@ -86,41 +84,43 @@ def search_address_by_person_ids(request):
 def search_topics_by_person_ids(request):
     request.encoding = 'utf-8'
     result = {'is_success': False}
-    if 'person_ids[]' in request.POST and request.POST['person_ids[]'] and len(request.POST['person_ids[]']) > 0:
+    if 'person_ids[]' in request.POST and request.POST['person_ids[]']:
         person_ids = request.POST.getlist('person_ids[]')
         try:
             person_ids = [int(_id) for _id in person_ids]
-            all_topic_ids, label2topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_pmi, person_id2position2d, node_dict, edge_dict = get_topics_by_person_ids(
-                person_ids)
-            # todo 未来可以考虑去掉？可以通过topic2sentence_positions来获取？
-            result['all_topic_ids'] = [int(_id) for _id in all_topic_ids]
-            label2topic_ids_json = {}
-            for _label, _ids in label2topic_ids.items():
-                label2topic_ids_json[_label] = [int(_id) for _id in _ids]
-            result['label2topic_ids'] = label2topic_ids_json
+            all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids = get_topics_by_person_ids(
+                person_ids, max_topic=15)
+            result['all_topic_ids'] = [[int(_id) for _id in _ids] for _ids in all_topic_ids]
             topic_id2sentence_id2position1d_json = {}
             for _topic_id, _item in topic_id2sentence_id2position1d.items():
-                topic_id2sentence_id2position1d_json[int(_topic_id)] = {}
+                _topic_id = [str(_id) for _id in _topic_id]
+                _topic_id = ' '.join(_topic_id)
+                topic_id2sentence_id2position1d_json[_topic_id] = {}
                 for _sentence_id, _value in _item.items():
                     _sentence = [str(_id) for _id in _sentence_id]
                     _sentence = ' '.join(_sentence)
-                    topic_id2sentence_id2position1d_json[int(_topic_id)][_sentence] = _value
+                    topic_id2sentence_id2position1d_json[_topic_id][_sentence] = _value[0]
             result['topic_id2sentence_id2position1d'] = topic_id2sentence_id2position1d_json
             topic_pmi_json = {}
-            for _x, _item in topic_pmi.items():
-                topic_pmi_json[int(_x)] = {}
-                for _y, _pmi in _item.items():
-                    topic_pmi_json[int(_x)][int(_y)] = _pmi
+            for _xs, _item in topic_pmi.items():
+                _xs = [str(_id) for _id in _xs]
+                _xs = ' '.join(_xs)
+                topic_pmi_json[_xs] = {}
+                for _ys, _pmi in _item.items():
+                    _ys = [str(_id) for _id in _ys]
+                    _ys = ' '.join(_ys)
+                    topic_pmi_json[_xs][_ys] = _pmi
             result['topic_pmi'] = topic_pmi_json
-            person_pmi_json = {}
-            for _x, _item in person_pmi.items():
-                person_pmi_json[int(_x)] = {}
-                for _y, _pmi in _item.items():
-                    person_pmi_json[int(_x)][int(_y)] = _pmi
-            result['person_pmi'] = person_pmi_json
             result['person_id2position2d'] = person_id2position2d
             result['node_dict'] = node_dict
             result['edge_dict'] = edge_dict
+            topic_id2lrs_json = {}
+            for _topic_id, _lrs in topic_id2lrs.items():
+                _topic_id = [str(_id) for _id in _topic_id]
+                _topic_id = ' '.join(_topic_id)
+                topic_id2lrs_json[_topic_id] = _lrs
+            result['topic_id2lrs'] = topic_id2lrs_json
+            result['similar_person_ids'] = similar_person_ids
             result['is_success'] = True
         except Exception as e:
             result['bug'] = '发给后端调试问题。输入为 person_ids:{}'.format(person_ids)

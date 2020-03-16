@@ -1,5 +1,5 @@
+import json
 import timeit
-
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -26,12 +26,12 @@ if __name__ == '__main__':
     start = timeit.default_timer()
     ranges = get_ranges_by_name(labels, '王安石')
     print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
-    start = timeit.default_timer()
-    person = get_person_by_ranges([575], 980, 1120, False, [633480])
-    print('查询范围内的所有人耗时:{}'.format(timeit.default_timer() - start))
-    start = timeit.default_timer()
-    address = get_address_by_person_ids(person.keys())
-    print('查询地址耗时:{}'.format(timeit.default_timer() - start))
+    # start = timeit.default_timer()
+    # person = get_person_by_ranges([575], 980, 1120, False, [633480])
+    # print('查询范围内的所有人耗时:{}'.format(timeit.default_timer() - start))
+    # start = timeit.default_timer()
+    # address = get_address_by_person_ids(person.keys())
+    # print('查询地址耗时:{}'.format(timeit.default_timer() - start))
     GRAPH_DAO.start_connect()
     start = timeit.default_timer()
     person_id2relation = {_id: len(GRAPH_DAO.get_in_edges(_id) + GRAPH_DAO.get_out_edges(_id)) for _id in
@@ -39,40 +39,28 @@ if __name__ == '__main__':
     print('查询所有人的相关性:{}'.format(timeit.default_timer() - start))
     GRAPH_DAO.close_connect()
 
-    person_id2relation = sort_dict2list(person_id2relation)[:15]
+    person_id2relation = sort_dict2list(person_id2relation)[:30]
     person_ids = [_id[0] for _id in person_id2relation]
 
     start = timeit.default_timer()
-    all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict = get_topics_by_person_ids(
-        person_ids)
+    all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids = get_topics_by_person_ids(
+        person_ids, 100)
     print('查询所有topic的相关性:{}'.format(timeit.default_timer() - start))
-    start = timeit.default_timer()
-    topic_id2lrs, similar_person_ids = get_all_similar_person(person_ids, all_topic_ids)
-    print('查询所有相关的人:{}'.format(timeit.default_timer() - start))
     # topic 相似矩阵
     pmi_names = list()
     _len = len(topic_pmi)
     _matrix = np.zeros((_len, _len))
-    for i, x_id in enumerate(topic_pmi):
-        pmi_names.append(node_dict[x_id]['name'])
-        for j, y_id in enumerate(topic_pmi):
-            _matrix[i][j] = topic_pmi[x_id][y_id]
+    for i, x_ids in enumerate(topic_pmi):
+        topic_names = list()
+        for t_id in x_ids:
+            topic_names.append(node_dict[t_id]['name'])
+        pmi_names.append(' '.join(topic_names))
+        for j, y_ids in enumerate(topic_pmi):
+            _matrix[i][j] = topic_pmi[x_ids][y_ids]
     plt.matshow(_matrix)
     plt.xticks(list(range(_len)), pmi_names)
     plt.yticks(list(range(_len)), pmi_names)
     plt.show()
-    # # person 相似矩阵
-    # pmi_names = list()
-    # _len = len(person_pmi)
-    # _matrix = np.zeros((_len, _len))
-    # for i, x_id in enumerate(person_pmi):
-    #     pmi_names.append(node_dict[x_id]['name'])
-    #     for j, y_id in enumerate(person_pmi):
-    #         _matrix[i][j] = person_pmi[x_id][y_id]
-    # plt.matshow(_matrix)
-    # plt.xticks(list(range(_len)), pmi_names)
-    # plt.yticks(list(range(_len)), pmi_names)
-    # plt.show()
     # topic散点图
     for _topic_id, _sentences_id2position1d in topic_id2sentence_id2position1d.items():
         num_sentence = len(_sentences_id2position1d.keys())
@@ -84,13 +72,13 @@ if __name__ == '__main__':
             _index += 1
         plt.scatter(np.zeros(num_sentence), position1d, alpha=0.5, c=colors)
         for _sentence_id, _pos1d in _sentences_id2position1d.items():
-            sentence = ''  # 描述
+            sentence = list()  # 描述
             for i, _id in enumerate(_sentence_id):
                 if i % 3 == 0 or i % 3 == 2:
-                    sentence += ' ' + node_dict[_id]['name']
+                    sentence.append(node_dict[_id]['name'])
                 else:
-                    sentence += ' ' + edge_dict[_id]['name']
-            plt.text(0, _pos1d, sentence, fontsize=5)
+                    sentence.append(edge_dict[_id]['name'])
+            plt.text(0, _pos1d, ' '.join(sentence), fontsize=5)
         plt.show()
 
     # 人物散点图

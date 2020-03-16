@@ -1,6 +1,10 @@
 # 更新 2020/3/4
 1. 换了计算节点相关度的计算方式
-2. 添加了相似人物推荐的算法(findAllSimPeople函数)，在数据库中添加了新的对应的倒排索引, 新的数据库位置 [https://pan.baidu.com/s/1RIQ-jv0Ba18gl6Ke2HFEYQ](https://pan.baidu.com/s/1RIQ-jv0Ba18gl6Ke2HFEYQ) 提取码:kp9j
+2. 添加了相似人物推荐的算法(findAllSimPeople函数)，在数据库中添加了新的对应的倒排索引, 新的数据库位置
+
+        链接：https://pan.baidu.com/s/1jSYAhKd9-ikEZbzm7lx2nA 
+        提取码：f9a7
+
 3. 添加LRS(LRS函数)，表示topic在群体中和总体中的区分度,
 4. 修改了描述的降维方式，改为了tf-idf,现在不需要加载原先训练好的模型了
 

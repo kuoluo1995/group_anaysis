@@ -4,4 +4,3 @@ networkx
 py2neo
 pyyaml
 cylouvain
-scikit-learn

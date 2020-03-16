@@ -21,6 +21,14 @@ node:
     status: 'Status'  # 社会区分
     text: 'Text'  # 写作的内容
     year: 'Year'
+
+    # siwei
+    nian_hao: 'Nianhao'
+    role: 'Role'
+    inst: 'Inst'
+    assoc_type: 'AssocType'
+    inst_type: 'InstType'
+    
 edge:
     address_belong: 'AddrBelong'  # 属于哪个行政区
     address_associate_is: 'AddrAssocIs'
@@ -43,3 +51,11 @@ edge:
     text_is: 'TextIs'  # 是否写作
     topic_is: 'TopicIs'
     where: 'Where'
+
+    # siwei:
+    nian_hao_is: 'NianhaoIs'
+    next: 'Next'
+    inst_belong: 'InstBelong'
+    occa_is: 'OccaIs'
+    when: 'When'
+    assoc_is: 'AssocIs'
