@@ -121,8 +121,8 @@ class GraphDAO(SqliteDAO):
     # siwei: 找到描述中包含节点的人(必须是总描述数量超过10个的人)
     def get_person_ids_by_node_id(self, node_id):
         if node_id not in self.node_id2has_topic_person_cache:
-            # sql_str = '''SELECT person_id2count FROM node2person2count WHERE node_id = ?'''
-            sql_str = '''SELECT pids FROM reverse_index_person_5 WHERE name = ?'''
+            sql_str = '''SELECT person_id2count FROM node2person2count WHERE node_id = ?'''
+            # sql_str = '''SELECT pids FROM reverse_index_person_5 WHERE name = ?'''
             rows = self._select(sql_str, ['person_id2count'], (node_id,))
             if len(rows) == 0:
                 print(node_id, self.get_node_name_by_id(node_id), '没有对应的person_id2count')
@@ -136,7 +136,6 @@ class GraphDAO(SqliteDAO):
         return self.node_id2has_topic_person_cache[node_id]
 
     def get_edge_label_by_id(self, edge_id):
-        # edge_id = int(edge_id)
         if edge_id not in self.edge_label_cache:
             sql_str = '''SELECT label, name, en_name FROM rel2data WHERE id = ?'''
             rows = self._select(sql_str, ['label', 'name', 'en_name'], (edge_id,))
@@ -148,7 +147,6 @@ class GraphDAO(SqliteDAO):
         return self.edge_label_cache[edge_id]
 
     def get_edge_name_by_id(self, edge_id):
-        # edge_id = int(edge_id)
         if edge_id not in self.edge_label_cache:
             sql_str = '''SELECT label, name, en_name FROM rel2data WHERE id = ?'''
             rows = self._select(sql_str, ['label', 'name', 'en_name'], (edge_id,))
@@ -160,7 +158,6 @@ class GraphDAO(SqliteDAO):
         return self.edge_name_cache[edge_id]
 
     def get_edge_en_name_by_id(self, edge_id):
-        # edge_id = int(edge_id)
         if edge_id not in self.edge_label_cache:
             sql_str = '''SELECT label, name, en_name FROM rel2data WHERE id = ?'''
             rows = self._select(sql_str, ['label', 'name', 'en_name'], (edge_id,))
@@ -172,11 +169,8 @@ class GraphDAO(SqliteDAO):
         return self.edge_en_name_cache[edge_id]
 
     def get_in_edges(self, target_id):
-        # target_id = int(target_id)
         if target_id not in self.in_edge_cache:
             rows = self._select('''SELECT source, r_id FROM graph WHERE target = ?''', ['source', 'r_id'], (target_id,))
-            # rows = [{'source_id': int(row['source']), 'target_id': target_id, 'edge_id': int(row['r_id'])} for row in
-            #         rows]
             rows = [(int(row['source']), target_id, int(row['r_id'])) for row in rows]  # 减小内存消耗
             if not self.use_cache:
                 return rows
@@ -184,7 +178,6 @@ class GraphDAO(SqliteDAO):
         return self.in_edge_cache[target_id]
 
     def get_out_edges(self, source_id):
-        # source_id = int(source_id)
         if source_id not in self.out_edge_cache:
             rows = self._select('''SELECT target, r_id FROM graph WHERE source = ?''', ['target', 'r_id'], (source_id,))
             rows = [(source_id, int(row['target']), int(row['r_id'])) for row in rows]
@@ -195,7 +188,6 @@ class GraphDAO(SqliteDAO):
 
     def get_sub_graph(self, node_id, max_depth=3):  # 我的实现方式慢一些，可能由于Queue这里线程安全的缘故？
         start = timeit.default_timer()
-        # node_id = int(node_id)
         node_queue = queue.Queue()  # 宽度搜索
         node_queue.put({'node_id': node_id, 'depth': 0})
         used_nodes = set()  # stack

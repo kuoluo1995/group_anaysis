@@ -181,7 +181,7 @@ if __name__ == "__main__":
     # start_neo4j()  # 开启neo4j数据库
     # time.sleep(1000)  # 等待彻底开启完毕
     whole_g, node2data, rel2data = get_whole_graph()
-    sql_dataset = Path('./dataset/graph3.db')
+    sql_dataset = Path('./dataset/graph.db')
     if sql_dataset.exists():
         sql_dataset.unlink()
     save2sqlite(whole_g, node2data, rel2data, str(sql_dataset))

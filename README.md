@@ -1,8 +1,14 @@
+# 更新 2020/3/16
+将上述算法融入到了后端中。并修改了新的数据库
+
+        链接：https://pan.baidu.com/s/1GNWBW2Aj4RpmmOQll7oTEg 
+        提取码：egkz
+
 # 更新 2020/3/4
 1. 换了计算节点相关度的计算方式
 2. 添加了相似人物推荐的算法(findAllSimPeople函数)，在数据库中添加了新的对应的倒排索引, 新的数据库位置
 
-        链接：https://pan.baidu.com/s/1jSYAhKd9-ikEZbzm7lx2nA 
+        链接：https://pan.baidu.com/s/1jSYAhKd9-ikEZbzm7lx2nA (废弃)
         提取码：f9a7
 
 3. 添加LRS(LRS函数)，表示topic在群体中和总体中的区分度,
