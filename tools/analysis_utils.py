@@ -28,6 +28,12 @@ def multidimensional_scale(num_component, data=None, _dist=None):
     diag_lamda = np.sqrt(np.diag(-np.sort(-lamda)[:num_component]))
     v_selected = v[:, index]
     z = v_selected.dot(diag_lamda)  # 点积
+    # 归一化
+    if num_component == 1:
+        z = np.array(z)
+        _min = z.min()
+        _max = z.max()
+        z = (z - _min) / (_max - _min)
     return z
 
 

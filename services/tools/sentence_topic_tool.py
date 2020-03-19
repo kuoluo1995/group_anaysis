@@ -194,11 +194,6 @@ def get_sentence_id2vector(all_topic_ids, topic_id2sentence_ids, num_dims):
             vectors[_dim] = multidimensional_scale(_dim, _dist=sentence_dist)
         for _i, sentence_id in enumerate(sentences_ids):
             for _dim in num_dims:
-                # topic_id2sentence_ids2vector = dim2topic_ids2sentence_ids2vector[_dim]
-                # sentence_id2vector = topic_id2sentence_ids2vector[topic_id]
-                # sentence_id2vector[sentence_id] = vectors[_dim][_i]
-                # topic_id2sentence_ids2vector[topic_id] = sentence_id2vector
-                # dim2topic_ids2sentence_ids2vector[_dim] = topic_id2sentence_ids2vector
                 dim2topic_ids2sentence_ids2vector[_dim][topic_id][sentence_id] = vectors[_dim][_i]
     return dim2topic_ids2sentence_ids2vector
 
