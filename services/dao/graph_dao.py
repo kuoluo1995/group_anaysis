@@ -16,12 +16,11 @@ class GraphDAO(SqliteDAO):
         self.node_id2en_name_cache = {}
         self.node_id2label_cache = {}
         self.node_label_code2id_cache = defaultdict(dict)
-
+        self.edge_id2label_cache = {}
+        self.edge_id2name_cache = {}
+        self.edge_id2en_name_cache = {}
         self.in_edge_cache = {}
         self.out_edge_cache = {}
-        self.edge_label_cache = {}
-        self.edge_name_cache = {}
-        self.edge_en_name_cache = {}
 
         self.node_id2has_topic_person_cache = {}
         if self.use_cache:  # todo 如果电脑性能允许的话，为了加快运行速度可以考虑提前载入数据
@@ -36,6 +35,12 @@ class GraphDAO(SqliteDAO):
             self.node_id2label_cache[int(cols['id'])] = str(cols['label'])
             self.node_id2name_cache[int(cols['id'])] = str(cols['name'])
             self.node_id2en_name_cache[int(cols['id'])] = str(cols['en_name'])
+        sql_str = '''SELECT id, label, name, en_name FROM rel2data'''
+        rows = self._select(sql_str, ['id', 'label', 'name', 'en_name'], ())
+        for cols in rows:
+            self.edge_id2label_cache[int(cols['id'])] = str(cols['label'])
+            self.edge_id2name_cache[int(cols['id'])] = str(cols['name'])
+            self.edge_id2en_name_cache[int(cols['id'])] = str(cols['en_name'])
 
     def get_node_ids_by_label_codes(self, node_label, node_codes):  # label里不包含年份，因为年份没有code
         if len(node_codes) > 0:
@@ -136,37 +141,43 @@ class GraphDAO(SqliteDAO):
         return self.node_id2has_topic_person_cache[node_id]
 
     def get_edge_label_by_id(self, edge_id):
-        if edge_id not in self.edge_label_cache:
+        if edge_id == -1:
+            return 'End'
+        if edge_id not in self.edge_id2label_cache:
             sql_str = '''SELECT label, name, en_name FROM rel2data WHERE id = ?'''
             rows = self._select(sql_str, ['label', 'name', 'en_name'], (edge_id,))
             if not self.use_cache:
                 return str(rows[0]['label'])
-            self.edge_label_cache[edge_id] = str(rows[0]['label'])
-            self.edge_name_cache[edge_id] = str(rows[0]['name'])
-            self.edge_en_name_cache[edge_id] = str(rows[0]['en_name'])
-        return self.edge_label_cache[edge_id]
+            self.edge_id2label_cache[edge_id] = str(rows[0]['label'])
+            self.edge_id2name_cache[edge_id] = str(rows[0]['name'])
+            self.edge_id2en_name_cache[edge_id] = str(rows[0]['en_name'])
+        return self.edge_id2label_cache[edge_id]
 
     def get_edge_name_by_id(self, edge_id):
-        if edge_id not in self.edge_label_cache:
+        if edge_id == -1:
+            return '。'
+        if edge_id not in self.edge_id2name_cache:
             sql_str = '''SELECT label, name, en_name FROM rel2data WHERE id = ?'''
             rows = self._select(sql_str, ['label', 'name', 'en_name'], (edge_id,))
             if not self.use_cache:
                 return str(rows[0]['name'])
-            self.edge_label_cache[edge_id] = str(rows[0]['label'])
-            self.edge_name_cache[edge_id] = str(rows[0]['name'])
-            self.edge_en_name_cache[edge_id] = str(rows[0]['en_name'])
-        return self.edge_name_cache[edge_id]
+            self.edge_id2label_cache[edge_id] = str(rows[0]['label'])
+            self.edge_id2name_cache[edge_id] = str(rows[0]['name'])
+            self.edge_id2en_name_cache[edge_id] = str(rows[0]['en_name'])
+        return self.edge_id2name_cache[edge_id]
 
     def get_edge_en_name_by_id(self, edge_id):
-        if edge_id not in self.edge_label_cache:
+        if edge_id == -1:
+            return '.'
+        if edge_id not in self.edge_id2en_name_cache:
             sql_str = '''SELECT label, name, en_name FROM rel2data WHERE id = ?'''
             rows = self._select(sql_str, ['label', 'name', 'en_name'], (edge_id,))
             if not self.use_cache:
                 return str(rows[0]['en_name'])
-            self.edge_label_cache[edge_id] = str(rows[0]['label'])
-            self.edge_name_cache[edge_id] = str(rows[0]['name'])
-            self.edge_en_name_cache[edge_id] = str(rows[0]['en_name'])
-        return self.edge_en_name_cache[edge_id]
+            self.edge_id2label_cache[edge_id] = str(rows[0]['label'])
+            self.edge_id2name_cache[edge_id] = str(rows[0]['name'])
+            self.edge_id2en_name_cache[edge_id] = str(rows[0]['en_name'])
+        return self.edge_id2en_name_cache[edge_id]
 
     def get_in_edges(self, target_id):
         if target_id not in self.in_edge_cache:

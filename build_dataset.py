@@ -166,7 +166,7 @@ def insert_node2person2count(db_path):
         if len(sentence_ids) < 10:
             continue
         for sentence_id in sentence_ids:
-            node_ids = set([word_id for _j, word_id in enumerate(sentence_id) if _j % 3 != 1])
+            node_ids = set([word_id for _j, word_id in enumerate(sentence_id) if _j % 2 == 0])
             for node_id in node_ids:
                 node_id2person_ids[node_id][person_id] += 1
     GRAPH_DAO.close_connect()

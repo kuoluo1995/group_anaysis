@@ -17,4 +17,4 @@ GRAPH_DAO.close_connect()
 MetaPaths = build_meta_paths('./services/configs/meta_paths.yaml')
 # Model = models.Doc2Vec.load('./services/models/sentence2vec.model')
 Model = models.TfidfModel
-Model_DIM = 100  # 模型的num维度
+Model_DIM = 5  # 模型的num维度

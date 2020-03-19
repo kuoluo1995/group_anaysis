@@ -19,23 +19,24 @@ if __name__ == '__main__':
     GRAPH_DAO = common.GRAPH_DAO
     NodeLabels = common.NodeLabels
 
-    dynasties, status = get_init_ranges()
+    # dynasties, status = get_init_ranges()
 
     labels = [NodeLabels['person'], NodeLabels['dynasty'], NodeLabels['year'], NodeLabels['gender'],
               NodeLabels['status']]
     start = timeit.default_timer()
     ranges = get_ranges_by_name(labels, '王安石')
     print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
-    # start = timeit.default_timer()
-    # person = get_person_by_ranges([575], 980, 1120, False, [633480])
-    # print('查询范围内的所有人耗时:{}'.format(timeit.default_timer() - start))
+
+    start = timeit.default_timer()
+    person = get_person_by_ranges([575], 980, 1120, False, [633480])
+    print('查询范围内的所有人耗时:{}'.format(timeit.default_timer() - start))
     # start = timeit.default_timer()
     # address = get_address_by_person_ids(person.keys())
     # print('查询地址耗时:{}'.format(timeit.default_timer() - start))
     GRAPH_DAO.start_connect()
     start = timeit.default_timer()
-    person_id2relation = {_id: len(GRAPH_DAO.get_in_edges(_id) + GRAPH_DAO.get_out_edges(_id)) for _id in
-                          ranges[NodeLabels['person']]}
+    person_id2relation = {_id: len(GRAPH_DAO.get_in_edges(_id) + GRAPH_DAO.get_out_edges(_id)) for _id, _ in
+                          person.items()}
     print('查询所有人的相关性:{}'.format(timeit.default_timer() - start))
     GRAPH_DAO.close_connect()
 
@@ -74,7 +75,7 @@ if __name__ == '__main__':
         for _sentence_id, _pos1d in _sentences_id2position1d.items():
             sentence = list()  # 描述
             for i, _id in enumerate(_sentence_id):
-                if i % 3 == 0 or i % 3 == 2:
+                if i % 2 == 0:
                     sentence.append(node_dict[_id]['name'])
                 else:
                     sentence.append(edge_dict[_id]['name'])

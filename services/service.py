@@ -62,6 +62,9 @@ def get_ranges_by_name(labels, person_name):
         {node_label: {(node_id): {'name': 中文的名字(node_name), 'en_name': 英文名字(node_en_name)}}}
     """
     GRAPH_DAO = common.GRAPH_DAO
+    MetaPaths = common.MetaPaths
+    NodeLabels = common.NodeLabels
+    EdgeLabels = common.EdgeLabels
     GRAPH_DAO.start_connect()
     if person_name is None or type(person_name) != str or person_name == '':
         raise Exception('get_ranges_by_name({})'.format(person_name))
@@ -70,12 +73,27 @@ def get_ranges_by_name(labels, person_name):
     ranges = defaultdict(dict)
     for _id in person_ids:
         # sub_graph = GRAPH_DAO.get_sub_graph(_id, max_depth=3)
+        relation_tree = MetaPaths['关系'].build_path_tree(_id)
+        kin_tree = MetaPaths['亲属'].build_path_tree(_id)
+
         sub_graph = GRAPH_DAO.getSubGraph(_id, depth=3)
         for node_id in sub_graph.nodes():
             node_label = GRAPH_DAO.get_node_label_by_id(node_id)
             if node_label in labels:
                 ranges[node_label][node_id] = {'name': GRAPH_DAO.get_node_name_by_id(node_id),
                                                'en_name': GRAPH_DAO.get_node_en_name_by_id(node_id)}
+                if node_label == NodeLabels['person']:
+                    relation_id = relation_tree.get_node_id(NodeLabels['association'], node_id)
+                    if relation_id is not None:
+                        ranges[node_label][node_id]['relation'] = {'name': GRAPH_DAO.get_node_name_by_id(relation_id),
+                                                                   'en_name': GRAPH_DAO.get_node_en_name_by_id(
+                                                                       relation_id)}
+                        continue
+                    kin_id = kin_tree.get_edge_id(EdgeLabels['kin'], node_id)
+                    if kin_id is not None:
+                        ranges[node_label][node_id]['relation'] = {'name': GRAPH_DAO.get_edge_name_by_id(kin_id),
+                                                                   'en_name': GRAPH_DAO.get_edge_en_name_by_id(kin_id)}
+
     GRAPH_DAO.close_connect()
     return ranges
 

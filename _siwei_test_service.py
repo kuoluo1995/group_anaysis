@@ -113,7 +113,7 @@ if __name__ == '__main__':
         for _sentence_id, _pos1d in _sentences_id2position1d.items():
             sentence = ''  # 描述
             for i, _id in enumerate(_sentence_id):
-                if i % 3 == 0 or i % 3 == 2:
+                if i % 2 == 0:
                     sentence += node_dict[_id]['name']
                 else:
                     sentence += edge_dict[_id]['name']

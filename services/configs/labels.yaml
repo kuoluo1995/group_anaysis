@@ -1,7 +1,7 @@
 node:
     address: 'Addr'
     address_type: 'AddrType'
-    association: 'Association'
+    association: 'Association' # 关系
     associate_event: 'AssocEvent'  # 关联事件
     dynasty: 'Dynasty'
     entry: 'Entry'  # 入仕
@@ -28,12 +28,11 @@ node:
     inst: 'Inst'
     assoc_type: 'AssocType'
     inst_type: 'InstType'
-    
+
 edge:
     address_belong: 'AddrBelong'  # 属于哪个行政区
     address_associate_is: 'AddrAssocIs'
     associate_belong: 'AssocBelong'  # 关联属于
-    associate_is: 'AssocIs'
     do: 'Do'  # 做了什么官, 做了什么关联的事
     ethnicity_is: 'EthnicityIs'  # 是什么民族
     entry_belong: 'Entry_Belong'
@@ -41,6 +40,7 @@ edge:
     first_year: 'FirstYear'  # 任职的第一年
     gender_is: 'GenderIs'  # 是什么性别
     house_hold_is: 'HouseholdIs'  # 住址在哪
+    kin: 'Kin' # 亲属关系
     last_year: 'LastYear'  # 任职的最后一年
     note_is: 'NoteIs'
     occasion_is: 'OccaIs'

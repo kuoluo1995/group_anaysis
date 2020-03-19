@@ -84,7 +84,7 @@ def get_node_relevancy(person_id2sentence_ids):
         temp_node_ids = set()
         for sentence_id in sentence_ids:
             for _i, word_id in enumerate(sentence_id):
-                if _i % 3 == 1:
+                if _i % 2 == 1:  # 这是边
                     continue
                 temp_node_ids.add(word_id)
                 node_id2sentence_ids[word_id].add(sentence_id)
@@ -117,7 +117,7 @@ def graph_id2string(graph_ids):
     GRAPH_DAO = common.GRAPH_DAO
     sentence = list()
     for i, id_ in enumerate(graph_ids):
-        if i % 3 == 0 or i % 3 == 2:
+        if i % 2 == 0:
             sentence.append(GRAPH_DAO.get_node_name_by_id(id_))
         else:
             sentence.append(GRAPH_DAO.get_edge_name_by_id(id_))
@@ -186,7 +186,7 @@ def get_graph_dict(all_sentence_dict):
     edge_dict = {}
     for graph_id, _ in all_sentence_dict.items():
         for i, _id in enumerate(graph_id):
-            if i % 3 == 0 or i % 3 == 2:
+            if i % 2 == 0:
                 node_dict[_id] = {'name': GRAPH_DAO.get_node_name_by_id(_id),
                                   'label': GRAPH_DAO.get_node_label_by_id(_id),
                                   'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)}

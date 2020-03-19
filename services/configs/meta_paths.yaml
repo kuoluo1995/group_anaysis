@@ -10,7 +10,7 @@ global_nodes:
             -   office_belong:
                     office_type:
                         -   office_belong: office_type
-    
+
     year_node:
         year:
             -   nian_hao_is: nian_hao
@@ -56,7 +56,7 @@ paths:
                                     -   associate_belong:
                                             assoc_type:
                                                 -   assoc_is: assoc_type
-                        -   associate_is: person
+                        -   assoc_is: person
                         -   first_year: year_node
                         -   occasion_is: occasion
                         -   topic_is: scholar
@@ -85,5 +85,6 @@ paths:
                                                 -   entry_belong: entry_type
                         -   first_year: year_node
                         -   note_is: note
-
-
+    亲属:
+        person:
+            -   kin: person

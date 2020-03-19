@@ -1,4 +1,3 @@
-import gc
 import random
 
 from services import common
@@ -12,8 +11,8 @@ class MetaNode:
 
     def match(self, node_id):
         DAO = common.GRAPH_DAO
-
-        all_edges = []
+        all_nodes = {node_id}
+        tree = {node_id: []}
         node_label = DAO.get_node_label_by_id(node_id)
         if node_label != self.label:
             raise Exception(node_id, node_label, DAO.get_node_name_by_id(node_id), '不符合', self.label)
@@ -26,27 +25,91 @@ class MetaNode:
                               _target_id) == meta_node.label]
                 if len(_edges) == 0:
                     continue
-                target_id, edge_id = random.choice(_edges)  # 随机游走
-                # all_edges.append({'source_id': node_id, 'target_id': target_id, 'edge_id': edge_id})
-                all_edges.append((node_id, edge_id, target_id))
-                all_edges += meta_node.match(target_id)
-        return all_edges
-
-    def __str__(self):
-        _str = ' '
-        for next_node in self.next_nodes:
-            for edge_label, meta_node in next_node.items():
-                _str += self.label + '_' + edge_label + '_' + meta_node.label + ':' + str(meta_node) + ';'
-        return _str
+                # target_id, edge_id = random.choice(_edges)  # 随机游走
+                for target_id, edge_id in _edges:
+                    _sub_tree, _nodes = meta_node.match(target_id)
+                    all_nodes.update(_nodes)
+                    tree[node_id].append({'edge_id': edge_id, 'target_id': _sub_tree})
+        return tree, all_nodes
 
 
 class MetaPath:
     def __init__(self, name, start_node):
         self.name = name
         self.start_node = start_node
+        self.tree = None
+        self.used_up = False
+        self.node_cache = []
 
-    def match(self, node_id):
-        return self.start_node.match(node_id)
+    def build_path_tree(self, node_id):
+        self.tree, self.node_cache = self.start_node.match(node_id)
+        return self
+
+    def get_edge_id(self, edge_label, target_id):
+        GRAPH_DAO = common.GRAPH_DAO
+        if target_id in self.node_cache:
+            return None
+
+        def _visit_tree(sub_tree, edge_id=None):
+            for _node_id, _children in sub_tree.items():
+                if (edge_id is not None) or len(_children) == 0:
+                    return edge_id
+                for _child in _children:
+                    _label = GRAPH_DAO.get_edge_label_by_id(_child['edge_id'])
+                    if edge_label == _label:
+                        edge_id = _child['edge_id']
+                    edge_id = _visit_tree(_child['target_id'], edge_id)
+                return edge_id
+
+        edge_id = _visit_tree(self.tree)
+        return edge_id
+
+    def get_node_id(self, node_label, target_id):
+        GRAPH_DAO = common.GRAPH_DAO
+        if target_id in self.node_cache:
+            return None
+
+        def _visit_tree(sub_tree, node_id=None):
+            for _node_id, _children in sub_tree.items():
+                if (node_id is not None) or len(_children) == 0:
+                    return node_id
+                for _child in _children:
+                    _label = GRAPH_DAO.get_node_label_by_id(_node_id)
+                    if node_label == _label:
+                        node_id = _node_id
+                    node_id = _visit_tree(_child['target_id'], node_id)
+                return node_id
+
+        node_id = _visit_tree(self.tree)
+        return node_id
+
+    def random_pop(self):
+        if self.used_up or self.tree is None:
+            return None
+
+        def _visit_tree(_tree, self=self):
+            path = list()
+            for _node_id, _children in _tree.items():
+                if len(_children) == 0:
+                    path.append(_node_id)
+                    path.append(-1)  # 句号
+                    return path, None
+
+                path.append(_node_id)
+                sub_tree = random.choice(_children)
+                path.append(sub_tree['edge_id'])
+                _sub_path, new_children = _visit_tree(sub_tree['target_id'])
+                path.extend(_sub_path)
+                if new_children is None:
+                    _tree[_node_id].remove(sub_tree)
+                    return path, {_node_id: _tree[_node_id]} if len(_tree[_node_id]) > 0 else None
+                return path, {_node_id: _tree[_node_id]}
+
+        path, self.tree = _visit_tree(self.tree)
+        if self.tree is None:
+            self.used_up = True
+            return None
+        return path
 
 
 global_nodes = dict()
@@ -74,12 +137,10 @@ def build_meta_nodes(node_):
 
 def build_meta_paths(path):
     rules = yaml_utils.read(path)
-    # print(rules)
     # 先定义一些公共的点
     for _key, _item in rules['global_nodes'].items():
         global_nodes[_key] = build_meta_nodes(_item)
-    meta_paths = list()
+    meta_paths = {}
     for _key, _item in rules['paths'].items():
-        # print(_key)
-        meta_paths.append(MetaPath(_key, build_meta_nodes(_item)))
+        meta_paths[_key] = MetaPath(_key, build_meta_nodes(_item))
     return meta_paths
