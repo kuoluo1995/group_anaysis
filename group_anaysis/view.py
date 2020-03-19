@@ -88,7 +88,7 @@ def search_topics_by_person_ids(request):
         person_ids = request.POST.getlist('person_ids[]')
         try:
             person_ids = [int(_id) for _id in person_ids]
-            all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids = get_topics_by_person_ids(
+            all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids, all_sentence_dict = get_topics_by_person_ids(
                 person_ids, max_topic=15)
             result['all_topic_ids'] = [[int(_id) for _id in _ids] for _ids in all_topic_ids]
             topic_id2sentence_id2position1d_json = {}
@@ -121,6 +121,12 @@ def search_topics_by_person_ids(request):
                 topic_id2lrs_json[_topic_id] = _lrs
             result['topic_id2lrs'] = topic_id2lrs_json
             result['similar_person_ids'] = similar_person_ids
+            all_sentence_dict_json = {}
+            for _sentence_id, _name in all_sentence_dict.items():
+                _sentence_id = [str(_id) for _id in _sentence_id]
+                _sentence_id = ' '.join(_sentence_id)
+                all_sentence_dict_json[_sentence_id] = _name
+            result['all_sentence_dict'] = all_sentence_dict_json
             result['is_success'] = True
         except Exception as e:
             result['bug'] = '发给后端调试问题。输入为 person_ids:{}'.format(person_ids)

@@ -203,15 +203,15 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, popula
     GRAPH_DAO = common.GRAPH_DAO
     GRAPH_DAO.start_connect()
 
-    person_id2sentence_ids, sentence_id2person_id, all_sentence_ids = get_sentence_dict(person_ids,
-                                                                                        random_epoch=random_epoch)
+    person_id2sentence_ids, sentence_id2person_id, all_sentence_dict = get_sentence_dict(person_ids,
+                                                                                         random_epoch=random_epoch)
 
     node_label2ids, node_id2relevancy, node_id2sentence_ids = get_node_relevancy(person_id2sentence_ids)
 
     topic_ids2person_ids, topic_ids2sentence_ids, all_topic_ids = get_topic_dict(node_label2ids, node_id2relevancy,
                                                                                  sentence_id2person_id,
                                                                                  node_id2sentence_ids, len(person_ids),
-                                                                                 len(all_sentence_ids),
+                                                                                 len(all_sentence_dict),
                                                                                  min_sentences=10,
                                                                                  max_topic=max_topic,
                                                                                  populate_ratio=populate_ratio)
@@ -222,16 +222,16 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, popula
     person_id2position2d = person_tool.get_person_id2vector2d(dim2topic_id2sentence_ids2vector[5],
                                                               person_id2sentence_ids, num_dim=5)
 
-    topic_pmi = get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_ids2sentence_ids, len(all_sentence_ids))
+    topic_pmi = get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_ids2sentence_ids, len(all_sentence_dict))
 
-    node_dict, edge_dict = get_graph_dict(all_sentence_ids)
+    node_dict, edge_dict = get_graph_dict(all_sentence_dict)
 
     topic_id2lrs = {_id: lrs(_id, person_ids) for _id in all_topic_ids}  # siwei: 这个以后也要发给前端
     similar_person_ids = get_all_similar_person(person_ids, topic_id2lrs)
     GRAPH_DAO.close_connect()
 
     return all_topic_ids, dim2topic_id2sentence_ids2vector[
-        1], topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids
+        1], topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids, all_sentence_dict
 
 
 def get_community_by_num_node_links(num_node, links):

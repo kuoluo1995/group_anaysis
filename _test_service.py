@@ -43,7 +43,7 @@ if __name__ == '__main__':
     person_ids = [_id[0] for _id in person_id2relation]
 
     start = timeit.default_timer()
-    all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids = get_topics_by_person_ids(
+    all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids, all_sentence_dict = get_topics_by_person_ids(
         person_ids, 100)
     print('查询所有topic的相关性:{}'.format(timeit.default_timer() - start))
     # topic 相似矩阵

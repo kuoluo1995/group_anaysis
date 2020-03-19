@@ -160,7 +160,7 @@ def get_filtered_node(id_=None, name_=None, label_=None):
     return True, id_
 
 
-def get_graph_dict(all_graph_ids):
+def get_graph_dict(all_sentence_dict):
     """根据图id来得到图的字典，包括节点字典和边字典，为前端这里可以实现多语言化
     Notes
     ----------
@@ -168,7 +168,7 @@ def get_graph_dict(all_graph_ids):
 
     Parameters
     ----------
-    all_graph_ids: list(list())
+    all_sentence_dict: dict{list(int):string}
         all_graph_ids代表着所有的描述的id, 然后里面的每个item代表一句描述，描述是由三元数组组成的。
         node_id, edge_id, node_id 将这些所有的三元数组组合成列表。
 
@@ -184,7 +184,7 @@ def get_graph_dict(all_graph_ids):
 
     node_dict = {}
     edge_dict = {}
-    for graph_id in all_graph_ids:
+    for graph_id, _ in all_sentence_dict.items():
         for i, _id in enumerate(graph_id):
             if i % 3 == 0 or i % 3 == 2:
                 node_dict[_id] = {'name': GRAPH_DAO.get_node_name_by_id(_id),

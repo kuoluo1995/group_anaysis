@@ -20,6 +20,46 @@ Sentence 部分
 
 
 def get_sentence_dict(person_ids, random_epoch=100):
+    """根据人的id 遍历全部描述
+
+    Parameters
+    ----------
+    person_ids: list(int)
+        所有相关人的id
+    random_epoch: int
+        随机游走的迭代步数
+
+    Returns
+    -------
+    person_id2sentence_ids: dict{int: list(int)}
+        人的id对应到描述的id
+    sentence_id2person_id: dict{list(int): int}
+        描述的id（node_id,edge_id,node_id。。。）作为key,每个描述对应着每个人的id
+    all_sentence_ids: list(list(int))
+        所有的描述，以及描述里所有的id（node_id,edge_id,node_id。。。）
+    """
+    MetaPaths = common.MetaPaths
+
+    person_id2sentence_ids = {}  # 描述
+    sentence_id2person_id = {}
+    all_sentence_dict = {}
+    for person_id in person_ids:
+        sentence_ids = set()
+        for meta_path in MetaPaths:
+            _ids = meta_path.match(person_id)
+            if len(_ids) > 0:
+                sentence_id = []
+                for _source_id, _edge_id, _target_id in _ids:
+                    sentence_id += [_source_id, _edge_id, _target_id]
+                sentence_id = tuple(sentence_id)  # list没法hash，所以要转化成元组
+                sentence_ids.add(sentence_id)
+                sentence_id2person_id[sentence_id] = person_id
+                all_sentence_dict[sentence_id] = meta_path.name
+        person_id2sentence_ids[person_id] = sentence_ids
+    return person_id2sentence_ids, sentence_id2person_id, all_sentence_dict
+
+
+def get_sentence_dict2(person_ids, random_epoch=100):
     """根据人的id 随机游走找到响应的描述
 
     Parameters
@@ -42,7 +82,7 @@ def get_sentence_dict(person_ids, random_epoch=100):
 
     person_id2sentence_ids = {}  # 描述
     sentence_id2person_id = {}
-    all_sentence_ids = set()
+    all_sentence_dict = {}
     for person_id in person_ids:
         sentence_ids = set()
         for i in range(random_epoch):
@@ -55,9 +95,9 @@ def get_sentence_dict(person_ids, random_epoch=100):
                 sentence_id = tuple(sentence_id)  # list没法hash，所以要转化成元组
                 sentence_ids.add(sentence_id)
                 sentence_id2person_id[sentence_id] = person_id
-                all_sentence_ids.add(sentence_id)
+                all_sentence_dict[sentence_id] = meta_path.name
         person_id2sentence_ids[person_id] = sentence_ids
-    return person_id2sentence_ids, sentence_id2person_id, all_sentence_ids
+    return person_id2sentence_ids, sentence_id2person_id, all_sentence_dict
 
 
 def get_sentence_ids_by_topic_ids(topic_id1, topic_id2, _topic_id2sentence_ids):
@@ -245,7 +285,7 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_id
     while True:
         no_used_topic = set()
         new_topic_ids = set()
-        remove_topic_ids = set()
+        # remove_topic_ids = set()
         for topic_id1 in all_topic_ids:
             for topic_id2 in all_topic_ids:
                 if topic_id1 == topic_id2:
@@ -271,25 +311,25 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_id
                     new_topic_ids.add(new_topic_id)
                     topic_id2person_ids[new_topic_id] = person_ids
                     topic_id2sentence_ids[new_topic_id] = sentence_ids
-                    if support_persons > 0.9 * support_topic1:
-                        remove_topic_ids.add(topic_id1)
-                    if support_persons > 0.9 * support_topic2:
-                        remove_topic_ids.add(topic_id2)
+                    # if support_persons > 0.9 * support_topic1:
+                    #     remove_topic_ids.add(topic_id1)
+                    # if support_persons > 0.9 * support_topic2:
+                    #     remove_topic_ids.add(topic_id2)
                 else:
                     no_used_topic.add(new_topic_id)
 
         i += 1
-        print('循环次数:{}, 新增topic数量:{}, 删除topic数量:{}'.format(i, len(new_topic_ids), len(remove_topic_ids)))
+        print('循环次数:{}, 新增topic数量:{}, 删除topic数量:{}'.format(i, len(new_topic_ids), 0))  # len(remove_topic_ids)
         all_topic_ids.update(new_topic_ids)
-        for topic_id in remove_topic_ids:
-            all_topic_ids.remove(topic_id)
+        # for topic_id in remove_topic_ids:
+        #     all_topic_ids.remove(topic_id)
         if len(new_topic_ids) == 0:
             break
-    removed_topic_ids = set(topic_id2sentence_ids.keys())
-    removed_topic_ids.difference_update(all_topic_ids)
-    for _id in remove_topic_ids:
-        topic_id2sentence_ids.pop(_id)
-        topic_id2person_ids.pop(_id)
+    # removed_topic_ids = set(topic_id2sentence_ids.keys())
+    # removed_topic_ids.difference_update(all_topic_ids)
+    # for _id in remove_topic_ids:
+    #     topic_id2sentence_ids.pop(_id)
+    #     topic_id2person_ids.pop(_id)
     return topic_id2sentence_ids, topic_id2person_ids, all_topic_ids
 
 
