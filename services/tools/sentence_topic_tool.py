@@ -19,8 +19,8 @@ Sentence 部分
 """
 
 
-# def get_sentence_dict(person_ids, random_epoch=100):
-#     """根据人的id 遍历全部描述
+# def get_sentence_dict2(person_ids, random_epoch=100):
+#     """根据人的id 随机游走找到响应的描述
 #
 #     Parameters
 #     ----------
@@ -45,7 +45,8 @@ Sentence 部分
 #     all_sentence_dict = {}
 #     for person_id in person_ids:
 #         sentence_ids = set()
-#         for _path_name, meta_path in MetaPaths.items():
+#         for i in range(random_epoch):
+#             meta_path = random.choice(MetaPaths)
 #             _ids = meta_path.match(person_id)
 #             if len(_ids) > 0:
 #                 sentence_id = []
@@ -54,7 +55,7 @@ Sentence 部分
 #                 sentence_id = tuple(sentence_id)  # list没法hash，所以要转化成元组
 #                 sentence_ids.add(sentence_id)
 #                 sentence_id2person_id[sentence_id] = person_id
-#                 all_sentence_dict[sentence_id] = _path_name
+#                 all_sentence_dict[sentence_id] = meta_path.name
 #         person_id2sentence_ids[person_id] = sentence_ids
 #     return person_id2sentence_ids, sentence_id2person_id, all_sentence_dict
 
@@ -84,20 +85,13 @@ def get_sentence_dict(person_ids, random_epoch=100):
     all_sentence_dict = {}
     for person_id in person_ids:
         sentence_ids = set()
-        tree_paths = {_key: _path.build_path_tree(person_id) for _key, _path in MetaPaths.items()}
-        for i in range(random_epoch):
-            if len(tree_paths) == 0:
-                break
-            path_name = random.choice(list(tree_paths.keys()))
-            meta_path = tree_paths[path_name]
-            sentence_id = meta_path.random_pop()  # 随机游走
-            if sentence_id is None or len(sentence_id) == 0:
-                tree_paths.pop(path_name)
-                continue
-            sentence_id = tuple(sentence_id)  # list没法hash，所以要转化成元组
-            sentence_ids.add(sentence_id)
-            sentence_id2person_id[sentence_id] = person_id
-            all_sentence_dict[sentence_id] = meta_path.name
+        all_paths = [{tuple(sentence_id): _key for sentence_id in _path.get_all_paths_by_node_id(person_id)} for
+                     _key, _path in MetaPaths.items()]  # list没法hash，所以要转化成元组
+        for sentence in all_paths:
+            for sentence_id, sentence_type in sentence.items():
+                sentence_ids.add(sentence_id)
+                sentence_id2person_id[sentence_id] = person_id
+                all_sentence_dict[sentence_id] = sentence_type
         person_id2sentence_ids[person_id] = sentence_ids
     return person_id2sentence_ids, sentence_id2person_id, all_sentence_dict
 
@@ -208,7 +202,7 @@ Topic
 
 
 def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_id2sentence_ids, num_persons,
-                   num_sentences, min_sentences=5, max_topic=15, populate_ratio=0.4):
+                   num_sentences, min_sentences=5, max_topic=15, populate_ratio=0.1):
     """根据相关的人和描述，得到所有有关的topic， topic其实就是node_name
 
     Parameters

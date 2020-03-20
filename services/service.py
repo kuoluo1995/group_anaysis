@@ -73,8 +73,8 @@ def get_ranges_by_name(labels, person_name):
     ranges = defaultdict(dict)
     for _id in person_ids:
         # sub_graph = GRAPH_DAO.get_sub_graph(_id, max_depth=3)
-        relation_tree = MetaPaths['关系'].build_path_tree(_id)
-        kin_tree = MetaPaths['亲属'].build_path_tree(_id)
+        relation_path = MetaPaths['关系'].match(_id)
+        kin_path = MetaPaths['亲属'].match(_id)
 
         sub_graph = GRAPH_DAO.getSubGraph(_id, depth=3)
         for node_id in sub_graph.nodes():
@@ -83,13 +83,13 @@ def get_ranges_by_name(labels, person_name):
                 ranges[node_label][node_id] = {'name': GRAPH_DAO.get_node_name_by_id(node_id),
                                                'en_name': GRAPH_DAO.get_node_en_name_by_id(node_id)}
                 if node_label == NodeLabels['person']:
-                    relation_id = relation_tree.get_node_id(NodeLabels['association'], node_id)
+                    relation_id = relation_path.get_node_id_from_paths(node_id, NodeLabels['association'])
                     if relation_id is not None:
                         ranges[node_label][node_id]['relation'] = {'name': GRAPH_DAO.get_node_name_by_id(relation_id),
                                                                    'en_name': GRAPH_DAO.get_node_en_name_by_id(
                                                                        relation_id)}
                         continue
-                    kin_id = kin_tree.get_edge_id(EdgeLabels['kin'], node_id)
+                    kin_id = kin_path.get_edge_id_from_paths(node_id, EdgeLabels['kin'])
                     if kin_id is not None:
                         ranges[node_label][node_id]['relation'] = {'name': GRAPH_DAO.get_edge_name_by_id(kin_id),
                                                                    'en_name': GRAPH_DAO.get_edge_en_name_by_id(kin_id)}
@@ -183,7 +183,7 @@ def get_address_by_person_ids(person_ids):
     return address
 
 
-def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, populate_ratio=0.4):
+def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, populate_ratio=0.1):
     """根据人的id查询所有的topic
 
     Notes
@@ -230,7 +230,7 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, popula
                                                                                  sentence_id2person_id,
                                                                                  node_id2sentence_ids, len(person_ids),
                                                                                  len(all_sentence_dict),
-                                                                                 min_sentences=10,
+                                                                                 min_sentences=5,
                                                                                  max_topic=max_topic,
                                                                                  populate_ratio=populate_ratio)
 

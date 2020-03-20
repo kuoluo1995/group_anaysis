@@ -155,7 +155,7 @@ class GraphDAO(SqliteDAO):
 
     def get_edge_name_by_id(self, edge_id):
         if edge_id == -1:
-            return '。'
+            return '；'
         if edge_id not in self.edge_id2name_cache:
             sql_str = '''SELECT label, name, en_name FROM rel2data WHERE id = ?'''
             rows = self._select(sql_str, ['label', 'name', 'en_name'], (edge_id,))
@@ -168,7 +168,7 @@ class GraphDAO(SqliteDAO):
 
     def get_edge_en_name_by_id(self, edge_id):
         if edge_id == -1:
-            return '.'
+            return ';'
         if edge_id not in self.edge_id2en_name_cache:
             sql_str = '''SELECT label, name, en_name FROM rel2data WHERE id = ?'''
             rows = self._select(sql_str, ['label', 'name', 'en_name'], (edge_id,))

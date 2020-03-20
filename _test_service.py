@@ -18,25 +18,45 @@ plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 if __name__ == '__main__':
     GRAPH_DAO = common.GRAPH_DAO
     NodeLabels = common.NodeLabels
-
+    # MetaPaths = common.MetaPaths
     # dynasties, status = get_init_ranges()
+    # GRAPH_DAO.start_connect()
+    # id = GRAPH_DAO.get_node_ids_by_name('王安石')[0]
+    # edges = GRAPH_DAO.get_out_edges(id)
+    # result = {}
+    # count = 0
+    # for _key, meta_path in MetaPaths.items():
+    #     all_path = meta_path.match(id)
+    #     all_sentences = []
+    #     for path in all_path:
+    #         sentence = []
+    #         for i, word_id in enumerate(path):
+    #             if i % 2 == 0:
+    #                 sentence.append(GRAPH_DAO.get_node_name_by_id(word_id))
+    #             else:
+    #                 sentence.append(GRAPH_DAO.get_edge_name_by_id(word_id))
+    #         all_sentences.append(sentence)
+    #     result[_key] = all_sentences
+    #     count += len(result[_key])
 
+    # print(len(edges))
     labels = [NodeLabels['person'], NodeLabels['dynasty'], NodeLabels['year'], NodeLabels['gender'],
               NodeLabels['status']]
     start = timeit.default_timer()
     ranges = get_ranges_by_name(labels, '王安石')
     print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
+    all_relation_person = [types for _person_id, types in ranges[NodeLabels['person']].items() if 'relation' in types]
 
-    start = timeit.default_timer()
-    person = get_person_by_ranges([575], 980, 1120, False, [633480])
-    print('查询范围内的所有人耗时:{}'.format(timeit.default_timer() - start))
+    # start = timeit.default_timer()
+    # person = get_person_by_ranges([575], 980, 1120, False, [633480])
+    # print('查询范围内的所有人耗时:{}'.format(timeit.default_timer() - start))
     # start = timeit.default_timer()
     # address = get_address_by_person_ids(person.keys())
     # print('查询地址耗时:{}'.format(timeit.default_timer() - start))
     GRAPH_DAO.start_connect()
     start = timeit.default_timer()
     person_id2relation = {_id: len(GRAPH_DAO.get_in_edges(_id) + GRAPH_DAO.get_out_edges(_id)) for _id, _ in
-                          person.items()}
+                          ranges[NodeLabels['person']].items()}
     print('查询所有人的相关性:{}'.format(timeit.default_timer() - start))
     GRAPH_DAO.close_connect()
 
@@ -45,7 +65,7 @@ if __name__ == '__main__':
 
     start = timeit.default_timer()
     all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids, all_sentence_dict = get_topics_by_person_ids(
-        person_ids, 100)
+        person_ids, 1000, populate_ratio=0.6)
     print('查询所有topic的相关性:{}'.format(timeit.default_timer() - start))
     # topic 相似矩阵
     pmi_names = list()
