@@ -1,3 +1,5 @@
+# 更新 2020/3/23
+增加新的方法。adjust_topic_weights和search_community_by_links
 # 更新 2020/3/16
 将上述算法融入到了后端中。并修改了新的数据库
 
@@ -57,6 +59,10 @@ python manage.py runserver 127.0.0.1:8080
 ![](./images/search_address_by_person_ids.png)
 
 ![](./images/search_topic_by_person_ids.png)
+
+![](./images/adjust_topic_weights.png)
+
+![](./images/search_community_by_links.png)
 # 后端自测接口
 ```
 http://127.0.0.1:8080/test_init_ranges/

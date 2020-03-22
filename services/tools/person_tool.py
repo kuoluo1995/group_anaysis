@@ -129,3 +129,12 @@ def get_person_pmi(all_person_ids, person_id2sentence_ids, num_all_sentences):
             pmi = p_xy / p_x
             pmi_node[_x][_y] = 0 if pmi == 0 or _x == _y else math.log(pmi)
     return pmi_node
+
+
+def get_person_dict(all_person_ids):
+    GRAPH_DAO = common.GRAPH_DAO
+    person_dict = {}
+    for _id in all_person_ids:
+        person_dict[_id] = {'name': GRAPH_DAO.get_node_name_by_id(_id),
+                            'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)}
+    return person_dict

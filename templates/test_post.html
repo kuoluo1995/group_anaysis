@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>post请求测试</title>
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
 </head>
 <body>
 <div>
@@ -56,7 +57,11 @@
         <input type="submit" value="搜索">
     </form>
 </div>
-
+<div>
+    <h2>调整topic_id权重</h2>
+    <label>执行前先要执行通过人名id搜索topic，然后再可视化一下，之后才能按调整topic_id权重这个按钮</label>
+    <button type="button" onclick="adjust_topic_weights()">调整topic_id权重</button>
+</div>
 <div>
     <h2>结果:
         <button type="button" onclick="show()">可视化</button>
@@ -67,9 +72,28 @@
 </html>
 
 <script type="text/javascript">
+    _json = {};
+
     function show() {
         var _content = document.getElementById('response').innerText; //获取json格式内容
+        _json = JSON.parse(_content);
         _content = JSON.stringify(JSON.parse(_content), null, 2);//将字符串转换成json对象
         document.getElementById('response').innerText = _content;
+    }
+
+    function adjust_topic_weights() {
+        $.ajax({
+            url: '/test_adjust_topic_weights/',
+            type: 'POST',
+            data: JSON.stringify({
+                "topic_weights": {'1 1 1': 2},
+                "topic_id2sentence_ids2vector": _json['topic_id2sentence_ids2vector'],
+                "person_id2sentence_ids": _json['person_id2sentence_ids']
+            }),
+            dataType: "json",
+            success: function (result) {
+                document.getElementById('response').innerText = JSON.stringify(result, null, 2);
+            }
+        });
     }
 </script>

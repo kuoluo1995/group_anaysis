@@ -183,7 +183,7 @@ def get_address_by_person_ids(person_ids):
     return address
 
 
-def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, populate_ratio=0.1):
+def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, populate_ratio=0.6):
     """根据人的id查询所有的topic
 
     Notes
@@ -248,8 +248,20 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, popula
     similar_person_ids = get_all_similar_person(person_ids, topic_id2lrs)
     GRAPH_DAO.close_connect()
 
-    return all_topic_ids, dim2topic_id2sentence_ids2vector[
-        1], topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids, all_sentence_dict
+    return all_topic_ids, dim2topic_id2sentence_ids2vector[1], topic_pmi, person_id2position2d, node_dict, edge_dict, \
+           topic_id2lrs, similar_person_ids, all_sentence_dict, dim2topic_id2sentence_ids2vector[5], \
+           person_id2sentence_ids
+
+
+# todo:这里还要有个topic的权重
+def add_topic_weights(topic_weights, topic_id2sentence_ids2vector, person_id2sentence_ids, num_dim=5):
+    GRAPH_DAO = common.GRAPH_DAO
+    GRAPH_DAO.start_connect()
+    person_id2position2d = person_tool.get_person_id2vector2d(topic_id2sentence_ids2vector,
+                                                              person_id2sentence_ids, num_dim=5)
+    person_dict = person_tool.get_person_dict(person_id2position2d.keys())
+    GRAPH_DAO.close_connect()
+    return person_id2position2d, person_dict
 
 
 def get_community_by_num_node_links(num_node, links):

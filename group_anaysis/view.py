@@ -1,10 +1,11 @@
 import json
+import numpy as np
 from django.http import HttpResponse
 from django.shortcuts import render
 
 from services import common
 from services.service import get_ranges_by_name, get_topics_by_person_ids, get_person_by_ranges, get_init_ranges, \
-    get_address_by_person_ids, get_community_by_num_node_links, get_all_similar_person
+    get_address_by_person_ids, get_community_by_num_node_links, add_topic_weights
 
 
 def init_ranges(request):
@@ -88,19 +89,19 @@ def search_topics_by_person_ids(request):
         person_ids = request.POST.getlist('person_ids[]')
         try:
             person_ids = [int(_id) for _id in person_ids]
-            all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids, all_sentence_dict = get_topics_by_person_ids(
+            all_topic_ids, topic_id2sentence_ids2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
                 person_ids, max_topic=15)
             result['all_topic_ids'] = [[int(_id) for _id in _ids] for _ids in all_topic_ids]
-            topic_id2sentence_id2position1d_json = {}
-            for _topic_id, _item in topic_id2sentence_id2position1d.items():
+            topic_id2sentence_ids2position1d_json = {}
+            for _topic_id, _item in topic_id2sentence_ids2position1d.items():
                 _topic_id = [str(_id) for _id in _topic_id]
                 _topic_id = ' '.join(_topic_id)
-                topic_id2sentence_id2position1d_json[_topic_id] = {}
+                topic_id2sentence_ids2position1d_json[_topic_id] = {}
                 for _sentence_id, _value in _item.items():
                     _sentence = [str(_id) for _id in _sentence_id]
                     _sentence = ' '.join(_sentence)
-                    topic_id2sentence_id2position1d_json[_topic_id][_sentence] = _value[0]
-            result['topic_id2sentence_id2position1d'] = topic_id2sentence_id2position1d_json
+                    topic_id2sentence_ids2position1d_json[_topic_id][_sentence] = _value[0]
+            result['topic_id2sentence_id2position1d'] = topic_id2sentence_ids2position1d_json
             topic_pmi_json = {}
             for _xs, _item in topic_pmi.items():
                 _xs = [str(_id) for _id in _xs]
@@ -127,9 +128,53 @@ def search_topics_by_person_ids(request):
                 _sentence_id = ' '.join(_sentence_id)
                 all_sentence_dict_json[_sentence_id] = _name
             result['all_sentence_dict'] = all_sentence_dict_json
+            topic_id2sentence_ids2vector_json = {}
+            for _topic_id, _item in topic_id2sentence_ids2vector.items():
+                _topic_id = [str(_id) for _id in _topic_id]
+                _topic_id = ' '.join(_topic_id)
+                topic_id2sentence_ids2vector_json[_topic_id] = {}
+                for _sentence_id, _value in _item.items():
+                    _sentence = [str(_id) for _id in _sentence_id]
+                    _sentence = ' '.join(_sentence)
+                    topic_id2sentence_ids2vector_json[_topic_id][_sentence] = [v for v in _value]
+            result['topic_id2sentence_ids2vector'] = topic_id2sentence_ids2vector_json
+            person_id2sentence_ids = {_person_id: list(_sentence_id) for _person_id, _sentence_id in
+                                      person_id2sentence_ids.items()}
+            result['person_id2sentence_ids'] = person_id2sentence_ids
             result['is_success'] = True
         except Exception as e:
             result['bug'] = '发给后端调试问题。输入为 person_ids:{}'.format(person_ids)
+    json_result = json.dumps(result)
+    return HttpResponse(json_result, content_type="application/json")
+
+
+def adjust_topic_weights(request):
+    request.encoding = 'utf-8'
+    result = {'is_success': False}
+    request_json = json.loads(request.body)
+    if 'topic_weights' in request_json and request_json['topic_weights'] and \
+            'topic_id2sentence_ids2vector' in request_json and request_json['topic_id2sentence_ids2vector'] and \
+            'person_id2sentence_ids' in request_json and request_json['person_id2sentence_ids']:
+        try:
+            topic_weights = {tuple([int(_id) for _id in _topic_id.split(' ')]): _weight for _topic_id, _weight in
+                             request_json['topic_weights'].items()}
+            topic_id2sentence_ids2vector_json = {}
+            for _topic_id, _items in request_json['topic_id2sentence_ids2vector'].items():
+                _topic_id = tuple([int(_id) for _id in _topic_id.split(' ')])
+                topic_id2sentence_ids2vector_json[_topic_id] = {}
+                for _sentence_id, _value in _items.items():
+                    _sentence = tuple([int(_id) for _id in _sentence_id.split(' ')])
+                    topic_id2sentence_ids2vector_json[_topic_id][_sentence] = np.array(_value)
+            person_id2sentence_ids = {int(_person_id): [tuple(_sentence_id) for _sentence_id in _sentence_ids] for
+                                      _person_id, _sentence_ids in request_json['person_id2sentence_ids'].items()}
+            person_id2position2d, person_dict = add_topic_weights(topic_weights,
+                                                                  topic_id2sentence_ids2vector_json,
+                                                                  person_id2sentence_ids)
+            result['person_id2position2d'] = person_id2position2d
+            result['person_dict'] = person_dict
+            result['is_success'] = True
+        except Exception as e:
+            result['bug'] = '发给后端调试问题。输入为 {}'.format(request_json)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
 
@@ -179,3 +224,8 @@ def test_search_topics_by_person_ids(request):
     response = search_topics_by_person_ids(request)
     content = str(response.content, 'utf-8')
     return render(request, 'test_post.html', {'response': content})
+
+
+def test_adjust_topic_weights(request):
+    response = adjust_topic_weights(request)
+    return response

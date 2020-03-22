@@ -5,7 +5,7 @@ import numpy as np
 
 from services import common
 from services.service import get_ranges_by_name, get_topics_by_person_ids, get_init_ranges, get_person_by_ranges, \
-    get_address_by_person_ids, get_all_similar_person
+    get_address_by_person_ids, get_all_similar_person, add_topic_weights
 from tools.sort_utils import sort_dict2list
 
 # linux去除中文乱码
@@ -18,7 +18,7 @@ plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 if __name__ == '__main__':
     GRAPH_DAO = common.GRAPH_DAO
     NodeLabels = common.NodeLabels
-    # MetaPaths = common.MetaPaths
+    MetaPaths = common.MetaPaths
     # dynasties, status = get_init_ranges()
     # GRAPH_DAO.start_connect()
     # id = GRAPH_DAO.get_node_ids_by_name('王安石')[0]
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     # result = {}
     # count = 0
     # for _key, meta_path in MetaPaths.items():
-    #     all_path = meta_path.match(id)
+    #     all_path = meta_path.get_all_paths_by_node_id(id)
     #     all_sentences = []
     #     for path in all_path:
     #         sentence = []
@@ -64,9 +64,13 @@ if __name__ == '__main__':
     person_ids = [_id[0] for _id in person_id2relation]
 
     start = timeit.default_timer()
-    all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids, all_sentence_dict = get_topics_by_person_ids(
-        person_ids, 1000, populate_ratio=0.6)
+    all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
+        person_ids, 100, populate_ratio=0.8)
     print('查询所有topic的相关性:{}'.format(timeit.default_timer() - start))
+    topic_weights = {'1 2 3': 2}
+    person_id2position2d2, person_dict = add_topic_weights(topic_weights, topic_id2sentence_ids2vector,
+                                                           person_id2sentence_ids)
+
     # topic 相似矩阵
     pmi_names = list()
     _len = len(topic_pmi)
