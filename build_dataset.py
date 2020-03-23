@@ -11,6 +11,7 @@ from py2neo import Graph
 
 from services import common
 from services.tools.sentence_topic_tool import get_sentence_dict
+from tools.shell_utils import Shell
 
 ip = 'bolt://localhost:7687'
 username = 'neo4j'
@@ -178,8 +179,8 @@ def insert_node2person2count(db_path):
 
 
 if __name__ == "__main__":
-    # start_neo4j()  # 开启neo4j数据库
-    # time.sleep(1000)  # 等待彻底开启完毕
+    # neo4j = Shell('neo4j.bat console', 'Started')
+    # neo4j.run_background()
     whole_g, node2data, rel2data = get_whole_graph()
     sql_dataset = Path('./dataset/graph.db')
     if sql_dataset.exists():

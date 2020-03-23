@@ -63,6 +63,14 @@
     <button type="button" onclick="adjust_topic_weights()">调整topic_id权重</button>
 </div>
 <div>
+    <h2>通过图数据语句来查询人的id</h2>
+    <form action="/test_search_person_ids_by_draws/" method="post">
+        <label for="draws">图数据查询语句（执行前要开图数据库）</label>
+        <textarea id="draws" name="draws" rows="4" cols="100"></textarea>
+        <input type="submit" value="搜索">
+    </form>
+</div>
+<div>
     <h2>结果:
         <button type="button" onclick="show()">可视化</button>
     </h2>

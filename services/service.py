@@ -42,7 +42,7 @@ def get_init_ranges():
     return dynasties, status
 
 
-def get_ranges_by_name(labels, person_name):
+def get_range_person_by_name(person_name, ranges):
     """根据person_name和所需要的范围label来得到范围所包含的值(name)
 
     Notes
@@ -51,7 +51,7 @@ def get_ranges_by_name(labels, person_name):
 
     Parameters
     ----------
-    labels: list(string)
+    ranges: dict{string:dict{string:int}}
         具体的值参考 @see services/configs/labels.yaml
     person_name : string
 
@@ -64,38 +64,41 @@ def get_ranges_by_name(labels, person_name):
     GRAPH_DAO = common.GRAPH_DAO
     MetaPaths = common.MetaPaths
     NodeLabels = common.NodeLabels
-    EdgeLabels = common.EdgeLabels
     GRAPH_DAO.start_connect()
     if person_name is None or type(person_name) != str or person_name == '':
-        raise Exception('get_ranges_by_name({})'.format(person_name))
+        raise Exception('get_range_person_by_name({})'.format(person_name))
 
     person_ids = GRAPH_DAO.get_node_ids_by_name(person_name)
-    ranges = defaultdict(dict)
+    person_dict = defaultdict(dict)
     for _id in person_ids:
-        # sub_graph = GRAPH_DAO.get_sub_graph(_id, max_depth=3)
-        relation_path = MetaPaths['关系'].match(_id)
-        kin_path = MetaPaths['亲属'].match(_id)
-
-        sub_graph = GRAPH_DAO.getSubGraph(_id, depth=3)
-        for node_id in sub_graph.nodes():
-            node_label = GRAPH_DAO.get_node_label_by_id(node_id)
-            if node_label in labels:
-                ranges[node_label][node_id] = {'name': GRAPH_DAO.get_node_name_by_id(node_id),
-                                               'en_name': GRAPH_DAO.get_node_en_name_by_id(node_id)}
-                if node_label == NodeLabels['person']:
-                    relation_id = relation_path.get_node_id_from_paths(node_id, NodeLabels['association'])
-                    if relation_id is not None:
-                        ranges[node_label][node_id]['relation'] = {'name': GRAPH_DAO.get_node_name_by_id(relation_id),
-                                                                   'en_name': GRAPH_DAO.get_node_en_name_by_id(
-                                                                       relation_id)}
-                        continue
-                    kin_id = kin_path.get_edge_id_from_paths(node_id, EdgeLabels['kin'])
-                    if kin_id is not None:
-                        ranges[node_label][node_id]['relation'] = {'name': GRAPH_DAO.get_edge_name_by_id(kin_id),
-                                                                   'en_name': GRAPH_DAO.get_edge_en_name_by_id(kin_id)}
-
+        for _key, _items in ranges.items():
+            all_paths = MetaPaths[_key].get_all_paths_by_node_id(_id)
+            for _path in all_paths:
+                person_ids = []
+                relation_ids = []
+                _label, index = list(_items.keys())[0], list(_items.values())[0]
+                search_label = GRAPH_DAO.get_node_label_by_id if index == 0 else GRAPH_DAO.get_edge_label_by_id
+                search_name = GRAPH_DAO.get_node_name_by_id if index == 0 else GRAPH_DAO.get_edge_name_by_id
+                search_en_name = GRAPH_DAO.get_node_en_name_by_id if index == 0 else GRAPH_DAO.get_edge_en_name_by_id
+                for i, word_id in enumerate(_path):
+                    if i % 2 == 0 and i != 0:
+                        if GRAPH_DAO.get_node_label_by_id(word_id) == NodeLabels['person']:
+                            person_ids.append(word_id)
+                    if i % 2 == index:
+                        _label_ = search_label(word_id)
+                        if _label_ == _label:
+                            relation_ids.append(word_id)
+                if len(person_ids) == 1 and len(relation_ids) == 1:
+                    person_id = person_ids[0]
+                    relation_id = relation_ids[0]
+                    person_dict[person_id] = {'name': GRAPH_DAO.get_node_name_by_id(person_id),
+                                              'en_name': GRAPH_DAO.get_node_en_name_by_id(person_id),
+                                              'relation': {'name': search_name(relation_id),
+                                                           'en_name': search_en_name(relation_id)}}
+                else:
+                    print(_path)
     GRAPH_DAO.close_connect()
-    return ranges
+    return person_dict
 
 
 def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids):
@@ -262,6 +265,12 @@ def add_topic_weights(topic_weights, topic_id2sentence_ids2vector, person_id2sen
     person_dict = person_tool.get_person_dict(person_id2position2d.keys())
     GRAPH_DAO.close_connect()
     return person_id2position2d, person_dict
+
+
+def get_person_by_draws(sql):
+    NEO4J_DAO = common.NEO4J_DAO
+    ids = NEO4J_DAO.query(sql.strip())
+    return ids
 
 
 def get_community_by_num_node_links(num_node, links):

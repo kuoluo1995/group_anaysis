@@ -1,10 +1,11 @@
 import json
+import os
 import timeit
 import matplotlib.pyplot as plt
 import numpy as np
 
 from services import common
-from services.service import get_ranges_by_name, get_topics_by_person_ids, get_init_ranges, get_person_by_ranges, \
+from services.service import get_range_person_by_name, get_topics_by_person_ids, get_init_ranges, get_person_by_ranges, \
     get_address_by_person_ids, get_all_similar_person, add_topic_weights
 from tools.sort_utils import sort_dict2list
 
@@ -18,6 +19,7 @@ plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 if __name__ == '__main__':
     GRAPH_DAO = common.GRAPH_DAO
     NodeLabels = common.NodeLabels
+    EdgeLabels = common.EdgeLabels
     MetaPaths = common.MetaPaths
     # dynasties, status = get_init_ranges()
     # GRAPH_DAO.start_connect()
@@ -40,12 +42,11 @@ if __name__ == '__main__':
     #     count += len(result[_key])
 
     # print(len(edges))
-    labels = [NodeLabels['person'], NodeLabels['dynasty'], NodeLabels['year'], NodeLabels['gender'],
-              NodeLabels['status']]
     start = timeit.default_timer()
-    ranges = get_ranges_by_name(labels, '王安石')
+    ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
+    person = get_range_person_by_name('王安石', ranges)
     print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
-    all_relation_person = [types for _person_id, types in ranges[NodeLabels['person']].items() if 'relation' in types]
+    all_relation_person = [_person_id for _person_id, types in person.items()]
 
     # start = timeit.default_timer()
     # person = get_person_by_ranges([575], 980, 1120, False, [633480])

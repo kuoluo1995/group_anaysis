@@ -1,4 +1,7 @@
 # 更新 2020/3/23
+增加了新的接口，对于画图，以及优化了search_range_people_by_name
+每次后台启动前还要开启图数据库。
+# 更新 2020/3/23
 增加新的方法。adjust_topic_weights和search_community_by_links
 # 更新 2020/3/16
 将上述算法融入到了后端中。并修改了新的数据库
@@ -25,8 +28,15 @@
 neo4j-admin load --from=./dataset/graph_cbdb4.dump --database=graph.db --force
 ```
 ## 启动neo4j数据库
+**以改成自动启动了~**
 ```bash
 neo4j.bat console
+```
+**如果发现后台一直有占用着的。可以通过管理员模式下的cmd来删掉**
+```bash
+netstat -a -n -o
+# 找到端口号是7474的进程pid
+taskkill /pid 进程pid -f
 ```
 ## 连接账户密码
 **connect URL:** bolt://localhost:7687
@@ -63,6 +73,8 @@ python manage.py runserver 127.0.0.1:8080
 ![](./images/adjust_topic_weights.png)
 
 ![](./images/search_community_by_links.png)
+
+![](./images/search_person_ids_by_draws.png)
 # 后端自测接口
 ```
 http://127.0.0.1:8080/test_init_ranges/

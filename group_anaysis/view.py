@@ -4,8 +4,8 @@ from django.http import HttpResponse
 from django.shortcuts import render
 
 from services import common
-from services.service import get_ranges_by_name, get_topics_by_person_ids, get_person_by_ranges, get_init_ranges, \
-    get_address_by_person_ids, get_community_by_num_node_links, add_topic_weights
+from services.service import get_range_person_by_name, get_topics_by_person_ids, get_person_by_ranges, get_init_ranges, \
+    get_address_by_person_ids, get_community_by_num_node_links, add_topic_weights, get_person_by_draws
 
 
 def init_ranges(request):
@@ -25,14 +25,14 @@ def init_ranges(request):
 
 def search_ranges_by_name(request):
     NodeLabels = common.NodeLabels
+    EdgeLabels = common.EdgeLabels
     request.encoding = 'utf-8'
     result = {'is_success': False}
     if 'name' in request.POST and request.POST['name']:
         name = request.POST['name']
         try:
-            labels = [NodeLabels['person'], NodeLabels['dynasty'], NodeLabels['year'], NodeLabels['gender'],
-                      NodeLabels['status']]
-            result.update(get_ranges_by_name(labels, name))
+            ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
+            result[NodeLabels['person']] = get_range_person_by_name(name, ranges)
             result['is_success'] = True
         except Exception as e:
             result['bug'] = '发给后端调试问题。输入为 name:{}'.format(name)
@@ -179,6 +179,20 @@ def adjust_topic_weights(request):
     return HttpResponse(json_result, content_type="application/json")
 
 
+def search_person_ids_by_draws(request):
+    request.encoding = 'utf-8'
+    result = {'is_success': False}
+    if 'draws' in request.POST and request.POST['draws']:
+        draws = request.POST['draws']
+        try:
+            result['person_ids'] = get_person_by_draws(draws)
+            result['is_success'] = True
+        except Exception as e:
+            result['bug'] = '发给后端调试问题,请检查neo4j数据库是否开启。输入为 draws:{}'.format(draws)
+    json_result = json.dumps(result)
+    return HttpResponse(json_result, content_type='application/json')
+
+
 def search_community_by_links(request):
     request.encoding = 'utf-8'
     result = {'is_success': False}
@@ -229,3 +243,9 @@ def test_search_topics_by_person_ids(request):
 def test_adjust_topic_weights(request):
     response = adjust_topic_weights(request)
     return response
+
+
+def test_search_person_ids_by_draws(request):
+    response = search_person_ids_by_draws(request)
+    content = str(response.content, 'utf-8')
+    return render(request, 'test_post.html', {'response': content})
