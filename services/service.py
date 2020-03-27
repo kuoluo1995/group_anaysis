@@ -97,6 +97,9 @@ def get_range_person_by_name(person_name, ranges):
                                                            'en_name': search_en_name(relation_id)}}
                 else:
                     print(_path)
+        person_dict[_id] = {'name': GRAPH_DAO.get_node_name_by_id(_id),
+                            'en_name': GRAPH_DAO.get_node_en_name_by_id(_id),
+                            'relation': {'name': '自己', 'en_name': 'me'}}
     GRAPH_DAO.close_connect()
     return person_dict
 
