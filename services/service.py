@@ -233,12 +233,11 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, popula
                                                                                  sentence_id2person_id,
                                                                                  node_id2sentence_ids, len(person_ids),
                                                                                  len(all_sentence_dict),
-                                                                                 min_sentences=5,
-                                                                                 max_topic=max_topic,
+                                                                                 min_sentences=5, max_topic=max_topic,
                                                                                  populate_ratio=populate_ratio)
 
     # sentence_id2vector
-    dim2topic_id2sentence_ids2vector = get_sentence_id2vector(all_topic_ids, topic_ids2sentence_ids, num_dims=[1, 5])
+    dim2topic_id2sentence_ids2vector = get_sentence_id2vector(all_topic_ids, topic_ids2sentence_ids, num_dims=[2, 5])
     # todo:这里还要有个topic的权重
     person_id2position2d = person_tool.get_person_id2vector2d(dim2topic_id2sentence_ids2vector[5],
                                                               person_id2sentence_ids, num_dim=5)
@@ -251,7 +250,7 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, popula
     similar_person_ids = get_all_similar_person(person_ids, topic_id2lrs)
     GRAPH_DAO.close_connect()
 
-    return all_topic_ids, dim2topic_id2sentence_ids2vector[1], topic_pmi, person_id2position2d, node_dict, edge_dict, \
+    return all_topic_ids, dim2topic_id2sentence_ids2vector[2], topic_pmi, person_id2position2d, node_dict, edge_dict, \
            topic_id2lrs, similar_person_ids, all_sentence_dict, dim2topic_id2sentence_ids2vector[5], \
            person_id2sentence_ids
 

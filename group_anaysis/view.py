@@ -100,7 +100,7 @@ def search_topics_by_person_ids(request):
                 for _sentence_id, _value in _item.items():
                     _sentence = [str(_id) for _id in _sentence_id]
                     _sentence = ' '.join(_sentence)
-                    topic_id2sentence_ids2position1d_json[_topic_id][_sentence] = _value[0]
+                    topic_id2sentence_ids2position1d_json[_topic_id][_sentence] = [v for v in _value]
             result['topic_id2sentence_id2position1d'] = topic_id2sentence_ids2position1d_json
             topic_pmi_json = {}
             for _xs, _item in topic_pmi.items():
