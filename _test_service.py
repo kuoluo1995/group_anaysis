@@ -63,7 +63,7 @@ if __name__ == '__main__':
 
     person_id2relation = sort_dict2list(person_id2relation)[:30]
     person_ids = [_id[0] for _id in person_id2relation]
-
+    print('查询的人:{}'.format(person_ids))
     start = timeit.default_timer()
     all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
         person_ids, populate_ratio=0.8, max_topic=5)
