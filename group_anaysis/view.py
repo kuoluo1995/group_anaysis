@@ -90,7 +90,7 @@ def search_topics_by_person_ids(request):
         try:
             person_ids = [int(_id) for _id in person_ids]
             all_topic_ids, topic_id2sentence_ids2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
-                person_ids, max_topic=15)
+                person_ids, populate_ratio=0.8, max_topic=5)
             result['all_topic_ids'] = [[int(_id) for _id in _ids] for _ids in all_topic_ids]
             topic_id2sentence_ids2position1d_json = {}
             for _topic_id, _item in topic_id2sentence_ids2position1d.items():

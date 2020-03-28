@@ -46,7 +46,7 @@ if __name__ == '__main__':
     ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
     person = get_range_person_by_name('王安石', ranges)
     print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
-    all_relation_person = [_person_id for _person_id, types in person.items()]
+    # all_relation_person = [_person_id for _person_id, types in person.items()]
 
     # start = timeit.default_timer()
     # person = get_person_by_ranges([575], 980, 1120, False, [633480])
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     GRAPH_DAO.start_connect()
     start = timeit.default_timer()
     person_id2relation = {_id: len(GRAPH_DAO.get_in_edges(_id) + GRAPH_DAO.get_out_edges(_id)) for _id, _ in
-                          ranges[NodeLabels['person']].items()}
+                          person.items()}
     print('查询所有人的相关性:{}'.format(timeit.default_timer() - start))
     GRAPH_DAO.close_connect()
 
@@ -66,7 +66,8 @@ if __name__ == '__main__':
 
     start = timeit.default_timer()
     all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
-        person_ids, 100, populate_ratio=0.8)
+        person_ids, populate_ratio=0.8, max_topic=5)
+    print(len(all_topic_ids))
     print('查询所有topic的相关性:{}'.format(timeit.default_timer() - start))
     topic_weights = {'1 2 3': 2}
     person_id2position2d2, person_dict = add_topic_weights(topic_weights, topic_id2sentence_ids2vector,
@@ -91,12 +92,9 @@ if __name__ == '__main__':
     for _topic_id, _sentences_id2position1d in topic_id2sentence_id2position1d.items():
         num_sentence = len(_sentences_id2position1d.keys())
         colors = np.random.random(num_sentence)
-        position1d = np.zeros(num_sentence)
-        _index = 0
-        for _, _pos1d in _sentences_id2position1d.items():
-            position1d[_index] = _pos1d
-            _index += 1
-        plt.scatter(np.zeros(num_sentence), position1d, alpha=0.5, c=colors)
+        position1d = np.zeros((num_sentence, 2))
+        position2ds = np.array([_pos1d for _, _pos1d in _sentences_id2position1d.items()])
+        plt.scatter(position2ds[:, 0], position2ds[:, 1], alpha=0.5, c=colors)
         for _sentence_id, _pos1d in _sentences_id2position1d.items():
             sentence = list()  # 描述
             for i, _id in enumerate(_sentence_id):
@@ -104,7 +102,7 @@ if __name__ == '__main__':
                     sentence.append(node_dict[_id]['name'])
                 else:
                     sentence.append(edge_dict[_id]['name'])
-            plt.text(0, _pos1d, ' '.join(sentence), fontsize=5)
+            plt.text(_pos1d[0], _pos1d[1], ' '.join(sentence), fontsize=5)
         plt.show()
 
     # 人物散点图

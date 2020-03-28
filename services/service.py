@@ -229,6 +229,7 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, popula
 
     person_id2sentence_ids, sentence_id2person_id, all_sentence_dict = get_sentence_dict(person_ids,
                                                                                          random_epoch=random_epoch)
+    print('所有的描述:{}'.format(len(all_sentence_dict)))
 
     node_label2ids, node_id2relevancy, node_id2sentence_ids = get_node_relevancy(person_id2sentence_ids)
 

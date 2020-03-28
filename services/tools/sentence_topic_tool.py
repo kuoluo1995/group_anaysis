@@ -202,7 +202,7 @@ Topic
 
 
 def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_id2sentence_ids, num_persons,
-                   num_sentences, min_sentences=5, max_topic=15, populate_ratio=0.1):
+                   num_sentences, min_sentences=5, max_topic=15, populate_ratio=0.6):
     """根据相关的人和描述，得到所有有关的topic， topic其实就是node_name
 
     Parameters
@@ -254,7 +254,7 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
                 topic_id2sentence_ids[topic_id] = sentence_ids  # 小圆点
                 topic_id2person_ids[topic_id] = person_ids
                 all_topic_ids.add(topic_id)
-
+    print('单个topic的数量:{}'.format(len(all_topic_ids)))
     topic_ids2sentence_ids, topic_ids2person_ids, all_topic_ids = _topic_id2topic_ids(all_topic_ids,
                                                                                       topic_id2sentence_ids,
                                                                                       topic_id2person_ids, num_persons,

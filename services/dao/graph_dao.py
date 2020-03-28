@@ -23,10 +23,10 @@ class GraphDAO(SqliteDAO):
         self.out_edge_cache = {}
 
         self.node_id2has_topic_person_cache = {}
-        if self.use_cache:  # todo 如果电脑性能允许的话，为了加快运行速度可以考虑提前载入数据
-            self.start_connect()
-            self.__import_all_data()
-            self.close_connect()
+        # if self.use_cache:  # todo 如果电脑性能允许的话，为了加快运行速度可以考虑提前载入数据
+        #     self.start_connect()
+        #     self.__import_all_data()
+        #     self.close_connect()
 
     def __import_all_data(self):
         sql_str = '''SELECT DISTINCT id, name, code, label, en_name FROM node2data'''
