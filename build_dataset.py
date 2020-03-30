@@ -81,9 +81,9 @@ def get_whole_graph():
     rel2data = {}
     # multiThreadLoad(loadEdges, 3)
     # multiThreadLoad(loadNodes, 3)
-    multiThreadLoad(loadEdges, 60)
+    multiThreadLoad(loadEdges, 100)
     print('所有边加载完')
-    multiThreadLoad(loadNodes, 14)
+    multiThreadLoad(loadNodes, 15)
     print('所有的点数量:{};所有的边数量{}'.format(graph.number_of_nodes(), graph.number_of_edges()))
     return graph, node2data, rel2data
 

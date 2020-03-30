@@ -242,7 +242,6 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, popula
 
     # sentence_id2vector
     dim2topic_id2sentence_ids2vector = get_sentence_id2vector(all_topic_ids, topic_ids2sentence_ids, num_dims=[2, 5])
-    # todo:这里还要有个topic的权重
     person_id2position2d = person_tool.get_person_id2vector2d(dim2topic_id2sentence_ids2vector[5],
                                                               person_id2sentence_ids, num_dim=5)
 
@@ -259,12 +258,12 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, popula
            person_id2sentence_ids
 
 
-# todo:这里还要有个topic的权重
 def add_topic_weights(topic_weights, topic_id2sentence_ids2vector, person_id2sentence_ids, num_dim=5):
     GRAPH_DAO = common.GRAPH_DAO
     GRAPH_DAO.start_connect()
     person_id2position2d = person_tool.get_person_id2vector2d(topic_id2sentence_ids2vector,
-                                                              person_id2sentence_ids, num_dim=5)
+                                                              person_id2sentence_ids, topic_weights=topic_weights,
+                                                              num_dim=5)
     person_dict = person_tool.get_person_dict(person_id2position2d.keys())
     GRAPH_DAO.close_connect()
     return person_id2position2d, person_dict

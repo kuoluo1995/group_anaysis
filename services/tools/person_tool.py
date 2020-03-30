@@ -27,7 +27,7 @@ def get_person_ids_by_topic_id(topic_id):
 
 
 # 计算人物相似度方案一(学长)
-def get_person_id2vector2d(topic_id2sentence_ids2vector, person_id2sentence_ids, num_dim, **kwargs):
+def get_person_id2vector2d(topic_id2sentence_ids2vector, person_id2sentence_ids, num_dim, topic_weights=None, **kwargs):
     """根据人的id查询所有的地址及坐标
 
     Notes
@@ -56,6 +56,8 @@ def get_person_id2vector2d(topic_id2sentence_ids2vector, person_id2sentence_ids,
     for _topic_id, sentence_id2vector in topic_id2sentence_ids2vector.items():
         _topic_vectors = np.array([_vector for _, _vector in sentence_id2vector.items()])
         _mean = mean_vectors(_topic_vectors)
+        if topic_weights is not None and _topic_id in topic_weights:
+            _mean *= topic_weights[_topic_id]
         for person_id in person_id2sentence_ids.keys():
             max_vector = _mean
             _vectors = [sentence_id2vector[_sentence_id] for _sentence_id in person_id2sentence_ids[person_id] if
