@@ -56,8 +56,6 @@ def get_person_id2vector2d(topic_id2sentence_ids2vector, person_id2sentence_ids,
     for _topic_id, sentence_id2vector in topic_id2sentence_ids2vector.items():
         _topic_vectors = np.array([_vector for _, _vector in sentence_id2vector.items()])
         _mean = mean_vectors(_topic_vectors)
-        if topic_weights is not None and _topic_id in topic_weights:
-            _mean *= topic_weights[_topic_id]
         for person_id in person_id2sentence_ids.keys():
             max_vector = _mean
             _vectors = [sentence_id2vector[_sentence_id] for _sentence_id in person_id2sentence_ids[person_id] if
@@ -65,6 +63,8 @@ def get_person_id2vector2d(topic_id2sentence_ids2vector, person_id2sentence_ids,
             if len(_vectors) > 0:
                 max_vector = max(_vectors, key=lambda item: cos_dict(item, _mean))
             # 可以在这里加个维度的权重参数
+            if topic_weights is not None and _topic_id in topic_weights:
+                max_vector *= topic_weights[_topic_id]
             person_id2vector[person_id][_i * num_dim:(_i + 1) * num_dim] = max_vector
         _i += 1
     _vectors = np.array([_vector for _, _vector in person_id2vector.items()])
