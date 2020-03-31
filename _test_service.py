@@ -44,7 +44,7 @@ if __name__ == '__main__':
     # print(len(edges))
     start = timeit.default_timer()
     ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
-    person = get_range_person_by_name('李清照', ranges)
+    person = get_range_person_by_name('苏轼', ranges)
     print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
     # all_relation_person = [_person_id for _person_id, types in person.items()]
 
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     print('查询的人:{}'.format(person_ids))
     start = timeit.default_timer()
     all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
-        person_ids, populate_ratio=0.6, max_topic=15)
+        person_ids, populate_ratio=0.6, max_topic=10)
     print(len(all_topic_ids))
     print('查询所有topic的相关性:{}'.format(timeit.default_timer() - start))
     topic_weights = {'1 2 3': 2}

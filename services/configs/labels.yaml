@@ -34,6 +34,7 @@ edge:
     address_associate_is: 'AddrAssocIs'
     associate_belong: 'AssocBelong'  # 关联属于
     do: 'Do'  # 做了什么官, 做了什么关联的事
+    dynasty_is: 'DynastyIs'
     ethnicity_is: 'EthnicityIs'  # 是什么民族
     entry_belong: 'Entry_Belong'
     entry_is: 'EntryIs'

@@ -88,3 +88,6 @@ paths:
     亲属:
         person:
             -   kin: person
+    朝代:
+        person:
+            -   dynasty_is: dynasty

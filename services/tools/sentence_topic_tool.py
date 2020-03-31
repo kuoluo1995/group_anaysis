@@ -1,4 +1,5 @@
 import copy
+import timeit
 
 import math
 import random
@@ -7,6 +8,7 @@ from collections import defaultdict
 from gensim import corpora, similarities
 
 from services import common
+from services.tools import person_tool
 from services.tools.graph_tool import get_filtered_node
 from services.tools.person_tool import get_person_ids_by_topic_ids
 from tools.analysis_utils import multidimensional_scale
@@ -60,7 +62,7 @@ Sentence 部分
 #     return person_id2sentence_ids, sentence_id2person_id, all_sentence_dict
 
 
-def get_sentence_dict(person_ids, random_epoch=100):
+def get_sentence_dict(person_ids, random_epoch=100, min_sentence=5):
     """根据人的id 随机游走找到响应的描述
 
     Parameters
@@ -87,6 +89,11 @@ def get_sentence_dict(person_ids, random_epoch=100):
         sentence_ids = set()
         all_paths = [{tuple(sentence_id): _key for sentence_id in _path.get_all_paths_by_node_id(person_id)} for
                      _key, _path in MetaPaths.items()]  # list没法hash，所以要转化成元组
+        all_paths_num = 0
+        for sentence in all_paths:
+            all_paths_num += len(sentence)
+        if all_paths_num <= min_sentence:
+            continue
         for sentence in all_paths:
             for sentence_id, sentence_type in sentence.items():
                 sentence_ids.add(sentence_id)
@@ -417,14 +424,16 @@ def get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_id2sentence_ids, 
     """
     # 统计topic
     count_x, count_xy = defaultdict(int), defaultdict(dict)
-    for _x in all_topic_ids:
+    for i, _x in enumerate(all_topic_ids):
+        # start = timeit.default_timer()
         for _sentence_ids in person_id2sentence_ids.values():
             for _sentence_id in _sentence_ids:
                 if _sentence_id in topic_id2sentence_ids[_x]:
                     # 每一个topic对于所有的描述
                     count_x[_x] += 1
                     break
-
+        # print('4.1.1 {}/{}:{}'.format(i + 1, len(all_topic_ids), timeit.default_timer() - start))
+        # start = timeit.default_timer()
         count_xy[_x] = defaultdict(int)
         for _y in all_topic_ids:
             for _sentence_ids in person_id2sentence_ids.values():
@@ -436,6 +445,9 @@ def get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_id2sentence_ids, 
                         has_y = True
                 if has_x and has_y:
                     count_xy[_x][_y] += 1
+    #     print('4.1.2 {}/{}:{}'.format(i + 1, len(all_topic_ids), timeit.default_timer() - start))
+    # print('4.1:{}'.format(timeit.default_timer() - start))
+    # start = timeit.default_timer()
     # 计算pmi
     pmi_node = {}
     for _x in all_topic_ids:
@@ -448,4 +460,58 @@ def get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_id2sentence_ids, 
             p_x = count_x[_x] / num_all_sentences  # p(x)
             pmi = p_xy / p_x
             pmi_node[_x][_y] = 0 if pmi == 0 or _x == _y else math.log(pmi)
+    # print('4.2:{}'.format(timeit.default_timer() - start))
+    return pmi_node
+
+
+def get_topic_pmi2(all_topic_ids, all_person_ids):
+    """计算所有topic的pmi 标签之间的相关性，每个Topic的连线，越高先关系越大 pmi点互信息（概率论）
+
+    Parameters
+    ----------
+    all_topic_ids: list(int)
+        topic其实就是name, 所以就是node_name对应的id集合
+    person_id2sentence_ids: dict{int: list(int)}
+        人的id对应到描述的id
+    topic_id2sentence_ids: dict{int: list(int)}
+        topic_id对应的所有描述，以及描述是由list组成的。里面是(node_id,edge_id,node_id。。。。)组成
+    num_all_sentences: int
+        所有的描述数量
+
+    Returns
+    -------
+    pmi_node: dict{int: dict{int: float}}
+        topic的pmi矩阵 标签之间的相关性，每个Topic的连线，越高先关系越大 pmi点互信息（概率论）
+    """
+    num_all_person = len(all_person_ids)
+    # 统计topic
+    count_x, count_xy = defaultdict(int), defaultdict(dict)
+    for i, _x in enumerate(all_topic_ids):
+        # start = timeit.default_timer()
+        person_x_ids = person_tool.get_person_ids_by_topic_id(_x)
+        count_x[_x] += len(person_x_ids.intersection(all_person_ids))
+
+        # print('4.1.1 {}/{}:{}'.format(i + 1, len(all_topic_ids), timeit.default_timer() - start))
+        # start = timeit.default_timer()
+        count_xy[_x] = defaultdict(int)
+        for _y in all_topic_ids:
+            person_y_ids = person_tool.get_person_ids_by_topic_id(_y)
+            person_xy_ids = person_x_ids.intersection(person_y_ids)
+            count_xy[_x][_y] += len(person_xy_ids.intersection(all_person_ids))
+    #     print('4.1.2 {}/{}:{}'.format(i + 1, len(all_topic_ids), timeit.default_timer() - start))
+    # print('4.1:{}'.format(timeit.default_timer() - start))
+    # start = timeit.default_timer()
+    # 计算pmi
+    pmi_node = {}
+    for _x in all_topic_ids:
+        pmi_node[_x] = defaultdict(int)
+        for _y in all_topic_ids:
+            if count_x[_x] == 0 or count_x[_y] == 0:
+                pmi_node[_x][_y] = 0
+                continue
+            p_xy = count_xy[_x][_y] / count_x[_y]  # p(x|y)
+            p_x = count_x[_x] / num_all_person  # p(x)
+            pmi = p_xy / p_x
+            pmi_node[_x][_y] = 0 if pmi == 0 else math.log(pmi)
+    # print('4.2:{}'.format(timeit.default_timer() - start))
     return pmi_node

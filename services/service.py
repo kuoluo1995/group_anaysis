@@ -1,3 +1,5 @@
+import timeit
+
 import cylouvain
 import networkx as nx
 from collections import defaultdict
@@ -6,7 +8,8 @@ from services.tools.graph_tool import get_node_relevancy, get_graph_dict
 from services.tools import person_tool
 from services.tools.person_tool import get_all_similar_person
 from services.tools.pruning_tool import lrs
-from services.tools.sentence_topic_tool import get_sentence_dict, get_sentence_id2vector, get_topic_pmi, get_topic_dict
+from services.tools.sentence_topic_tool import get_sentence_dict, get_sentence_id2vector, get_topic_pmi, get_topic_dict, \
+    get_topic_pmi2
 
 
 def get_init_ranges():
@@ -189,7 +192,7 @@ def get_address_by_person_ids(person_ids):
     return address
 
 
-def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, populate_ratio=0.6):
+def get_topics_by_person_ids(person_ids, random_epoch=1000, min_sentence=5, max_topic=15, populate_ratio=0.6):
     """根据人的id查询所有的topic
 
     Notes
@@ -224,11 +227,14 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, popula
     edge_dict: dict{int:dict{string: string}}
         边字典: {edge_id: {'name': name, 'label': label, 'en_name': en_name}}
     """
+    print('查询topic的所有人数:{}'.format(len(person_ids)))
+    start = timeit.default_timer()
     GRAPH_DAO = common.GRAPH_DAO
     GRAPH_DAO.start_connect()
 
     person_id2sentence_ids, sentence_id2person_id, all_sentence_dict = get_sentence_dict(person_ids,
-                                                                                         random_epoch=random_epoch)
+                                                                                         random_epoch=random_epoch,
+                                                                                         min_sentence=min_sentence)
     print('所有的描述:{}'.format(len(all_sentence_dict)))
 
     node_label2ids, node_id2relevancy, node_id2sentence_ids = get_node_relevancy(person_id2sentence_ids)
@@ -239,18 +245,28 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, max_topic=15, popula
                                                                                  len(all_sentence_dict),
                                                                                  min_sentences=5, max_topic=max_topic,
                                                                                  populate_ratio=populate_ratio)
-
+    print('1:{}'.format(timeit.default_timer() - start))
     # sentence_id2vector
+    start = timeit.default_timer()
     dim2topic_id2sentence_ids2vector = get_sentence_id2vector(all_topic_ids, topic_ids2sentence_ids, num_dims=[2, 5])
+    print('2:{}'.format(timeit.default_timer() - start))
+    start = timeit.default_timer()
     person_id2position2d = person_tool.get_person_id2vector2d(dim2topic_id2sentence_ids2vector[5],
                                                               person_id2sentence_ids, num_dim=5)
-
-    topic_pmi = get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_ids2sentence_ids, len(all_sentence_dict))
-
+    print('3:{}'.format(timeit.default_timer() - start))
+    start = timeit.default_timer()
+    # topic_pmi = get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_ids2sentence_ids, len(all_sentence_dict))
+    topic_pmi = get_topic_pmi2(all_topic_ids, person_ids)
+    print('4:{}'.format(timeit.default_timer() - start))
+    start = timeit.default_timer()
     node_dict, edge_dict = get_graph_dict(all_sentence_dict)
-
+    print('5:{}'.format(timeit.default_timer() - start))
+    start = timeit.default_timer()
     topic_id2lrs = {_id: lrs(_id, person_ids) for _id in all_topic_ids}  # siwei: 这个以后也要发给前端
+    print('6:{}'.format(timeit.default_timer() - start))
+    start = timeit.default_timer()
     similar_person_ids = get_all_similar_person(person_ids, topic_id2lrs)
+    print('7:{}'.format(timeit.default_timer() - start))
     GRAPH_DAO.close_connect()
 
     return all_topic_ids, dim2topic_id2sentence_ids2vector[2], topic_pmi, person_id2position2d, node_dict, edge_dict, \
