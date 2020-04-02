@@ -140,3 +140,18 @@ def get_person_dict(all_person_ids):
         person_dict[_id] = {'name': GRAPH_DAO.get_node_name_by_id(_id),
                             'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)}
     return person_dict
+
+
+def get_person_all_dict(all_person_ids):
+    GRAPH_DAO = common.GRAPH_DAO
+    NodeLabels = common.NodeLabels
+    CBDB_DAO = common.CBDB_DAO
+    person = {}
+    for _id in all_person_ids:
+        code = GRAPH_DAO.get_node_code_by_id(_id)
+        cbdb_dict = CBDB_DAO.get_person_ranges_by_code(code)
+        dynasty_id = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['dynasty'], [cbdb_dict['dynasty_code']]),
+        statu_id = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['status'], [cbdb_dict['status_code']])
+        person[_id] = {dynasty_id[0][0]: GRAPH_DAO.get_node_name_by_id(dynasty_id[0][0]),
+                       statu_id[0]: GRAPH_DAO.get_node_name_by_id(statu_id[0])}
+    return person

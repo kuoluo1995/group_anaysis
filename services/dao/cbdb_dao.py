@@ -55,6 +55,14 @@ class CBDBDAO(SqliteDAO):
         rows = self._select(sql_str, ['person_code', 'name'], sql_args)
         return {cols['person_code']: cols['name'] for cols in rows}
 
+    def get_person_ranges_by_code(self, person_code):
+        sql_str = '''SELECT DISTINCT dynasties.c_dy, status_data.c_status_code FROM dynasties,biog_main,status_data,status_codes WHERE dynasties.c_dy=biog_main.c_dy AND status_data.c_personid = biog_main.c_personid AND status_data.c_status_code = status_codes.c_status_code'''
+        sql_args = []
+        if person_code is not None:
+            sql_str += ''' AND biog_main.c_personid = {}'''.format(person_code)
+        rows = self._select(sql_str, ['dynasty_code', 'status_code'], sql_args)
+        return rows[0]
+
     def get_address_by_person_codes(self, person_codes):
         if len(person_codes) > 0:
             person_codes = [int(_code) for _code in person_codes]
