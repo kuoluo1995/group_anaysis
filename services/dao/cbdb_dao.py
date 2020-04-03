@@ -1,4 +1,3 @@
-import gc
 from collections import defaultdict
 
 from services.dao.base_dao import SqliteDAO
@@ -10,6 +9,7 @@ class CBDBDAO(SqliteDAO):
         self.all_dynasties_cache = {}
         self.all_status_cache = {}
         self.person_code2address_cache = defaultdict(list)
+        self.address_code2address_cache = defaultdict(list)
         self.person_name2ids = defaultdict(set)
 
     def get_all_dynasties(self):
@@ -76,6 +76,19 @@ class CBDBDAO(SqliteDAO):
                     {'x_coord': cols['x_coord'], 'y_coord': cols['y_coord'], 'address_name': cols['address_name']})
 
         return {_code: self.person_code2address_cache[_code] for _code in person_codes}
+
+    def get_address_by_address_codes(self, address_codes):
+        address_codes = [int(_code) for _code in address_codes]
+        new_address_codes = [_code for _code in address_codes if _code not in self.address_code2address_cache]
+        if self.use_cache and len(new_address_codes) > 0:
+            sql_str = '''SELECT DISTINCT c_addr_id,x_coord,y_coord,c_name_chn FROM addresses WHERE c_addr_id in {}'''.format(
+                tuple(new_address_codes if len(new_address_codes) > 1 else "({})".format(new_address_codes[0])))
+            rows = self._select(sql_str, ['address_id', 'x_coord', 'y_coord', 'address_name'], ())
+            for cols in rows:
+                self.address_code2address_cache[cols['address_id']].append(
+                    {'x_coord': cols['x_coord'], 'y_coord': cols['y_coord'], 'address_name': cols['address_name']})
+
+        return {_code: self.address_code2address_cache[_code] for _code in address_codes}
 
     def get_person_by_person_names(self, person_names):
         new_person_names = [_name for _name in person_names if _name not in self.person_name2ids]

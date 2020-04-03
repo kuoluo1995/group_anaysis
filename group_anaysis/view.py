@@ -5,7 +5,7 @@ from django.shortcuts import render
 
 from services import common
 from services.service import get_range_person_by_name, get_topics_by_person_ids, get_person_by_ranges, get_init_ranges, \
-    get_address_by_person_ids, get_community_by_num_node_links, add_topic_weights, get_person_by_draws
+    get_address_by_address_ids, get_community_by_num_node_links, add_topic_weights, get_person_by_draws
 
 
 def init_ranges(request):
@@ -66,18 +66,18 @@ def search_person_by_ranges(request):
     return HttpResponse(json_result, content_type="application/json")
 
 
-def search_address_by_person_ids(request):
+def search_address_by_address_ids(request):
     NodeLabels = common.NodeLabels
     request.encoding = 'utf-8'
     result = {'is_success': False}
-    if 'person_ids[]' in request.POST and request.POST['person_ids[]']:
-        person_ids = request.POST.getlist('person_ids[]')
+    if 'address_ids[]' in request.POST and request.POST['address_ids[]']:
+        address_ids = request.POST.getlist('address_ids[]')
         try:
-            address = get_address_by_person_ids(person_ids)
+            address = get_address_by_address_ids(address_ids)
             result[NodeLabels['address']] = address
             result['is_success'] = True
         except Exception as e:
-            result['bug'] = '发给后端调试问题。输入为 person_ids:{}'.format(person_ids)
+            result['bug'] = '发给后端调试问题。输入为 address_ids:{}'.format(address_ids)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
 
@@ -229,8 +229,8 @@ def test_search_person_by_ranges(request):
     return render(request, 'test_post.html', {'response': content})
 
 
-def test_search_address_by_person_ids(request):
-    response = search_address_by_person_ids(request)
+def test_search_address_by_address_ids(request):
+    response = search_address_by_address_ids(request)
     content = str(response.content, 'utf-8')
     return render(request, 'test_post.html', {'response': content})
 

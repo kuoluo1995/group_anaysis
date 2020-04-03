@@ -157,7 +157,7 @@ def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids):
     return person
 
 
-def get_address_by_person_ids(person_ids):
+def get_address_by_address_ids(address_ids):
     """根据人的id查询所有的地址及坐标
 
     Notes
@@ -166,7 +166,7 @@ def get_address_by_person_ids(person_ids):
 
     Parameters
     ----------
-    person_ids: list(int)
+    address_ids: list(int)
 
     Returns
     -------
@@ -178,14 +178,14 @@ def get_address_by_person_ids(person_ids):
     NodeLabels = common.NodeLabels
     CBDB_DAO.start_connect()
     GRAPH_DAO.start_connect()
-
-    if person_ids is not None:
-        person_ids = list(person_ids)
-        for i, _id in enumerate(person_ids):
-            person_ids[i] = GRAPH_DAO.get_node_code_by_id(_id)
-
-    address = CBDB_DAO.get_address_by_person_codes(person_ids)
-    address = {GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['person'], [_code])[0]: _item for _code, _item in
+    address_codes = list()
+    if address_ids is None:
+        return None
+    address_ids = list(address_ids)
+    for _id in address_ids:
+        address_codes.append(GRAPH_DAO.get_node_code_by_id(_id))
+    address = CBDB_DAO.get_address_by_address_codes(address_codes)
+    address = {GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['address'], [_code])[0]: _item for _code, _item in
                address.items()}
     GRAPH_DAO.close_connect()
     CBDB_DAO.close_connect()
