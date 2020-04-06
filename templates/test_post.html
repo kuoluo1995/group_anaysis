@@ -8,7 +8,7 @@
 <body>
 <div>
     <h2>通过名字搜索范围</h2>
-    <form action="/test_search_ranges_by_name/" method="post">
+    <form action="/test_search_relation_person_by_name/" method="post">
         <label for="name">name</label>
         <input type="text" name="name" id="name">
         <input type="submit" value="搜索">
@@ -18,8 +18,8 @@
     <h2>通过范围搜索人名</h2>
     <form action="/test_search_person_by_ranges/" method="post">
         <label>dynasties:</label>
-        <label><input name="dynasties[]" type="checkbox" value="575">宋</label>
-        <label><input name="dynasties[]" type="checkbox" value="406">唐</label>
+        <label><input name="dynasty_ids[]" type="checkbox" value="575">宋</label>
+        <label><input name="dynasty_ids[]" type="checkbox" value="406">唐</label>
         <label for="min_year">min_year(整数)</label>
         <input type="number" name="min_year" id="min_year">
         <label for="max_year">max_year(整数)</label>
@@ -28,8 +28,11 @@
         <label><input name="genders[]" type="checkbox" value="男">男</label>
         <label><input name="genders[]" type="checkbox" value="女">女</label>
         <label>status:</label>
-        <label><input name="status[]" type="checkbox" value="[為官者：文]">[為官者：文]</label>
-        <label><input name="status[]" type="checkbox" value="[武官]">[武官]</label>
+        <label><input name="statu_ids[]" type="checkbox" value="633555">[宰相]</label>
+        <label><input name="statu_ids[]" type="checkbox" value="633479">书法家</label>
+        <label>address:</label>
+        <label><input name="address_ids[]" type="checkbox" value="445625">北京省市</label>
+        <label><input name="address_ids" type="checkbox" value="445622">浙江省</label>
         <input type="submit" value="搜索">
     </form>
 </div>
@@ -48,6 +51,12 @@
 <div>
     <h2>通过人名id搜索topic</h2>
     <form action="/test_search_topics_by_person_ids/" method="post">
+        <label for="populate_ratio">populate_ratio(推荐0.6)</label>
+        <input type="number" name="populate_ratio" id="populate_ratio" value="0.6">
+        <label for="max_topic">max_topic(推荐 10)</label>
+        <input type="number" name="max_topic" id="max_topic" value="10">
+        <label for="min_sentence">min_sentence(不要小于5 )</label>
+        <input type="number" name="min_sentence" id="min_sentence" value="5">
         <label>person_ids:</label>
         <label><input name="person_ids[]" type="checkbox" value="1447">朱明之</label>
         <label><input name="person_ids[]" type="checkbox" value="2287">吕嘉问</label>
@@ -56,6 +65,11 @@
         <label><input name="person_ids[]" type="checkbox" value="2658">蔡京</label>
         <input type="submit" value="搜索">
     </form>
+</div>
+<div>
+    <h2>搜索相似的人</h2>
+    <label>执行前先要执行通过人名id搜索topic，然后再可视化一下，之后才能按搜索相似的人这个按钮</label>
+    <button type="button" onclick="search_all_similar_person()">搜索相似的人</button>
 </div>
 <div>
     <h2>调整topic_id权重</h2>
@@ -97,6 +111,21 @@
                 "topic_weights": {'699576 731580 731593': 2, '445657 731580 731593': 3, '1 1 1': 5},
                 "topic_id2sentence_ids2vector": _json['topic_id2sentence_ids2vector'],
                 "person_id2sentence_ids": _json['person_id2sentence_ids']
+            }),
+            dataType: "json",
+            success: function (result) {
+                document.getElementById('response').innerText = JSON.stringify(result, null, 2);
+            }
+        });
+    }
+
+    function search_all_similar_person() {
+        $.ajax({
+            url: '/test_search_all_similar_person/',
+            type: 'POST',
+            data: JSON.stringify({
+                "topic_weights": _json['topic_id2lrs'],
+                'person_ids': [1447, 2287, 2773, 2775, 2658]
             }),
             dataType: "json",
             success: function (result) {

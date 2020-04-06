@@ -40,9 +40,13 @@ def get_init_ranges():
     status_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['status'], status.keys())
     status = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for
               _id in status_ids}
+    address = CBDB_DAO.get_all_address()
+    address_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['address'], address.keys())
+    address = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for
+               _id in address_ids}
     GRAPH_DAO.close_connect()
     CBDB_DAO.close_connect()
-    return dynasties, status
+    return dynasties, status, address
 
 
 def get_range_person_by_name(person_name, ranges):
@@ -107,7 +111,7 @@ def get_range_person_by_name(person_name, ranges):
     return person_dict
 
 
-def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids):
+def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids, address_ids):
     """根据范围查询到所有的人群
 
     Notes
@@ -136,19 +140,14 @@ def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids):
     GRAPH_DAO.start_connect()
     if dynasty_ids is not None:
         for i, _id in enumerate(dynasty_ids):
-            dynasty_ids[i] = GRAPH_DAO.get_node_code_by_id(int(_id))
-
-    if min_year is not None:
-        min_year = int(min_year)
-    if max_year is not None:
-        max_year = int(max_year)
-    if is_female is not None and type(is_female) != bool:
-        raise Exception('get_person_by_ranges({})'.format(is_female))
+            dynasty_ids[i] = GRAPH_DAO.get_node_code_by_id(_id)
     if statu_ids is not None:
         for i, _id in enumerate(statu_ids):
-            statu_ids[i] = GRAPH_DAO.get_node_code_by_id(int(_id))
-
-    person = CBDB_DAO.get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids)
+            statu_ids[i] = GRAPH_DAO.get_node_code_by_id(_id)
+    if address_ids is not None:
+        for i, _id in enumerate(address_ids):
+            address_ids[i] = GRAPH_DAO.get_node_code_by_id(_id)
+    person = CBDB_DAO.get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids, address_ids)
     person_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['person'], person.keys())
     person = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for
               _id in person_ids}
@@ -243,7 +242,8 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, min_sentence=5, max_
                                                                                  sentence_id2person_id,
                                                                                  node_id2sentence_ids, len(person_ids),
                                                                                  len(all_sentence_dict),
-                                                                                 min_sentences=5, max_topic=max_topic,
+                                                                                 min_sentences=min_sentence,
+                                                                                 max_topic=max_topic,
                                                                                  populate_ratio=populate_ratio)
     print('1:{}'.format(timeit.default_timer() - start))
     # sentence_id2vector
@@ -264,13 +264,10 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, min_sentence=5, max_
     start = timeit.default_timer()
     topic_id2lrs = {_id: lrs(_id, person_ids) for _id in all_topic_ids}  # siwei: 这个以后也要发给前端
     print('6:{}'.format(timeit.default_timer() - start))
-    start = timeit.default_timer()
-    similar_person_ids = get_all_similar_person(person_ids, topic_id2lrs)
-    print('7:{}'.format(timeit.default_timer() - start))
     GRAPH_DAO.close_connect()
 
     return all_topic_ids, dim2topic_id2sentence_ids2vector[2], topic_pmi, person_id2position2d, node_dict, edge_dict, \
-           topic_id2lrs, similar_person_ids, all_sentence_dict, dim2topic_id2sentence_ids2vector[5], \
+           topic_id2lrs, all_sentence_dict, dim2topic_id2sentence_ids2vector[5], \
            person_id2sentence_ids
 
 
@@ -279,10 +276,19 @@ def add_topic_weights(topic_weights, topic_id2sentence_ids2vector, person_id2sen
     GRAPH_DAO.start_connect()
     person_id2position2d = person_tool.get_person_id2vector2d(topic_id2sentence_ids2vector,
                                                               person_id2sentence_ids, topic_weights=topic_weights,
-                                                              num_dim=5)
+                                                              num_dim=num_dim)
     person_dict = person_tool.get_person_dict(person_id2position2d.keys())
     GRAPH_DAO.close_connect()
     return person_id2position2d, person_dict
+
+
+def get_similar_person(person_ids, topic_weights):
+    GRAPH_DAO = common.GRAPH_DAO
+    GRAPH_DAO.start_connect()
+    similar_person_ids = get_all_similar_person(person_ids, topic_weights)
+    similar_person = person_tool.get_person_dict(similar_person_ids)
+    GRAPH_DAO.close_connect()
+    return similar_person
 
 
 def get_person_by_draws(sql):

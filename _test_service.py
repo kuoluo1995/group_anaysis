@@ -6,7 +6,7 @@ import numpy as np
 
 from services import common
 from services.service import get_range_person_by_name, get_topics_by_person_ids, get_init_ranges, get_person_by_ranges, \
-    get_address_by_address_ids, get_all_similar_person, add_topic_weights
+    get_address_by_address_ids, get_all_similar_person, add_topic_weights, get_similar_person
 from services.tools.person_tool import get_person_all_dict
 from tools.sort_utils import sort_dict2list
 
@@ -24,13 +24,20 @@ if __name__ == '__main__':
     MetaPaths = common.MetaPaths
 
     GRAPH_DAO.start_connect()
-    dynasties, status = get_init_ranges()
-    # GRAPH_DAO.close_connect()
-    dynastie_id = 716  # 明朝
+    dynasties, status, address = get_init_ranges()
 
-    start_id = 633615  # 【进士】
-    start_id2 = 633526  # 业进士
-    start_id3 = 471835  # [乡贡进士]
+    start = timeit.default_timer()
+    dynastie_id = 716  # 明朝
+    person = get_person_by_ranges([dynastie_id], None, None, None, None, list(address.keys())[:30])
+    print('查询范围内的所有人耗时:{}'.format(timeit.default_timer() - start))
+    CBDB_DAO = common.CBDB_DAO
+    CBDB_DAO.start_connect()
+    person_dict = get_person_all_dict([_id for _id, values in person.items()])
+    person_dict = {key: values for key, values in person_dict.items() if 633615 in values.keys()}
+    person_ids = [_id for _id, values in person.items()][:30]
+
+    # GRAPH_DAO.close_connect()
+
     # id = GRAPH_DAO.get_node_ids_by_name('王安石')[0]
     # edges = GRAPH_DAO.get_out_edges(id)
     # result = {}
@@ -56,14 +63,6 @@ if __name__ == '__main__':
     # print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
     # all_relation_person = [_person_id for _person_id, types in person.items()]
 
-    start = timeit.default_timer()
-    person = get_person_by_ranges([dynastie_id], None, None, None, None)
-    print('查询范围内的所有人耗时:{}'.format(timeit.default_timer() - start))
-    CBDB_DAO = common.CBDB_DAO
-    CBDB_DAO.start_connect()
-    person_dict = get_person_all_dict([_id for _id, values in person.items()])
-    person_dict = {key: values for key, values in person_dict.items() if 633615 in values.keys()}
-    person_ids = [_id for _id, values in person.items()][:30]
     # GRAPH_DAO.start_connect()
     # start = timeit.default_timer()
     # person_id2relation = {_id: len(GRAPH_DAO.get_in_edges(_id) + GRAPH_DAO.get_out_edges(_id)) for _id, _ in
@@ -75,19 +74,20 @@ if __name__ == '__main__':
     # person_ids = [_id[0] for _id in person_id2relation]
     # print('查询的人:{}'.format(person_ids))
     start = timeit.default_timer()
-    all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
+    all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
         person_ids, populate_ratio=0.6, max_topic=10)
     print(len(all_topic_ids))
     print('查询所有topic的相关性:{}'.format(timeit.default_timer() - start))
 
-    address_ids = [_id for _id, _item in node_dict.items() if _item['label'] == NodeLabels['address']]
-    start = timeit.default_timer()
-    address = get_address_by_address_ids(address_ids)
-    print('查询地址耗时:{}'.format(timeit.default_timer() - start))
+    similar_person = get_similar_person(person_ids, topic_id2lrs)
+    # address_ids = [_id for _id, _item in node_dict.items() if _item['label'] == NodeLabels['address']]
+    # start = timeit.default_timer()
+    # address = get_address_by_address_ids(address_ids)
+    # print('查询地址耗时:{}'.format(timeit.default_timer() - start))
 
-    topic_weights = {'1 2 3': 2}
-    person_id2position2d2, person_dict = add_topic_weights(topic_weights, topic_id2sentence_ids2vector,
-                                                           person_id2sentence_ids)
+    # topic_weights = {'1 2 3': 2}
+    # person_id2position2d2, person_dict = add_topic_weights(topic_weights, topic_id2sentence_ids2vector,
+    #                                                        person_id2sentence_ids)
 
     # topic 相似矩阵
     pmi_names = list()

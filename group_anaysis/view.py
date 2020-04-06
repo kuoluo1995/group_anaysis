@@ -5,7 +5,8 @@ from django.shortcuts import render
 
 from services import common
 from services.service import get_range_person_by_name, get_topics_by_person_ids, get_person_by_ranges, get_init_ranges, \
-    get_address_by_address_ids, get_community_by_num_node_links, add_topic_weights, get_person_by_draws
+    get_address_by_address_ids, get_community_by_num_node_links, add_topic_weights, get_person_by_draws, \
+    get_similar_person
 
 
 def init_ranges(request):
@@ -13,9 +14,10 @@ def init_ranges(request):
     request.encoding = 'utf-8'
     result = {'is_success': False}
     try:
-        dynasties, status = get_init_ranges()
+        dynasties, status, address = get_init_ranges()
         result[NodeLabels['dynasty']] = dynasties
         result[NodeLabels['status']] = status
+        result[NodeLabels['address']] = address
         result['is_success'] = True
     except Exception as e:
         result['bug'] = '发给后端调试问题。输入为 空'
@@ -23,7 +25,7 @@ def init_ranges(request):
     return HttpResponse(json_result, content_type="application/json")
 
 
-def search_ranges_by_name(request):
+def search_relation_person_by_name(request):
     NodeLabels = common.NodeLabels
     EdgeLabels = common.EdgeLabels
     request.encoding = 'utf-8'
@@ -44,24 +46,29 @@ def search_person_by_ranges(request):
     NodeLabels = common.NodeLabels
     request.encoding = 'utf-8'
     result = {'is_success': False}
-    dynasty_ids = min_year = max_year = is_female = statu_ids = None
+    dynasty_ids = min_year = max_year = is_female = statu_ids = address_ids = None
     if 'dynasty_ids[]' in request.POST and request.POST['dynasty_ids[]']:
         dynasty_ids = request.POST.getlist('dynasty_ids[]')
+        dynasty_ids = [int(_id) for _id in dynasty_ids]
     if 'min_year' in request.POST and request.POST['min_year']:
-        min_year = request.POST['min_year']
+        min_year = int(request.POST['min_year'])
     if 'max_year' in request.POST and request.POST['max_year']:
-        max_year = request.POST['max_year']
+        max_year = int(request.POST['max_year'])
     if 'genders[]' in request.POST and request.POST['genders[]'] and len(request.POST['genders[]']) == 1:
         is_female = (request.POST.getlist('genders[]')[0] == '女')
     if 'statu_ids[]' in request.POST and request.POST['statu_ids[]']:
         statu_ids = request.POST.getlist('statu_ids[]')
+        statu_ids = [int(_id) for _id in statu_ids]
+    if 'address_ids[]' in request.POST and request.POST['address_ids[]']:
+        address_ids = request.POST.getlist('address_ids[]')
+        address_ids = [int(_id) for _id in address_ids]
     try:
-        person = get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids)
+        person = get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids, address_ids)
         result[NodeLabels['person']] = person
         result['is_success'] = True
     except Exception as e:
-        result['bug'] = '发给后端调试问题。输入为 dynasty_ids:{} min_year:{} max_year:{} is_female:{} statu_ids:{}' \
-            .format(dynasty_ids, min_year, max_year, is_female, statu_ids)
+        result['bug'] = '发给后端调试问题。输入为 dynasty_ids:{} min_year:{} max_year:{} is_female:{} statu_ids:{} address_ids:{}' \
+            .format(dynasty_ids, min_year, max_year, is_female, statu_ids, address_ids)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
 
@@ -72,6 +79,7 @@ def search_address_by_address_ids(request):
     result = {'is_success': False}
     if 'address_ids[]' in request.POST and request.POST['address_ids[]']:
         address_ids = request.POST.getlist('address_ids[]')
+        address_ids = [int(_id) for _id in address_ids]
         try:
             address = get_address_by_address_ids(address_ids)
             result[NodeLabels['address']] = address
@@ -85,13 +93,18 @@ def search_address_by_address_ids(request):
 def search_topics_by_person_ids(request):
     request.encoding = 'utf-8'
     result = {'is_success': False}
-    if 'person_ids[]' in request.POST and request.POST['person_ids[]']:
+    if 'person_ids[]' in request.POST and request.POST['person_ids[]'] and 'populate_ratio' in request.POST and \
+            request.POST['populate_ratio'] and 'max_topic' in request.POST and request.POST['max_topic'] and \
+            'min_sentence' in request.POST and request.POST['min_sentence']:
         person_ids = request.POST.getlist('person_ids[]')
+        person_ids = [int(_id) for _id in person_ids]
+        populate_ratio = float(request.POST['populate_ratio'])
+        max_topic = int(request.POST['max_topic'])
+        min_sentence = int(request.POST['min_sentence'])
         try:
-            person_ids = [int(_id) for _id in person_ids]
             print('查询的人:{}'.format(person_ids))
-            all_topic_ids, topic_id2sentence_ids2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, similar_person_ids, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
-                person_ids, populate_ratio=0.8, max_topic=5)
+            all_topic_ids, topic_id2sentence_ids2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
+                person_ids, populate_ratio=populate_ratio, max_topic=max_topic, min_sentence=min_sentence)
             result['all_topic_ids'] = [[int(_id) for _id in _ids] for _ids in all_topic_ids]
             topic_id2sentence_ids2position1d_json = {}
             for _topic_id, _item in topic_id2sentence_ids2position1d.items():
@@ -122,7 +135,6 @@ def search_topics_by_person_ids(request):
                 _topic_id = ' '.join(_topic_id)
                 topic_id2lrs_json[_topic_id] = _lrs
             result['topic_id2lrs'] = topic_id2lrs_json
-            result['similar_person_ids'] = similar_person_ids
             all_sentence_dict_json = {}
             for _sentence_id, _name in all_sentence_dict.items():
                 _sentence_id = [str(_id) for _id in _sentence_id]
@@ -144,7 +156,8 @@ def search_topics_by_person_ids(request):
             result['person_id2sentence_ids'] = person_id2sentence_ids
             result['is_success'] = True
         except Exception as e:
-            result['bug'] = '发给后端调试问题。输入为 person_ids:{}'.format(person_ids)
+            result['bug'] = '发给后端调试问题。输入为 populate_ratio:{} max_topix:{} min_sentence:{} person_ids:{}'.format(
+                populate_ratio, max_topic, min_sentence, person_ids)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
 
@@ -176,6 +189,26 @@ def adjust_topic_weights(request):
             result['is_success'] = True
         except Exception as e:
             result['bug'] = '发给后端调试问题。输入为 {}'.format(request_json)
+    json_result = json.dumps(result)
+    return HttpResponse(json_result, content_type="application/json")
+
+
+def search_all_similar_person(request):
+    request.encoding = 'utf-8'
+    result = {'is_success': False}
+    request_json = json.loads(request.body)
+    if 'topic_weights' in request_json and request_json['topic_weights'] and 'person_ids' in request_json and \
+            request_json['person_ids']:
+        try:
+            topic_weights = {tuple([int(_id) for _id in _topic_id.split(' ')]): _weight for _topic_id, _weight in
+                             request_json['topic_weights'].items()}
+            person_ids = [int(_id) for _id in request_json['person_ids']]
+            print('查询的人:{}'.format(person_ids))
+            similar_person = get_similar_person(person_ids, topic_weights)
+            result['similar_person'] = similar_person
+            result['is_success'] = True
+        except Exception as e:
+            result['bug'] = '发给后端调试问题。输入为 json:{}'.format(request_json)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
 
@@ -217,8 +250,8 @@ def test_init_ranges(request):
     return render(request, 'test_post.html', {'response': content})
 
 
-def test_search_ranges_by_name(request):
-    response = search_ranges_by_name(request)
+def test_search_relation_person_by_name(request):
+    response = search_relation_person_by_name(request)
     content = str(response.content, 'utf-8')
     return render(request, 'test_post.html', {'response': content})
 
@@ -243,6 +276,11 @@ def test_search_topics_by_person_ids(request):
 
 def test_adjust_topic_weights(request):
     response = adjust_topic_weights(request)
+    return response
+
+
+def test_search_all_similar_person(request):
+    response = search_all_similar_person(request)
     return response
 
 

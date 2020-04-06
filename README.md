@@ -62,7 +62,7 @@ python manage.py runserver 127.0.0.1:8080
 # 前后端接口
 ![](./images/init_ranges.png)
 
-![](./images/search_ranges_by_name.png)
+![](./images/search_relation_person_by_name.png)
 
 ![](./images/search_person_by_ranges.png)
 
@@ -71,6 +71,8 @@ python manage.py runserver 127.0.0.1:8080
 ![](./images/search_topic_by_person_ids.png)
 
 ![](./images/adjust_topic_weights.png)
+
+![](./images/search_all_similar_person.png)
 
 ![](./images/search_community_by_links.png)
 

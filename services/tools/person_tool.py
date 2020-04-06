@@ -78,16 +78,16 @@ def get_person_id2vector2d(topic_id2sentence_ids2vector, person_id2sentence_ids,
     return person_id2position2d
 
 
-def get_all_similar_person(person_ids, topic_id2lrs):
+def get_all_similar_person(person_ids, topic_weights):
     # siwei: 找到所有相似的人, 要做成一个接口
     # 添加了相似人物推荐的算法(findAllSimPeople函数)
     person_id2num_topic = defaultdict(int)
-    for topic_id in topic_id2lrs.keys():
+    for topic_id in topic_weights.keys():
         has_topic_person_ids = get_person_ids_by_topic_id(topic_id)
         for _id in has_topic_person_ids:
-            if _id in person_ids:
+            if _id in person_ids:  # 已有的人就不要了~，推荐当前不存在的
                 continue
-            person_id2num_topic[_id] += topic_id2lrs[topic_id]
+            person_id2num_topic[_id] += topic_weights[topic_id]
     similar_person_ids = [_id for (_id, _) in sort_dict2list(person_id2num_topic)]
     return similar_person_ids
 
