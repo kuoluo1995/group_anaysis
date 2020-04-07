@@ -49,7 +49,7 @@ def get_init_ranges():
     return dynasties, status, address
 
 
-def get_range_person_by_name(person_name, ranges):
+def get_relation_person_by_name(person_name, ranges):
     """根据person_name和所需要的范围label来得到范围所包含的值(name)
 
     Notes
@@ -73,7 +73,7 @@ def get_range_person_by_name(person_name, ranges):
     NodeLabels = common.NodeLabels
     GRAPH_DAO.start_connect()
     if person_name is None or type(person_name) != str or person_name == '':
-        raise Exception('get_range_person_by_name({})'.format(person_name))
+        raise Exception('get_relation_person_by_name({})'.format(person_name))
 
     person_ids = GRAPH_DAO.get_node_ids_by_name(person_name)
     person_dict = defaultdict(dict)

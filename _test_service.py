@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from services import common
-from services.service import get_range_person_by_name, get_topics_by_person_ids, get_init_ranges, get_person_by_ranges, \
+from services.service import get_relation_person_by_name, get_topics_by_person_ids, get_init_ranges, get_person_by_ranges, \
     get_address_by_address_ids, get_all_similar_person, add_topic_weights, get_similar_person
 from services.tools.person_tool import get_person_all_dict
 from tools.sort_utils import sort_dict2list
@@ -24,55 +24,35 @@ if __name__ == '__main__':
     MetaPaths = common.MetaPaths
 
     GRAPH_DAO.start_connect()
-    dynasties, status, address = get_init_ranges()
+    # dynasties, status, address = get_init_ranges()
+    #
+    # start = timeit.default_timer()
+    # dynastie_id = 716  # 明朝
+    # person = get_person_by_ranges([dynastie_id], None, None, None, None, list(address.keys())[:30])
+    # print('查询范围内的所有人耗时:{}'.format(timeit.default_timer() - start))
+    # CBDB_DAO = common.CBDB_DAO
+    # CBDB_DAO.start_connect()
+    # person_dict = get_person_all_dict([_id for _id, values in person.items()])
+    # person_dict = {key: values for key, values in person_dict.items() if 633615 in values.keys()}
+    # person_ids = [_id for _id, values in person.items()][:30]
+
 
     start = timeit.default_timer()
-    dynastie_id = 716  # 明朝
-    person = get_person_by_ranges([dynastie_id], None, None, None, None, list(address.keys())[:30])
-    print('查询范围内的所有人耗时:{}'.format(timeit.default_timer() - start))
-    CBDB_DAO = common.CBDB_DAO
-    CBDB_DAO.start_connect()
-    person_dict = get_person_all_dict([_id for _id, values in person.items()])
-    person_dict = {key: values for key, values in person_dict.items() if 633615 in values.keys()}
-    person_ids = [_id for _id, values in person.items()][:30]
+    ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
+    person = get_relation_person_by_name('狄仁杰', ranges)
+    print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
+    all_relation_person = [_person_id for _person_id, types in person.items()]
 
-    # GRAPH_DAO.close_connect()
+    GRAPH_DAO.start_connect()
+    start = timeit.default_timer()
+    person_id2relation = {_id: len(GRAPH_DAO.get_in_edges(_id) + GRAPH_DAO.get_out_edges(_id)) for _id, _ in
+                          person.items()}
+    print('查询所有人的相关性:{}'.format(timeit.default_timer() - start))
+    GRAPH_DAO.close_connect()
 
-    # id = GRAPH_DAO.get_node_ids_by_name('王安石')[0]
-    # edges = GRAPH_DAO.get_out_edges(id)
-    # result = {}
-    # count = 0
-    # for _key, meta_path in MetaPaths.items():
-    #     all_path = meta_path.get_all_paths_by_node_id(id)
-    #     all_sentences = []
-    #     for path in all_path:
-    #         sentence = []
-    #         for i, word_id in enumerate(path):
-    #             if i % 2 == 0:
-    #                 sentence.append(GRAPH_DAO.get_node_name_by_id(word_id))
-    #             else:
-    #                 sentence.append(GRAPH_DAO.get_edge_name_by_id(word_id))
-    #         all_sentences.append(sentence)
-    #     result[_key] = all_sentences
-    #     count += len(result[_key])
-
-    # print(len(edges))
-    # start = timeit.default_timer()
-    # ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
-    # person = get_range_person_by_name('苏轼', ranges)
-    # print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
-    # all_relation_person = [_person_id for _person_id, types in person.items()]
-
-    # GRAPH_DAO.start_connect()
-    # start = timeit.default_timer()
-    # person_id2relation = {_id: len(GRAPH_DAO.get_in_edges(_id) + GRAPH_DAO.get_out_edges(_id)) for _id, _ in
-    #                       person.items()}
-    # print('查询所有人的相关性:{}'.format(timeit.default_timer() - start))
-    # GRAPH_DAO.close_connect()
-
-    # person_id2relation = sort_dict2list(person_id2relation)[:30]
-    # person_ids = [_id[0] for _id in person_id2relation]
-    # print('查询的人:{}'.format(person_ids))
+    person_id2relation = sort_dict2list(person_id2relation)
+    person_ids = [_id[0] for _id in person_id2relation]
+    print('查询的人:{}'.format(person_ids))
     start = timeit.default_timer()
     all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
         person_ids, populate_ratio=0.6, max_topic=10)

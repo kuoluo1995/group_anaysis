@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 
 from services import common
-from services.service import get_range_person_by_name, get_topics_by_person_ids, get_person_by_ranges, get_init_ranges, \
+from services.service import get_relation_person_by_name, get_topics_by_person_ids, get_person_by_ranges, get_init_ranges, \
     get_address_by_address_ids, get_community_by_num_node_links, add_topic_weights, get_person_by_draws, \
     get_similar_person
 
@@ -34,7 +34,7 @@ def search_relation_person_by_name(request):
         name = request.POST['name']
         try:
             ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
-            result[NodeLabels['person']] = get_range_person_by_name(name, ranges)
+            result[NodeLabels['person']] = get_relation_person_by_name(name, ranges)
             result['is_success'] = True
         except Exception as e:
             result['bug'] = '发给后端调试问题。输入为 name:{}'.format(name)

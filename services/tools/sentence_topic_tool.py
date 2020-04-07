@@ -240,6 +240,7 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
     all_topic_ids: set(int)
         topic其实就是name, 所以就是node_name对应的id集合
     """
+    # GRAPH_DAO = common.GRAPH_DAO
     topic_id2person_ids, topic_id2sentence_ids, all_topic_ids = {}, {}, set()  # 不用defaultdict 因为不能直接变成json串
     for _label, _ids in node_label2ids.items():
         _node_id2relevancy = dict()  # node_id2relevancy是个计算当前结点里已有结点的相关性
@@ -262,6 +263,7 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
                 topic_id2person_ids[topic_id] = person_ids
                 all_topic_ids.add(topic_id)
     print('单个topic的数量:{}'.format(len(all_topic_ids)))
+    # topic_names = [GRAPH_DAO.get_node_name_by_id(_id[0]) for _id in all_topic_ids]
     topic_ids2sentence_ids, topic_ids2person_ids, all_topic_ids = _topic_id2topic_ids(all_topic_ids,
                                                                                       topic_id2sentence_ids,
                                                                                       topic_id2person_ids, num_persons,

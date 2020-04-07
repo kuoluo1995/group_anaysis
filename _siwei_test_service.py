@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from services import common
-from services.service import get_range_person_by_name, get_topics_by_person_ids
+from services.service import get_relation_person_by_name, get_topics_by_person_ids
 from tools.sort_utils import sort_dict2list
 import math
 from collections import defaultdict
@@ -18,7 +18,7 @@ if __name__ == '__main__':
     print('start')
     GRAPH_DAO = common.GRAPH_DAO
     NodeLabels = common.NodeLabels
-    ranges = get_range_person_by_name('王安石')
+    ranges = get_relation_person_by_name('王安石')
     print('range end')
     GRAPH_DAO.start_connect()
     person_id2relation = {_id: len(GRAPH_DAO.get_in_edges(_id) + GRAPH_DAO.get_out_edges(_id)) for _id in
