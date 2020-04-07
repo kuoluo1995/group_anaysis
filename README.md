@@ -1,3 +1,6 @@
+# 更新 2020/4/7
+pip install channels
+
 # 更新 2020/3/23
 增加了新的接口，对于画图，以及优化了search_range_people_by_name
 每次后台启动前还要开启图数据库。

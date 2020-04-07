@@ -32,7 +32,7 @@
         <label><input name="statu_ids[]" type="checkbox" value="633479">书法家</label>
         <label>address:</label>
         <label><input name="address_ids[]" type="checkbox" value="445625">北京省市</label>
-        <label><input name="address_ids" type="checkbox" value="445622">浙江省</label>
+        <label><input name="address_ids[]" type="checkbox" value="445622">浙江省</label>
         <input type="submit" value="搜索">
     </form>
 </div>
@@ -65,6 +65,24 @@
         <label><input name="person_ids[]" type="checkbox" value="2658">蔡京</label>
         <input type="submit" value="搜索">
     </form>
+</div>
+<div>
+    <h2>Socket通过人名id搜索topic</h2>
+    <div id='socket_topic'>
+        <label for="populate_ratio">populate_ratio(推荐0.6)</label>
+        <input type="number" name="populate_ratio" id="populate_ratio" value="0.6">
+        <label for="max_topic">max_topic(推荐 10)</label>
+        <input type="number" name="max_topic" id="max_topic" value="10">
+        <label for="min_sentence">min_sentence(不要小于5 )</label>
+        <input type="number" name="min_sentence" id="min_sentence" value="5">
+        <label>person_ids:</label>
+        <label><input name="person_ids[]" type="checkbox" value="1447">朱明之</label>
+        <label><input name="person_ids[]" type="checkbox" value="2287">吕嘉问</label>
+        <label><input name="person_ids[]" type="checkbox" value="2773">王安礼</label>
+        <label><input name="person_ids[]" type="checkbox" value="2775">王安石</label>
+        <label><input name="person_ids[]" type="checkbox" value="2658">蔡京</label>
+        <button type='button' onclick="socket_search_topics_by_person_ids()">socket搜索</button>
+    </div>
 </div>
 <div>
     <h2>搜索相似的人</h2>
@@ -132,5 +150,47 @@
                 document.getElementById('response').innerText = JSON.stringify(result, null, 2);
             }
         });
+    }
+
+    function socket_search_topics_by_person_ids() {
+        // 新建WebSocket连接
+        let websocket = new WebSocket("ws://localhost:8000/socket_search_topics_by_person_ids/");
+        // 连接打开事件，打开连接后发送数据
+        _json = {};
+        let populate_ratio = $("#socket_topic input[name=populate_ratio]").val();//添加至数组
+        if (populate_ratio !== undefined && populate_ratio !== '')
+            _json['populate_ratio'] = populate_ratio;
+        let max_topic = $("#socket_topic input[name=max_topic]").val();
+        if (max_topic !== undefined && max_topic !== '')
+            _json['max_topic'] = max_topic;
+        let min_sentence = $("#socket_topic input[name=min_sentence]").val();
+        if (min_sentence !== undefined && min_sentence !== '')
+            _json['min_sentence'] = min_sentence;
+        let person_ids = [];
+        $("#socket_topic input[name='person_ids[]']").each(function () {
+            if ($(this).prop('checked'))
+                person_ids.push($(this).val());
+        });
+        if (person_ids.length > 0)
+            _json['person_ids[]'] = person_ids;
+        websocket.onopen = function () {
+            // 使用send()方法发送数据
+            _content = JSON.stringify(_json, null, 0);
+            websocket.send(_content);
+            console.log("数据发送中:\n" + _content);
+        };
+
+        // 接收数据事件，event的data就是返回数据
+        websocket.onmessage = function (evt) {
+            let received_json = evt.data;
+            console.log("数据已接收:\n");
+            document.getElementById('response').innerText = JSON.stringify(JSON.parse(received_json), null, 2);
+            // 作为一个好习惯，在接收完数据后就关闭连接，这样可以减少服务器的负担
+            websocket.close();
+        };
+        // 关闭连接后要做的事
+        websocket.onclose = function () {
+            console.log("连接已关闭...");
+        };
     }
 </script>
