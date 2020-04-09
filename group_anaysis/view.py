@@ -1,10 +1,13 @@
 import json
+import traceback
+
 import numpy as np
 from django.http import HttpResponse
 from django.shortcuts import render
 
 from services import common
-from services.service import get_relation_person_by_name, get_topics_by_person_ids, get_person_by_ranges, get_init_ranges, \
+from services.service import get_relation_person_by_name, get_topics_by_person_ids, get_person_by_ranges, \
+    get_init_ranges, \
     get_address_by_address_ids, get_community_by_num_node_links, add_topic_weights, get_person_by_draws, \
     get_similar_person
 
@@ -20,6 +23,7 @@ def init_ranges(request):
         result[NodeLabels['address']] = address
         result['is_success'] = True
     except Exception as e:
+        traceback.print_exc()
         result['bug'] = '发给后端调试问题。输入为 空'
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
@@ -37,6 +41,7 @@ def search_relation_person_by_name(request):
             result[NodeLabels['person']] = get_relation_person_by_name(name, ranges)
             result['is_success'] = True
         except Exception as e:
+            traceback.print_exc()
             result['bug'] = '发给后端调试问题。输入为 name:{}'.format(name)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
@@ -67,6 +72,7 @@ def search_person_by_ranges(request):
         result[NodeLabels['person']] = person
         result['is_success'] = True
     except Exception as e:
+        traceback.print_exc()
         result['bug'] = '发给后端调试问题。输入为 dynasty_ids:{} min_year:{} max_year:{} is_female:{} statu_ids:{} address_ids:{}' \
             .format(dynasty_ids, min_year, max_year, is_female, statu_ids, address_ids)
     json_result = json.dumps(result)
@@ -85,6 +91,7 @@ def search_address_by_address_ids(request):
             result[NodeLabels['address']] = address
             result['is_success'] = True
         except Exception as e:
+            traceback.print_exc()
             result['bug'] = '发给后端调试问题。输入为 address_ids:{}'.format(address_ids)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
@@ -149,13 +156,18 @@ def search_topics_by_person_ids(request):
                 for _sentence_id, _value in _item.items():
                     _sentence = [str(_id) for _id in _sentence_id]
                     _sentence = ' '.join(_sentence)
-                    topic_id2sentence_ids2vector_json[_topic_id][_sentence] = [v for v in _value]
+                    topic_id2sentence_ids2vector_json[_topic_id][_sentence] = {}
+                    for _s, _f in _value.items():
+                        _s = [str(_id) for _id in _s]
+                        _s = ' '.join(_s)
+                        topic_id2sentence_ids2vector_json[_topic_id][_sentence][_s] = float(_f)
             result['topic_id2sentence_ids2vector'] = topic_id2sentence_ids2vector_json
             person_id2sentence_ids = {_person_id: list(_sentence_id) for _person_id, _sentence_id in
                                       person_id2sentence_ids.items()}
             result['person_id2sentence_ids'] = person_id2sentence_ids
             result['is_success'] = True
         except Exception as e:
+            traceback.print_exc()
             result['bug'] = '发给后端调试问题。输入为 populate_ratio:{} max_topix:{} min_sentence:{} person_ids:{}'.format(
                 populate_ratio, max_topic, min_sentence, person_ids)
     json_result = json.dumps(result)
@@ -178,7 +190,10 @@ def adjust_topic_weights(request):
                 topic_id2sentence_ids2vector_json[_topic_id] = {}
                 for _sentence_id, _value in _items.items():
                     _sentence = tuple([int(_id) for _id in _sentence_id.split(' ')])
-                    topic_id2sentence_ids2vector_json[_topic_id][_sentence] = np.array(_value)
+                    topic_id2sentence_ids2vector_json[_topic_id][_sentence] = {}
+                    for _s, _f in _value.items():
+                        _s = tuple([int(_id) for _id in _s.split(' ')])
+                        topic_id2sentence_ids2vector_json[_topic_id][_sentence][_s] = _f
             person_id2sentence_ids = {int(_person_id): [tuple(_sentence_id) for _sentence_id in _sentence_ids] for
                                       _person_id, _sentence_ids in request_json['person_id2sentence_ids'].items()}
             person_id2position2d, person_dict = add_topic_weights(topic_weights,
@@ -188,6 +203,7 @@ def adjust_topic_weights(request):
             result['person_dict'] = person_dict
             result['is_success'] = True
         except Exception as e:
+            traceback.print_exc()
             result['bug'] = '发给后端调试问题。输入为 {}'.format(request_json)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
@@ -208,6 +224,7 @@ def search_all_similar_person(request):
             result['similar_person'] = similar_person
             result['is_success'] = True
         except Exception as e:
+            traceback.print_exc()
             result['bug'] = '发给后端调试问题。输入为 json:{}'.format(request_json)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
@@ -222,6 +239,7 @@ def search_person_ids_by_draws(request):
             result['person_ids'] = get_person_by_draws(draws)
             result['is_success'] = True
         except Exception as e:
+            traceback.print_exc()
             result['bug'] = '发给后端调试问题,请检查neo4j数据库是否开启。输入为 draws:{}'.format(draws)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type='application/json')
@@ -239,6 +257,7 @@ def search_community_by_links(request):
             result['info'] = '社团发现'
             result['is_success'] = True
         except Exception as e:
+            traceback.print_exc()
             result['bug'] = '发给后端调试问题。输入为 num:{},links:{}'.format(num_node, links)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")

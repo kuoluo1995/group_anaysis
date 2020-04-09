@@ -108,16 +108,13 @@
     </h2>
     <pre id="response">{{ response }}</pre>
 </div>
-</body>
-</html>
-
 <script type="text/javascript">
     _json = {};
 
     function show() {
         var _content = document.getElementById('response').innerText; //获取json格式内容
         _json = JSON.parse(_content);
-        _content = JSON.stringify(JSON.parse(_content), null, 2);//将字符串转换成json对象
+        {#_content = JSON.stringify(_json, null, 2);//将字符串转换成json对象#}
         document.getElementById('response').innerText = _content;
     }
 
@@ -184,7 +181,8 @@
         websocket.onmessage = function (evt) {
             let received_json = evt.data;
             console.log("数据已接收:\n");
-            document.getElementById('response').innerText = JSON.stringify(JSON.parse(received_json), null, 2);
+            _json = JSON.parse(received_json);
+            {#document.getElementById('response').innerText = JSON.stringify(_json, null, 2);#}
             // 作为一个好习惯，在接收完数据后就关闭连接，这样可以减少服务器的负担
             websocket.close();
         };
@@ -194,3 +192,6 @@
         };
     }
 </script>
+</body>
+</html>
+

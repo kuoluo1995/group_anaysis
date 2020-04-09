@@ -1,3 +1,5 @@
+import traceback
+
 from channels.generic.websocket import WebsocketConsumer
 import json
 
@@ -70,13 +72,18 @@ class SocketSearchTopicsByPersonIds(WebsocketConsumer):
                     for _sentence_id, _value in _item.items():
                         _sentence = [str(_id) for _id in _sentence_id]
                         _sentence = ' '.join(_sentence)
-                        topic_id2sentence_ids2vector_json[_topic_id][_sentence] = [v for v in _value]
+                        topic_id2sentence_ids2vector_json[_topic_id][_sentence] = {}
+                        for _s, _f in _value.items():
+                            _s = [str(_id) for _id in _s]
+                            _s = ' '.join(_s)
+                            topic_id2sentence_ids2vector_json[_topic_id][_sentence][_s] = float(_f)
                 result['topic_id2sentence_ids2vector'] = topic_id2sentence_ids2vector_json
                 person_id2sentence_ids = {_person_id: list(_sentence_id) for _person_id, _sentence_id in
                                           person_id2sentence_ids.items()}
                 result['person_id2sentence_ids'] = person_id2sentence_ids
                 result['is_success'] = True
             except Exception as e:
+                traceback.print_exc()
                 result['bug'] = '发给后端调试问题。输入为 {}'.format(text_data)
         json_result = json.dumps(result)
         self.send(text_data=json_result)

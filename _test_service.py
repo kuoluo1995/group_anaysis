@@ -5,8 +5,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from services import common
-from services.service import get_relation_person_by_name, get_topics_by_person_ids, get_init_ranges, get_person_by_ranges, \
-    get_address_by_address_ids, get_all_similar_person, add_topic_weights, get_similar_person
+from services.service import get_relation_person_by_name, get_topics_by_person_ids, get_init_ranges, \
+    get_person_by_ranges, \
+    get_address_by_address_ids, get_all_similar_person, add_topic_weights, get_similar_person, \
+    get_top_topic_by_sentence_ids
 from services.tools.person_tool import get_person_all_dict
 from tools.sort_utils import sort_dict2list
 
@@ -36,7 +38,6 @@ if __name__ == '__main__':
     # person_dict = {key: values for key, values in person_dict.items() if 633615 in values.keys()}
     # person_ids = [_id for _id, values in person.items()][:30]
 
-
     start = timeit.default_timer()
     ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
     person = get_relation_person_by_name('狄仁杰', ranges)
@@ -58,8 +59,11 @@ if __name__ == '__main__':
         person_ids, populate_ratio=0.6, max_topic=10)
     print(len(all_topic_ids))
     print('查询所有topic的相关性:{}'.format(timeit.default_timer() - start))
+    all_sentence_ids = {_id for _id in all_sentence_dict.keys()}
+    all_topic_ids = get_top_topic_by_sentence_ids(all_sentence_ids, min_sentence=1, max_topic=15, populate_ratio=0.1)
+    print(all_topic_ids)
+    # similar_person = get_similar_person(person_ids, topic_id2lrs)
 
-    similar_person = get_similar_person(person_ids, topic_id2lrs)
     # address_ids = [_id for _id, _item in node_dict.items() if _item['label'] == NodeLabels['address']]
     # start = timeit.default_timer()
     # address = get_address_by_address_ids(address_ids)

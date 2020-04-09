@@ -178,6 +178,8 @@ def get_sentence_id2vector(all_topic_ids, topic_id2sentence_ids, num_dims):
         根据描述得到相似度字典
     """
     dim2topic_ids2sentence_ids2vector = defaultdict(lambda **arg: defaultdict(dict))
+    topic_id2sentence_dist = defaultdict(dict)
+
     vectors = {}
     for topic_id in all_topic_ids:
         sentences_ids = list(topic_id2sentence_ids[topic_id])
@@ -189,8 +191,13 @@ def get_sentence_id2vector(all_topic_ids, topic_id2sentence_ids, num_dims):
 
         num_sentence = len(sentences_ids)
         sentence_dist = np.zeros((num_sentence, num_sentence))
+        sentence2sentence_dist = defaultdict(dict)
         for _i, _node_ids in enumerate(corpus):
             sentence_dist[_i] = 1 - sim_index[model[_node_ids]]
+            sentence_id = sentences_ids[_i]
+            for _i2, _dist in enumerate(list(sentence_dist[_i])):
+                sentence2sentence_dist[sentence_id][sentences_ids[_i2]] = _dist
+        topic_id2sentence_dist[topic_id] = sentence2sentence_dist
 
         # sentence_dist太少了降维会失败，应该是函数的问题
         for _dim in num_dims:
@@ -198,7 +205,7 @@ def get_sentence_id2vector(all_topic_ids, topic_id2sentence_ids, num_dims):
         for _i, sentence_id in enumerate(sentences_ids):
             for _dim in num_dims:
                 dim2topic_ids2sentence_ids2vector[_dim][topic_id][sentence_id] = vectors[_dim][_i]
-    return dim2topic_ids2sentence_ids2vector
+    return dim2topic_ids2sentence_ids2vector, topic_id2sentence_dist
 
 
 """
