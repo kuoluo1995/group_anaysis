@@ -16,9 +16,7 @@ class SocketSearchTopicsByPersonIds(WebsocketConsumer):
     def receive(self, text_data):
         request = json.loads(text_data)
         result = {'is_success': False}
-        if 'person_ids[]' in request and request['person_ids[]'] and 'populate_ratio' in request and \
-                request['populate_ratio'] and 'max_topic' in request and request['max_topic'] and \
-                'min_sentence' in request and request['min_sentence']:
+        if 'person_ids[]' in request and request['person_ids[]'] and 'populate_ratio' in request and request['populate_ratio'] and 'max_topic' in request and request['max_topic'] and 'min_sentence' in request and request['min_sentence']:
             person_ids = request['person_ids[]']
             person_ids = [int(_id) for _id in person_ids]
             populate_ratio = float(request['populate_ratio'])

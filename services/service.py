@@ -7,7 +7,7 @@ from services import common
 from services.tools.graph_tool import get_node_relevancy, get_graph_dict
 from services.tools import person_tool
 from services.tools.person_tool import get_all_similar_person
-from services.tools.pruning_tool import lrs
+from services.tools.pruning_tool import lrs, getTopicWeights
 from services.tools.sentence_topic_tool import get_sentence_dict, get_sentence_id2vector, get_topic_pmi, get_topic_dict, \
     get_topic_pmi2
 from tools.sort_utils import sort_dict2list
@@ -192,7 +192,7 @@ def get_address_by_address_ids(address_ids):
     return address
 
 
-def get_topics_by_person_ids(person_ids, random_epoch=1000, min_sentence=5, max_topic=15, populate_ratio=0.6):
+def get_topics_by_person_ids(person_ids, random_epoch=1000, min_sentence=5, max_topic=15, populate_ratio=0.4):
     # populate_ratio = 0.3
     """根据人的id查询所有的topic
 
@@ -266,7 +266,11 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, min_sentence=5, max_
     node_dict, edge_dict = get_graph_dict(all_sentence_dict)
     print('5:{}'.format(timeit.default_timer() - start))
     start = timeit.default_timer()
-    topic_id2lrs = {_id: lrs(_id, person_ids) for _id in all_topic_ids}  # siwei: 这个以后也要发给前端
+
+    # topic_id2lrs = getTopicWeights(all_topic_ids, person_ids)
+    # print(topic_id2lrs)
+
+    topic_id2lrs = {_id: lrs(_id, person_ids) for _id in all_topic_ids} 
     print('6:{}'.format(timeit.default_timer() - start))
     GRAPH_DAO.close_connect()
 

@@ -216,7 +216,7 @@ Topic
 
 
 def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_id2sentence_ids, num_persons,
-                   num_sentences, min_sentences=5, max_topic=15, populate_ratio=0.6):
+                   num_sentences, min_sentences=5, max_topic=15, populate_ratio=0.4):
     """根据相关的人和描述，得到所有有关的topic， topic其实就是node_name
 
     Parameters
@@ -261,6 +261,7 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
                 popular_node_ids.append(_id)
         popular_node_ids = popular_node_ids[:max_topic]
 
+        # todo: 可以考虑都显示然后再取前几个
         for _node_id in popular_node_ids:
             topic_id = (_node_id,)
             sentence_ids = node_id2sentence_ids[_node_id]
@@ -318,9 +319,9 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_id
                     new_topic_ids.add(new_topic_id)
                     topic_id2person_ids[new_topic_id] = person_ids
                     topic_id2sentence_ids[new_topic_id] = sentence_ids
-                    if support_persons > 0.9 * support_topic1:
+                    if support_persons > 0.7 * support_topic1:
                         remove_topic_ids.add(topic_id1)
-                    if support_persons > 0.9 * support_topic2:
+                    if support_persons > 0.7 * support_topic2:
                         remove_topic_ids.add(topic_id2)
                 else:
                     no_used_topic.add(new_topic_id)
