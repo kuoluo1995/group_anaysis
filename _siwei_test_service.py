@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from services import common
-from services.service import get_relation_person_by_name, get_topics_by_person_ids, get_init_ranges, get_person_by_ranges, \
-    get_address_by_address_ids, get_all_similar_person, add_topic_weights, get_similar_person
+from services.service import get_relation_person_by_name, get_topics_by_person_ids, get_init_ranges, get_person_by_ranges,get_address_by_address_ids, get_all_similar_person, add_topic_weights, get_similar_person, get_compared_topics_by_person_ids
 from services.tools.person_tool import get_person_all_dict
 from tools.sort_utils import sort_dict2list
 
@@ -39,24 +38,20 @@ if __name__ == '__main__':
 
     start = timeit.default_timer()
     ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
-    person = get_relation_person_by_name('王安石', ranges)
-    print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
-    all_relation_person = [_person_id for _person_id, types in person.items()]
+    person1 = get_relation_person_by_name('王安石', ranges)
+    person2 = get_relation_person_by_name('苏轼', ranges)
 
-    GRAPH_DAO.start_connect()
-    start = timeit.default_timer()
-    person_id2relation = {_id: len(GRAPH_DAO.get_in_edges(_id) + GRAPH_DAO.get_out_edges(_id)) for _id, _ in
-                          person.items()}
-    print('查询所有人的相关性:{}'.format(timeit.default_timer() - start))
-    GRAPH_DAO.close_connect()
+    print('查询耗时:{}'.format(timeit.default_timer() - start))
+    person_ids1 = [_person_id for _person_id, types in person1.items()]
+    person_ids2 = [_person_id for _person_id, types in person2.items()]
+    all_person_ids = list(set(person_ids1 + person_ids2))
 
-    person_id2relation = sort_dict2list(person_id2relation)
-    person_ids = [_id[0] for _id in person_id2relation]
-    print('查询的人:{}'.format(person_ids))
+    print('查询的人:{}'.format(all_person_ids))
     start = timeit.default_timer()
-    all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
-        person_ids, populate_ratio=0.6, max_topic=10)
+    all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_compared_topics_by_person_ids(person_ids1, person_ids2, populate_ratio=0.3, max_topic=10)
     print(len(all_topic_ids))
+
+
     # print('查询所有topic的相关性:{}'.format(timeit.default_timer() - start))
 
     # similar_person = get_similar_person(person_ids, topic_id2lrs)
@@ -102,14 +97,14 @@ if __name__ == '__main__':
     #     plt.show()
 
     # 人物散点图
-    num_person = len(person_id2position2d.keys())
-    colors = np.random.random(num_person)
-    position2ds = np.array([_position2d for person_id, _position2d in person_id2position2d.items()])
-    plt.scatter(position2ds[:, 0], position2ds[:, 1], alpha=0.5, c=colors)
-    for _person_id, _pos2d in person_id2position2d.items():
-        _name = node_dict[_person_id]['name']
-        plt.text(_pos2d[0], _pos2d[1], _name, fontsize=5)
-    plt.show()
+    # num_person = len(person_id2position2d.keys())
+    # colors = np.random.random(num_person)
+    # position2ds = np.array([_position2d for person_id, _position2d in person_id2position2d.items()])
+    # plt.scatter(position2ds[:, 0], position2ds[:, 1], alpha=0.5, c=colors)
+    # for _person_id, _pos2d in person_id2position2d.items():
+    #     _name = node_dict[_person_id]['name']
+    #     plt.text(_pos2d[0], _pos2d[1], _name, fontsize=5)
+    # plt.show()
 
     # 将算法的结果保存成json串，用于提供给前端快速测试
     # input_file = 'input.json'  # 输入的json

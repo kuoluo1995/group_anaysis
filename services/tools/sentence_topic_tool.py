@@ -82,7 +82,7 @@ def get_sentence_dict(person_ids, random_epoch=100, min_sentence=5):
         所有的描述，以及描述里所有的id（node_id,edge_id,node_id。。。）
     """
     MetaPaths = common.MetaPaths
-    person_id2sentence_ids = {}  # 描述
+    person_id2sentence_ids = defaultdict(set)  # 描述
     sentence_id2person_id = {}
     all_sentence_dict = {}
     for person_id in person_ids:
@@ -248,7 +248,7 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
         topic其实就是name, 所以就是node_name对应的id集合
     """
     # GRAPH_DAO = common.GRAPH_DAO
-    topic_id2person_ids, topic_id2sentence_ids, all_topic_ids = {}, {}, set()  # 不用defaultdict 因为不能直接变成json串
+    topic_id2person_ids, topic_id2sentence_ids, all_topic_ids = defaultdict(set), defaultdict(set), set()  # 不用defaultdict 因为不能直接变成json串
     for _label, _ids in node_label2ids.items():
         _node_id2relevancy = dict()  # node_id2relevancy是个计算当前结点里已有结点的相关性
         for _id in _ids:

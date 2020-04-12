@@ -7,7 +7,7 @@ from services import common
 from services.tools.graph_tool import get_node_relevancy, get_graph_dict
 from services.tools import person_tool
 from services.tools.person_tool import get_all_similar_person
-from services.tools.pruning_tool import lrs, getTopicWeights
+from services.tools.pruning_tool import lrs, getTopicWeights, compared_lrs
 from services.tools.sentence_topic_tool import get_sentence_dict, get_sentence_id2vector, get_topic_pmi, get_topic_dict, \
     get_topic_pmi2
 from tools.sort_utils import sort_dict2list
@@ -190,6 +190,79 @@ def get_address_by_address_ids(address_ids):
     GRAPH_DAO.close_connect()
     CBDB_DAO.close_connect()
     return address
+
+# 用于对比的
+def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=1000, min_sentence=5, max_topic=15, populate_ratio=0.4):
+    person_ids = list(set(person_ids1 + person_ids2))
+    
+    print('查询topic的所有人数:{}'.format(len(person_ids)))
+    start = timeit.default_timer()
+    GRAPH_DAO = common.GRAPH_DAO
+    GRAPH_DAO.start_connect()
+
+
+    def process(pids):
+        person_id2sentence_ids, sentence_id2person_id, all_sentence_dict = get_sentence_dict(pids, random_epoch=random_epoch,min_sentence=min_sentence)
+        print('所有的描述:{}'.format(len(all_sentence_dict)))
+
+        node_label2ids, node_id2relevancy, node_id2sentence_ids = get_node_relevancy(person_id2sentence_ids)
+        topic_ids2person_ids, topic_ids2sentence_ids, all_topic_ids = get_topic_dict(node_label2ids, node_id2relevancy,
+                                                                                    sentence_id2person_id,
+                                                                                    node_id2sentence_ids, len(person_ids),
+                                                                                    len(all_sentence_dict),
+                                                                                    min_sentences=min_sentence,
+                                                                                    max_topic=max_topic,
+                                                                                    populate_ratio=populate_ratio)
+        return topic_ids2person_ids, topic_ids2sentence_ids, all_topic_ids, person_id2sentence_ids, all_sentence_dict
+        
+    t2p1, t2s1, at1, p2s1, as1 = process(person_ids1)
+    t2p2, t2s2, at2, p2s2, as2 = process(person_ids2)
+    
+
+    # 合并
+    as1.update(as2)
+    all_sentence_dict = as1
+
+    topic_ids2person_ids = t2p1
+    topic_ids2sentence_ids = t2s1
+    all_topic_ids = set.union(at1, at2)
+    print(len(at1), len(at2), len(all_topic_ids))
+    for t in t2p2:
+        topic_ids2person_ids[t] = set.union(t2p2[t], t2p1[t])
+        topic_ids2sentence_ids[t] = set.union(t2s1[t], t2s2[t])
+
+    person_id2sentence_ids = p2s1
+    for p in p2s2:
+        person_id2sentence_ids[p] = set.union(p2s1[p], p2s2[p])
+
+    print('1:{}'.format(timeit.default_timer() - start))
+    # sentence_id2vector
+    start = timeit.default_timer()
+    dim2topic_id2sentence_ids2vector, topic_id2sentence_dist = get_sentence_id2vector(all_topic_ids,
+                                                                                      topic_ids2sentence_ids,
+                                                                                      num_dims=[2])  # , 5
+    print('2:{}'.format(timeit.default_timer() - start))
+    start = timeit.default_timer()
+    # dim2topic_id2sentence_ids2vector[5], 
+    person_id2position2d = person_tool.get_person_id2vector2d(topic_id2sentence_dist, person_id2sentence_ids, num_dim=5)
+    print('3:{}'.format(timeit.default_timer() - start))
+    start = timeit.default_timer()
+    # topic_pmi = get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_ids2sentence_ids, len(all_sentence_dict))
+    topic_pmi = get_topic_pmi2(all_topic_ids, person_ids)
+    print('4:{}'.format(timeit.default_timer() - start))
+    start = timeit.default_timer()
+    node_dict, edge_dict = get_graph_dict(all_sentence_dict)
+    print('5:{}'.format(timeit.default_timer() - start))
+    start = timeit.default_timer()
+
+    # topic_id2lrs = getTopicWeights(all_topic_ids, person_ids)
+    # print(topic_id2lrs)
+
+    topic_id2lrs = {_id: compared_lrs(_id, person_ids1, person_ids2) for _id in all_topic_ids} 
+    print('6:{}'.format(timeit.default_timer() - start))
+    GRAPH_DAO.close_connect()
+
+    return all_topic_ids, dim2topic_id2sentence_ids2vector[2], topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_dist, person_id2sentence_ids
 
 
 def get_topics_by_person_ids(person_ids, random_epoch=1000, min_sentence=5, max_topic=15, populate_ratio=0.4):

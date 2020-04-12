@@ -109,8 +109,8 @@ def get_person_id2vector2d(topic_id2sentence_dist, person_id2sentence_ids, topic
                     dist = max(all_dists) * topic_weight
                 person_dist[p1][p2] += dist * dist
 
-    for p1, ss1 in person2sentences.items():
-        for p2, ss2 in person2sentences.items():
+    for p1, ss1 in person_id2sentence_ids.items():
+        for p2, ss2 in person_id2sentence_ids.items():
             person_dist[p1][p2] = math.sqrt(person_dist[p1][p2])
 
     # print('start mds')
@@ -122,6 +122,8 @@ def get_person_id2vector2d(topic_id2sentence_dist, person_id2sentence_ids, topic
     # print('end mds')
     positions = mds(n_components=2, dist=person_dist_array)
 
+    # print(len(people), len(person2sentences.keys()), len(person_id2sentence_ids),len(person_dist), person_dist_array.shape)
+    # 419 1 587 419 (419, 419)
     person_id2position2d = {}
     _i = 0
     for _person_id in person_id2sentence_ids:
