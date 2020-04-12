@@ -40,7 +40,7 @@ if __name__ == '__main__':
 
     start = timeit.default_timer()
     ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
-    person = get_relation_person_by_name('狄仁杰', ranges)
+    person = get_relation_person_by_name('王安石', ranges)
     print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
     all_relation_person = [_person_id for _person_id, types in person.items()]
 

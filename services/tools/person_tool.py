@@ -92,10 +92,13 @@ def get_person_id2vector2d(topic_id2sentence_dist, person_id2sentence_ids, topic
                     person2sentences[person_id].append(_sentence)
 
         mean_dist = 0
+        dists = []
         for s1 in sentence_dist:
             for s2 in sentence_dist:
                 mean_dist += sentence_dist[s1][s2]
+                dists.append(sentence_dist[s1][s2])
         mean_dist /= len(sentence_dist) * len(sentence_dist)
+        max_dist = max(dists)
 
         for p1, ss1 in person2sentences.items():
             for p2, ss2 in person2sentences.items():
@@ -104,7 +107,8 @@ def get_person_id2vector2d(topic_id2sentence_dist, person_id2sentence_ids, topic
                     for s2 in ss2:
                         all_dists.append(sentence_dist[s1][s2])
                 if len(all_dists) == 0:
-                    dist = mean_dist * topic_weight
+                    # dist = mean_dist * topic_weight
+                    dist = max_dist * topic_weight
                 else:
                     dist = max(all_dists) * topic_weight
                 person_dist[p1][p2] += dist * dist

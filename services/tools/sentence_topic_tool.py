@@ -290,6 +290,7 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
 def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_ids, num_persons, num_sentences,
                         min_sentences, populate_ratio):
     i = 0
+
     while True:
         no_used_topic = set()
         new_topic_ids = set()
@@ -303,10 +304,14 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_id
                 if new_topic_id in all_topic_ids or new_topic_id in no_used_topic:
                     continue
                 sentence_ids = get_sentence_ids_by_topic_ids(topic_id1, topic_id2, topic_id2sentence_ids)
+                
+
                 if len(sentence_ids) == 0:
                     no_used_topic.add(new_topic_id)
                     continue
                 person_ids = get_person_ids_by_topic_ids(topic_id1, topic_id2, topic_id2person_ids)
+                topic_id2person_ids[new_topic_id] = set(person_ids)
+
                 if len(person_ids) == 0:
                     no_used_topic.add(new_topic_id)
                     continue
@@ -319,10 +324,10 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_id
                     new_topic_ids.add(new_topic_id)
                     topic_id2person_ids[new_topic_id] = person_ids
                     topic_id2sentence_ids[new_topic_id] = sentence_ids
-                    if support_persons > 0.7 * support_topic1:
-                        remove_topic_ids.add(topic_id1)
-                    if support_persons > 0.7 * support_topic2:
-                        remove_topic_ids.add(topic_id2)
+                    # if support_persons > 0.7 * support_topic1:
+                    #     remove_topic_ids.add(topic_id1)
+                    # if support_persons > 0.7 * support_topic2:
+                    #     remove_topic_ids.add(topic_id2)
                 else:
                     no_used_topic.add(new_topic_id)
 
@@ -331,13 +336,37 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_id
         all_topic_ids.update(new_topic_ids)
         for topic_id in remove_topic_ids:
             all_topic_ids.remove(topic_id)
+
         if len(new_topic_ids) == 0:
             break
-    removed_topic_ids = set(topic_id2sentence_ids.keys())
-    removed_topic_ids.difference_update(all_topic_ids)
-    for _id in remove_topic_ids:
-        topic_id2sentence_ids.pop(_id)
-        topic_id2person_ids.pop(_id)
+
+        
+    temp_all_topic_ids = set(all_topic_ids)
+    for t1 in all_topic_ids:
+        if t1 not in temp_all_topic_ids:
+            continue
+        for t2 in all_topic_ids:
+            if t1 == t2 or t2 not in temp_all_topic_ids:
+                continue
+            long_one = t2 if len(t1) < len(t2) else t1
+            short_one = t1 if len(t1) < len(t2) else t2
+            if set(short_one).issubset(set(long_one)): #是子集
+                large_pids = topic_id2person_ids[short_one]
+                small_pids = topic_id2person_ids[long_one]
+
+                diff = large_pids.difference(small_pids)
+                if len(diff)/len(large_pids) < 0.2:
+                    if short_one in temp_all_topic_ids:
+                        temp_all_topic_ids.remove(short_one)
+                        # print(short_one, long_one)
+    all_topic_ids = temp_all_topic_ids
+
+    # removed_topic_ids = set(topic_id2sentence_ids.keys())
+    # removed_topic_ids.difference_update(all_topic_ids)
+    # for _id in remove_topic_ids:
+    #     topic_id2sentence_ids.pop(_id)
+    #     topic_id2person_ids.pop(_id)
+    topic_id2person_ids = {tid: topic_id2person_ids[tid] for tid in all_topic_ids}
     return topic_id2sentence_ids, topic_id2person_ids, all_topic_ids
 
 
