@@ -222,7 +222,7 @@ def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=100
     t2p1, t2s1, at1, p2s1, as1 = process(person_ids1)
     t2p2, t2s2, at2, p2s2, as2 = process(person_ids2)
 
-    # 合并
+    # 合并的、
     as1.update(as2)
     all_sentence_dict = as1
 

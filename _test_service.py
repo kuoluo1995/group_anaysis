@@ -1,4 +1,3 @@
-import datetime
 import json
 import os
 import timeit
@@ -11,7 +10,6 @@ from services.service import get_relation_person_by_name, get_topics_by_person_i
     get_address_by_address_ids, get_all_similar_person, add_topic_weights, get_similar_person, \
     get_top_topic_by_sentence_ids
 from services.tools.person_tool import get_person_all_dict
-from tools import json_utils
 from tools.sort_utils import sort_dict2list
 
 # linux去除中文乱码
@@ -39,13 +37,11 @@ if __name__ == '__main__':
     # person_dict = get_person_all_dict([_id for _id, values in person.items()])
     # person_dict = {key: values for key, values in person_dict.items() if 633615 in values.keys()}
     # person_ids = [_id for _id, values in person.items()][:30]
-    name = 'error_init_ranges_' + str(datetime.datetime.now()).replace(' ', '-').replace(':','_')
-    json_utils.save_json({1:1}, name)
+
     start = timeit.default_timer()
     ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
-    name = '蔡京'
-    person = get_relation_person_by_name(name, ranges)
-    print('查询{}耗时:{}'.format(name, timeit.default_timer() - start))
+    person = get_relation_person_by_name('狄仁杰', ranges)
+    print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
     all_relation_person = [_person_id for _person_id, types in person.items()]
 
     GRAPH_DAO.start_connect()
@@ -60,7 +56,7 @@ if __name__ == '__main__':
     print('查询的人:{}'.format(person_ids))
     start = timeit.default_timer()
     all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
-        person_ids, populate_ratio=0.5, max_topic=10, min_sentence=5)
+        person_ids, populate_ratio=0.3, max_topic=10)
     print(len(all_topic_ids))
     print('查询所有topic的相关性:{}'.format(timeit.default_timer() - start))
     all_sentence_ids = {_id for _id in all_sentence_dict.keys()}
