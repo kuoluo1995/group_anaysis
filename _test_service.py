@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import timeit
@@ -10,6 +11,7 @@ from services.service import get_relation_person_by_name, get_topics_by_person_i
     get_address_by_address_ids, get_all_similar_person, add_topic_weights, get_similar_person, \
     get_top_topic_by_sentence_ids
 from services.tools.person_tool import get_person_all_dict
+from tools import json_utils
 from tools.sort_utils import sort_dict2list
 
 # linux去除中文乱码
@@ -37,7 +39,8 @@ if __name__ == '__main__':
     # person_dict = get_person_all_dict([_id for _id, values in person.items()])
     # person_dict = {key: values for key, values in person_dict.items() if 633615 in values.keys()}
     # person_ids = [_id for _id, values in person.items()][:30]
-
+    name = 'error_init_ranges_' + str(datetime.datetime.now()).replace(' ', '-').replace(':','_')
+    json_utils.save_json({1:1}, name)
     start = timeit.default_timer()
     ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
     name = '蔡京'
