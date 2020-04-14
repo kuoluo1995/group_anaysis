@@ -12,7 +12,7 @@ from services.tools import person_tool
 from services.tools.graph_tool import get_filtered_node
 from services.tools.person_tool import get_person_ids_by_topic_ids
 from tools.analysis_utils import multidimensional_scale
-from tools.sort_utils import sort_dict2list
+from tools.sort_utils import sort_dict2list, sort_by_condition
 
 """
 Sentence 部分
@@ -285,6 +285,11 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
     #                                                                                    populate_ratio,
     #                                                                                    sentence_id2person_id)
     print('总topic数量:{}'.format(len(all_topic_ids)))
+    all_topic_ids = sort_by_condition(topic_ids2person_ids, topic_id2sentence_ids)[:max_topic]
+    topic_ids2person_ids = {_topic: _person_ids for _topic, _person_ids in topic_ids2person_ids.items() if
+                            _topic in all_topic_ids}
+    topic_ids2sentence_ids = {_topic: _sentence_ids for _topic, _sentence_ids in topic_ids2sentence_ids.items() if
+                              _topic in all_topic_ids}
     return topic_ids2person_ids, topic_ids2sentence_ids, all_topic_ids
 
 
