@@ -196,7 +196,7 @@ def get_address_by_address_ids(address_ids):
 def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=1000, min_sentence=5, max_topic=15,
                                       populate_ratio=0.4):
     person_ids = list(set(person_ids1 + person_ids2))
-    
+
     print('查询topic的所有人数:{}'.format(len(person_ids)))
     start = timeit.default_timer()
     GRAPH_DAO = common.GRAPH_DAO
@@ -241,13 +241,11 @@ def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=100
     print('1:{}'.format(timeit.default_timer() - start))
     # sentence_id2vector
     start = timeit.default_timer()
-    dim2topic_id2sentence_ids2vector, topic_id2sentence_dist = get_sentence_id2vector(all_topic_ids,
-                                                                                      topic_ids2sentence_ids,
-                                                                                      num_dims=[2])  # , 5
+    dim2topic_id2sentence_ids2vector = get_sentence_id2vector(all_topic_ids, topic_ids2sentence_ids, num_dims=[2, 5])
     print('2:{}'.format(timeit.default_timer() - start))
     start = timeit.default_timer()
-    # dim2topic_id2sentence_ids2vector[5], 
-    person_id2position2d = person_tool.get_person_id2vector2d(topic_id2sentence_dist, person_id2sentence_ids, num_dim=5)
+    person_id2position2d = person_tool.get_person_id2vector2d(dim2topic_id2sentence_ids2vector[5],
+                                                              person_id2sentence_ids, num_dim=5)
     print('3:{}'.format(timeit.default_timer() - start))
     start = timeit.default_timer()
     # topic_pmi = get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_ids2sentence_ids, len(all_sentence_dict))
@@ -265,8 +263,8 @@ def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=100
     print('6:{}'.format(timeit.default_timer() - start))
     GRAPH_DAO.close_connect()
 
-    return all_topic_ids, dim2topic_id2sentence_ids2vector[
-        2], topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_dist, person_id2sentence_ids
+    return all_topic_ids, dim2topic_id2sentence_ids2vector[2], topic_pmi, person_id2position2d, node_dict, edge_dict, \
+           topic_id2lrs, all_sentence_dict, dim2topic_id2sentence_ids2vector[5], person_id2sentence_ids
 
 
 def get_topics_by_person_ids(person_ids, random_epoch=1000, min_sentence=5, max_topic=15, populate_ratio=0.4):
@@ -327,13 +325,13 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, min_sentence=5, max_
     print('1:{}'.format(timeit.default_timer() - start))
     # sentence_id2vector
     start = timeit.default_timer()
-    dim2topic_id2sentence_ids2vector, topic_id2sentence_dist = get_sentence_id2vector(all_topic_ids,
-                                                                                      topic_ids2sentence_ids,
-                                                                                      num_dims=[2])  # , 5
+    dim2topic_id2sentence_ids2vector = get_sentence_id2vector(all_topic_ids, topic_ids2sentence_ids,
+                                                              num_dims=[2, 5])  # , 5
     print('2:{}'.format(timeit.default_timer() - start))
     start = timeit.default_timer()
     # dim2topic_id2sentence_ids2vector[5], 
-    person_id2position2d = person_tool.get_person_id2vector2d(topic_id2sentence_dist, person_id2sentence_ids, num_dim=5)
+    person_id2position2d = person_tool.get_person_id2vector2d(dim2topic_id2sentence_ids2vector[5],
+                                                              person_id2sentence_ids, num_dim=5)
     print('3:{}'.format(timeit.default_timer() - start))
     start = timeit.default_timer()
     # topic_pmi = get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_ids2sentence_ids, len(all_sentence_dict))
@@ -352,7 +350,7 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, min_sentence=5, max_
     GRAPH_DAO.close_connect()
 
     return all_topic_ids, dim2topic_id2sentence_ids2vector[2], topic_pmi, person_id2position2d, node_dict, edge_dict, \
-           topic_id2lrs, all_sentence_dict, topic_id2sentence_dist, person_id2sentence_ids
+           topic_id2lrs, all_sentence_dict, dim2topic_id2sentence_ids2vector[5], person_id2sentence_ids
 
 
 def get_top_topic_by_sentence_ids(all_sentence_ids, min_sentence=5, max_topic=15, populate_ratio=0.6):

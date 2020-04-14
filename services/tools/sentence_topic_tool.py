@@ -178,7 +178,7 @@ def get_sentence_id2vector(all_topic_ids, topic_id2sentence_ids, num_dims):
         根据描述得到相似度字典
     """
     dim2topic_ids2sentence_ids2vector = defaultdict(lambda **arg: defaultdict(dict))
-    topic_id2sentence_dist = defaultdict(dict)
+    # topic_id2sentence_dist = defaultdict(dict)
 
     vectors = {}
     for topic_id in all_topic_ids:
@@ -197,7 +197,7 @@ def get_sentence_id2vector(all_topic_ids, topic_id2sentence_ids, num_dims):
             sentence_id = sentences_ids[_i]
             for _i2, _dist in enumerate(list(sentence_dist[_i])):
                 sentence2sentence_dist[sentence_id][sentences_ids[_i2]] = _dist
-        topic_id2sentence_dist[topic_id] = sentence2sentence_dist
+        # topic_id2sentence_dist[topic_id] = sentence2sentence_dist
 
         # sentence_dist太少了降维会失败，应该是函数的问题
         for _dim in num_dims:
@@ -205,7 +205,7 @@ def get_sentence_id2vector(all_topic_ids, topic_id2sentence_ids, num_dims):
         for _i, sentence_id in enumerate(sentences_ids):
             for _dim in num_dims:
                 dim2topic_ids2sentence_ids2vector[_dim][topic_id][sentence_id] = vectors[_dim][_i]
-    return dim2topic_ids2sentence_ids2vector, topic_id2sentence_dist
+    return dim2topic_ids2sentence_ids2vector  # , topic_id2sentence_dist
 
 
 """
@@ -248,7 +248,8 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
         topic其实就是name, 所以就是node_name对应的id集合
     """
     # GRAPH_DAO = common.GRAPH_DAO
-    topic_id2person_ids, topic_id2sentence_ids, all_topic_ids = defaultdict(set), defaultdict(set), set()  # 不用defaultdict 因为不能直接变成json串
+    topic_id2person_ids, topic_id2sentence_ids, all_topic_ids = defaultdict(set), defaultdict(
+        set), set()  # 不用defaultdict 因为不能直接变成json串
     for _label, _ids in node_label2ids.items():
         _node_id2relevancy = dict()  # node_id2relevancy是个计算当前结点里已有结点的相关性
         for _id in _ids:
@@ -304,7 +305,6 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_id
                 if new_topic_id in all_topic_ids or new_topic_id in no_used_topic:
                     continue
                 sentence_ids = get_sentence_ids_by_topic_ids(topic_id1, topic_id2, topic_id2sentence_ids)
-                
 
                 if len(sentence_ids) == 0:
                     no_used_topic.add(new_topic_id)
@@ -340,7 +340,6 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_id
         if len(new_topic_ids) == 0:
             break
 
-        
     temp_all_topic_ids = set(all_topic_ids)
     for t1 in all_topic_ids:
         if t1 not in temp_all_topic_ids:
@@ -350,12 +349,12 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_id
                 continue
             long_one = t2 if len(t1) < len(t2) else t1
             short_one = t1 if len(t1) < len(t2) else t2
-            if set(short_one).issubset(set(long_one)): #是子集
+            if set(short_one).issubset(set(long_one)):  # 是子集
                 large_pids = topic_id2person_ids[short_one]
                 small_pids = topic_id2person_ids[long_one]
 
                 diff = large_pids.difference(small_pids)
-                if len(diff)/len(large_pids) < 0.2:
+                if len(diff) / len(large_pids) < 0.2:
                     if short_one in temp_all_topic_ids:
                         temp_all_topic_ids.remove(short_one)
                         # print(short_one, long_one)

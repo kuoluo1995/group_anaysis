@@ -26,114 +26,114 @@ def get_person_ids_by_topic_id(topic_id):
     return person_ids
 
 
-# # 计算人物相似度方案一(学长)
-# def get_person_id2vector2d(topic_id2sentence_ids2vector, person_id2sentence_ids, num_dim, topic_weights=None, **kwargs):
-#     """根据人的id查询所有的地址及坐标
+# 计算人物相似度方案一(学长)
+def get_person_id2vector2d(topic_id2sentence_ids2vector, person_id2sentence_ids, num_dim, topic_weights=None, **kwargs):
+    """根据人的id查询所有的地址及坐标
 
-#     Notes
-#     ----------
-#     这里是通过CBDB数据库的内容查询的,但是整个函数传出来的id全是以图数据库为准
+    Notes
+    ----------
+    这里是通过CBDB数据库的内容查询的,但是整个函数传出来的id全是以图数据库为准
 
-#     Parameters
-#     ----------
-#     topic_id2sentence_ids2vector: dict{int: list(dict{list(int):array})}
-#     person_id2sentence_ids: dict{int:list(list(int))}
-#     num_dim: int
-#             num_dim 代表模型的维度
-#     **kwargs: dict
-#         里面可能包含:
-#         topic_id2sentence_ids_: dict{int: list(list(int))
-#             结点的id: list(描述) 描述里面是所有的id， 按照node_id, edge_id, node_id划分
+    Parameters
+    ----------
+    topic_id2sentence_ids2vector: dict{int: list(dict{list(int):array})}
+    person_id2sentence_ids: dict{int:list(list(int))}
+    num_dim: int
+            num_dim 代表模型的维度
+    **kwargs: dict
+        里面可能包含:
+        topic_id2sentence_ids_: dict{int: list(list(int))
+            结点的id: list(描述) 描述里面是所有的id， 按照node_id, edge_id, node_id划分
 
-#     Returns
-#     -------
-#     person_id2position2d: dict{int: (int, int)}
-#         { person_id: (x,y)}
-#     """
-#     num_topic = len(topic_id2sentence_ids2vector.keys())
-#     person_id2vector = {person_id: np.zeros(num_topic * num_dim) for person_id in person_id2sentence_ids.keys()}
-#     _i = 0
-#     for _topic_id, sentence_id2vector in topic_id2sentence_ids2vector.items():
-#         _topic_vectors = np.array([_vector for _, _vector in sentence_id2vector.items()])
-#         _mean = mean_vectors(_topic_vectors)
-#         for person_id in person_id2sentence_ids.keys():
-#             max_vector = _mean
-#             _vectors = [sentence_id2vector[_sentence_id] for _sentence_id in person_id2sentence_ids[person_id] if
-#                         _sentence_id in sentence_id2vector]
-#             if len(_vectors) > 0:
-#                 max_vector = max(_vectors, key=lambda item: cos_dict(item, _mean))
-#             # 可以在这里加个维度的权重参数
-#             if topic_weights is not None and _topic_id in topic_weights:
-#                 max_vector *= topic_weights[_topic_id]
-#             person_id2vector[person_id][_i * num_dim:(_i + 1) * num_dim] = max_vector
-#         _i += 1
-#     _vectors = np.array([_vector for _, _vector in person_id2vector.items()])
-#     vectors = multidimensional_scale(2, _vectors)
-
-#     _i = 0
-#     person_id2position2d = dict()
-#     for _person_id, _ in person_id2vector.items():
-#         person_id2position2d[_person_id] = (vectors[_i][0], vectors[_i][1])  # x,y
-#         _i += 1
-#     return person_id2position2d
-
-def get_person_id2vector2d(topic_id2sentence_dist, person_id2sentence_ids, topic_weights=None, **kwargs):
-    person_dist = defaultdict(lambda **arg: defaultdict(float))
+    Returns
+    -------
+    person_id2position2d: dict{int: (int, int)}
+        { person_id: (x,y)}
+    """
+    num_topic = len(topic_id2sentence_ids2vector.keys())
+    person_id2vector = {person_id: np.zeros(num_topic * num_dim) for person_id in person_id2sentence_ids.keys()}
     _i = 0
-    for _topic_id, sentence_dist in topic_id2sentence_dist.items():
-        topic_weight = 1  # 之后换成权重
-        if topic_weights is not None and _topic_id in topic_weights:
-            topic_weight = topic_weights[_topic_id]
-        person2sentences = defaultdict(list)
-        sentence_dist = topic_id2sentence_dist[_topic_id]
+    for _topic_id, sentence_id2vector in topic_id2sentence_ids2vector.items():
+        _topic_vectors = np.array([_vector for _, _vector in sentence_id2vector.items()])
+        _mean = mean_vectors(_topic_vectors)
         for person_id in person_id2sentence_ids.keys():
-            for _sentence in person_id2sentence_ids[person_id]:
-                if _sentence in sentence_dist:
-                    person2sentences[person_id].append(_sentence)
+            max_vector = _mean
+            _vectors = [sentence_id2vector[_sentence_id] for _sentence_id in person_id2sentence_ids[person_id] if
+                        _sentence_id in sentence_id2vector]
+            if len(_vectors) > 0:
+                max_vector = max(_vectors, key=lambda item: cos_dict(item, _mean))
+            # 可以在这里加个维度的权重参数
+            if topic_weights is not None and _topic_id in topic_weights:
+                max_vector *= topic_weights[_topic_id]
+            person_id2vector[person_id][_i * num_dim:(_i + 1) * num_dim] = max_vector
+        _i += 1
+    _vectors = np.array([_vector for _, _vector in person_id2vector.items()])
+    vectors = multidimensional_scale(2, _vectors)
 
-        mean_dist = 0
-        dists = []
-        for s1 in sentence_dist:
-            for s2 in sentence_dist:
-                mean_dist += sentence_dist[s1][s2]
-                dists.append(sentence_dist[s1][s2])
-        mean_dist /= len(sentence_dist) * len(sentence_dist)
-        max_dist = max(dists)
-
-        for p1, ss1 in person2sentences.items():
-            for p2, ss2 in person2sentences.items():
-                all_dists = []
-                for s1 in ss1:
-                    for s2 in ss2:
-                        all_dists.append(sentence_dist[s1][s2])
-                if len(all_dists) == 0:
-                    # dist = mean_dist * topic_weight
-                    dist = max_dist * topic_weight
-                else:
-                    dist = max(all_dists) * topic_weight
-                person_dist[p1][p2] += dist * dist
-
-    for p1, ss1 in person_id2sentence_ids.items():
-        for p2, ss2 in person_id2sentence_ids.items():
-            person_dist[p1][p2] = math.sqrt(person_dist[p1][p2])
-
-    # print('start mds')
-    people = list(person_dist.keys())
-    person_dist_array = np.zeros((len(people), len(people)))
-    for i1, p1 in enumerate(people):
-        for i2, p2 in enumerate(people):
-            person_dist_array[i1][i2] = person_dist[p1][p2]
-    # print('end mds')
-    positions = mds(n_components=2, dist=person_dist_array)
-
-    # print(len(people), len(person2sentences.keys()), len(person_id2sentence_ids),len(person_dist), person_dist_array.shape)
-    # 419 1 587 419 (419, 419)
-    person_id2position2d = {}
     _i = 0
-    for _person_id in person_id2sentence_ids:
-        person_id2position2d[_person_id] = (positions[_i][0], positions[_i][1])  # x,y
+    person_id2position2d = dict()
+    for _person_id, _ in person_id2vector.items():
+        person_id2position2d[_person_id] = (vectors[_i][0], vectors[_i][1])  # x,y
         _i += 1
     return person_id2position2d
+
+# def get_person_id2vector2d(topic_id2sentence_dist, person_id2sentence_ids, topic_weights=None, **kwargs):
+#     person_dist = defaultdict(lambda **arg: defaultdict(float))
+#     _i = 0
+#     for _topic_id, sentence_dist in topic_id2sentence_dist.items():
+#         topic_weight = 1  # 之后换成权重
+#         if topic_weights is not None and _topic_id in topic_weights:
+#             topic_weight = topic_weights[_topic_id]
+#         person2sentences = defaultdict(list)
+#         sentence_dist = topic_id2sentence_dist[_topic_id]
+#         for person_id in person_id2sentence_ids.keys():
+#             for _sentence in person_id2sentence_ids[person_id]:
+#                 if _sentence in sentence_dist:
+#                     person2sentences[person_id].append(_sentence)
+#
+#         mean_dist = 0
+#         dists = []
+#         for s1 in sentence_dist:
+#             for s2 in sentence_dist:
+#                 mean_dist += sentence_dist[s1][s2]
+#                 dists.append(sentence_dist[s1][s2])
+#         mean_dist /= len(sentence_dist) * len(sentence_dist)
+#         max_dist = max(dists)
+#
+#         for p1, ss1 in person2sentences.items():
+#             for p2, ss2 in person2sentences.items():
+#                 all_dists = []
+#                 for s1 in ss1:
+#                     for s2 in ss2:
+#                         all_dists.append(sentence_dist[s1][s2])
+#                 if len(all_dists) == 0:
+#                     # dist = mean_dist * topic_weight
+#                     dist = max_dist * topic_weight
+#                 else:
+#                     dist = max(all_dists) * topic_weight
+#                 person_dist[p1][p2] += dist * dist
+#
+#     for p1, ss1 in person_id2sentence_ids.items():
+#         for p2, ss2 in person_id2sentence_ids.items():
+#             person_dist[p1][p2] = math.sqrt(person_dist[p1][p2])
+#
+#     # print('start mds')
+#     people = list(person_dist.keys())
+#     person_dist_array = np.zeros((len(people), len(people)))
+#     for i1, p1 in enumerate(people):
+#         for i2, p2 in enumerate(people):
+#             person_dist_array[i1][i2] = person_dist[p1][p2]
+#     # print('end mds')
+#     positions = mds(n_components=2, dist=person_dist_array)
+#
+#     # print(len(people), len(person2sentences.keys()), len(person_id2sentence_ids),len(person_dist), person_dist_array.shape)
+#     # 419 1 587 419 (419, 419)
+#     person_id2position2d = {}
+#     _i = 0
+#     for _person_id in person_id2sentence_ids:
+#         person_id2position2d[_person_id] = (positions[_i][0], positions[_i][1])  # x,y
+#         _i += 1
+#     return person_id2position2d
 
 
 def get_all_similar_person(person_ids, topic_weights):

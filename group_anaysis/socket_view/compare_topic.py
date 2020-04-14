@@ -78,11 +78,7 @@ class ComparedTopicsByPersonIds(WebsocketConsumer):
                     for _sentence_id, _value in _item.items():
                         _sentence = [str(_id) for _id in _sentence_id]
                         _sentence = ' '.join(_sentence)
-                        topic_id2sentence_ids2vector_json[_topic_id][_sentence] = {}
-                        for _s, _f in _value.items():
-                            _s = [str(_id) for _id in _s]
-                            _s = ' '.join(_s)
-                            topic_id2sentence_ids2vector_json[_topic_id][_sentence][_s] = float(_f)
+                        topic_id2sentence_ids2vector_json[_topic_id][_sentence] = [float(_v) for _v in _value]
                 person_id2sentence_ids = {str(_person_id): list(_sentence_id) for _person_id, _sentence_id in
                                           person_id2sentence_ids.items()}
                 _name = 'temp_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
