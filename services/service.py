@@ -77,8 +77,9 @@ def get_relation_person_by_name(person_name, ranges):
         raise Exception('get_relation_person_by_name({})'.format(person_name))
 
     person_ids = GRAPH_DAO.get_node_ids_by_name(person_name)
-    person_dict = defaultdict(dict)
+    all_person_dict = list()
     for _id in person_ids:
+        person_dict = defaultdict(dict)
         for _key, _items in ranges.items():
             all_paths = MetaPaths[_key].get_all_paths_by_node_id(_id)
             for _path in all_paths:
@@ -99,17 +100,21 @@ def get_relation_person_by_name(person_name, ranges):
                 if len(person_ids) == 1 and len(relation_ids) == 1:
                     person_id = person_ids[0]
                     relation_id = relation_ids[0]
-                    person_dict[person_id] = {'name': GRAPH_DAO.get_node_name_by_id(person_id),
-                                              'en_name': GRAPH_DAO.get_node_en_name_by_id(person_id),
-                                              'relation': {'name': search_name(relation_id),
-                                                           'en_name': search_en_name(relation_id)}}
+                    if person_id not in person_dict:
+                        person_dict[person_id] = {'name': GRAPH_DAO.get_node_name_by_id(person_id),
+                                                  'en_name': GRAPH_DAO.get_node_en_name_by_id(person_id),
+                                                  'relation': list()}
+                    person_dict[person_id]['relation'].append({'name': search_name(relation_id),
+                                                               'en_name': search_en_name(relation_id),
+                                                               'type': _key})
                 else:
                     print(_path)
         person_dict[_id] = {'name': GRAPH_DAO.get_node_name_by_id(_id),
                             'en_name': GRAPH_DAO.get_node_en_name_by_id(_id),
-                            'relation': {'name': '自己', 'en_name': 'me'}}
+                            'relation': [{'name': '自己', 'en_name': 'me'}]}
+        all_person_dict.append(person_dict)
     GRAPH_DAO.close_connect()
-    return person_dict
+    return all_person_dict
 
 
 def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids, address_ids):
