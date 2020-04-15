@@ -6,6 +6,24 @@ from collections import defaultdict
 import numpy as np
 from tools.sort_utils import lda
 
+# person到topic的one-hot向量
+def getPerson2TopicVec(topic_ids, person_ids):
+    all_person_ids = set()
+    person2topics = defaultdict(set)
+    for t in topic_ids:
+        has_t_pids = person_tool.get_person_ids_by_topic_id(t)
+        for p in has_t_pids:
+            person2topics[p].add(t)
+            all_person_ids.add(p)
+    
+    all_person_ids = list(all_person_ids)
+    def getVec(pid):
+        return [1 if t in person2topics[pid] else -1 for t in topic_ids]
+
+    return all_person_ids, [getVec(p) for p in all_person_ids], [1 if p in person_ids else -1 for p in all_person_ids]
+
+
+# 被否了
 def getTopicWeights(topic_ids, person_ids):
     person_ids = set(person_ids)
     all_person_ids = set()
@@ -129,3 +147,49 @@ def lrs(topic_id, person_ids, smooth=0.01):
     # topic_name = [GRAPH_DAO.get_node_name_by_id(elm) for elm in topic_id]
     # print(topic_name, m_z, math.log(m_gz / m_z), m_gz, math.log(m_gf / m_f), lrs_value)
     return lrs_value
+
+class SeqClassifier():
+    def __init__(self, index):
+        self.v = 0
+        self.direction = 0
+        self.index = index
+
+    def train(self, p_v, labels, w):
+        x = p_v[:, self.index]
+        # print(p_v, x)
+        mis = x != labels
+        loss = sum(mis * w)
+        return loss
+        
+    def predict(self, p_v):
+        x = p_v[:, self.index]
+        return x == 1
+
+class AdaBoost():
+    def __init__(self, topic_num):
+        self.classifiers = [SeqClassifier(i) for i in range(topic_num)]
+        self.alphas = [1/topic_num for i in range(topic_num)]
+
+    def train(self, p_v, labels):    
+        p_v = np.array(p_v)
+        labels = np.array(labels)
+
+        n = p_v.shape[0]
+        w_m = np.array([1 / n] * n)
+
+        for index, classifier_m in enumerate(self.classifiers):
+            e_m = classifier_m.train(p_v, labels, w_m)
+            print(e_m, (1-e_m)/e_m)
+            alpha_m = 1 / 2 * np.log((1-e_m)/e_m)
+
+            w_m = w_m * np.exp(-alpha_m*labels*classifier_m.predict(p_v))
+            z_m = np.sum(w_m)
+            w_m = w_m / z_m
+            self.alphas[index] = alpha_m
+
+    def predict(self, p_v):
+        n = p_v.shape[0]
+        results = np.zeros(n)
+        for alpha, classifier in zip(self.alphas, self.classifiers):
+            results += alpha * classifier.predict(p_v)
+        return results > 0

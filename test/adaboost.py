@@ -12,15 +12,20 @@ class ThreshClassifier():
             for direction in [0,1]:
                 if direction == 0:
                     mis = (((x < v) - 0.5)*2 != y)
+                    # print(mis, y)
                 else:
                     mis = (((x > v) - 0.5)*2 != y)
+                print(mis)
                 loss = sum(mis * w)
+                # print(mis, w, mis * w)
                 if loss < min_loss:
                     min_loss = loss
                     self.v = v
                     self.direction = direction
 
         return min_loss
+
+    # 输出 -1到1
     def predict(self, x):
         if self.direction == 0:
             return ((x < self.v) - 0.5)*2
@@ -34,12 +39,13 @@ class AdaBoost():
         self.alphas = []
     def train(self, x, y):        
         n = x.shape[0]
-        M = 3
+        M = 3  #M个分类器
         w_m = np.array([1 / n] * n)
+        print(n, w_m.shape)
         for m in range(M):
             classifier_m = self.classifier()
             e_m = classifier_m.train(x, y, w_m)
-            print(e_m)
+            print(e_m)  #loss
             alpha_m = 1 / 2 * np.log((1-e_m)/e_m)
             w_m = w_m * np.exp(-alpha_m*y*classifier_m.predict(x))
             z_m = np.sum(w_m)
@@ -51,6 +57,7 @@ class AdaBoost():
         n = x.shape[0]
         results = np.zeros(n)
         for alpha, classifier in zip(self.alphas, self.classifiers):
+            print(alpha)
             results += alpha * classifier.predict(x)
         return ((results > 0) - 0.5) * 2
 
