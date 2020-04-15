@@ -4,7 +4,7 @@ from services.dao.cbdb_dao import CBDBDAO
 from services.dao.graph_dao import GraphDAO
 from services.dao.neo4j_dao import Neo4jDAO
 from services.entity.meta import build_meta_paths
-from tools import yaml_utils
+from tools import yaml_utils, json_utils
 from tools.shell_utils import Shell
 
 _labels = yaml_utils.read('./services/configs/labels.yaml')
@@ -23,3 +23,4 @@ GRAPH_DAO.close_connect()
 
 MetaPaths = build_meta_paths('./services/configs/meta_paths.yaml')
 Model = models.TfidfModel
+json_utils.delete_all_temps()  # 每次执行前先清除上一次没用的缓冲数据

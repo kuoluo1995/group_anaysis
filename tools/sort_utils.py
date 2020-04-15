@@ -1,3 +1,5 @@
+import functools
+
 import numpy as np
 
 
@@ -39,6 +41,26 @@ def sort_dict2list(dict_value, value_len=False, **kwargs):
     # 从大到小
     return sorted(dict_value.items(), key=lambda _item: len(_item[1]) if value_len else _item[1], reverse=True)
     # return maxN([item for item in dict_value.items()], key=lambda item: item[1], N=N)
+
+
+def sort_by_condition(dict1, dict2):
+    dict1 = {_k: len(_v) for _k, _v in dict1.items()}
+    dict2 = {_k: len(_v) for _k, _v in dict2.items()}
+
+    def cmp(x, y):
+        if dict1[x] < dict1[y]:
+            return -1
+        if dict1[x] > dict1[y]:
+            return 1
+        if dict2[x] < dict2[y]:
+            return -1
+        if dict2[x] > dict2[y]:
+            return 1
+        return 0
+
+    all_topic = list(dict1.keys())
+    all_topic = sorted(all_topic, key=functools.cmp_to_key(cmp), reverse=True)
+    return all_topic
 
 
 class MyMDS:
@@ -93,28 +115,28 @@ def lda(data, target, n_dim):
     #     # print("please input again")
     #     raise Exception('K is too much')
 
-    #within_class scatter matrix
-    Sw = np.zeros((data.shape[1],data.shape[1]))
+    # within_class scatter matrix
+    Sw = np.zeros((data.shape[1], data.shape[1]))
     for i in clusters:
         datai = data[target == i]
-        datai = datai-datai.mean(0)
-        Swi = np.mat(datai).T*np.mat(datai)
+        datai = datai - datai.mean(0)
+        Swi = np.mat(datai).T * np.mat(datai)
         Sw += Swi
 
-    #between_class scatter matrix
-    SB = np.zeros((data.shape[1],data.shape[1]))
-    u = data.mean(0)  #所有样本的平均值
+    # between_class scatter matrix
+    SB = np.zeros((data.shape[1], data.shape[1]))
+    u = data.mean(0)  # 所有样本的平均值
     for i in clusters:
         Ni = data[target == i].shape[0]
-        ui = data[target == i].mean(0)  #某个类别的平均值
-        SBi = Ni*np.mat(ui - u).T*np.mat(ui - u)
+        ui = data[target == i].mean(0)  # 某个类别的平均值
+        SBi = Ni * np.mat(ui - u).T * np.mat(ui - u)
         SB += SBi
     # print(Sw)
-    S = np.linalg.inv(Sw)*SB
-    eigVals,eigVects = np.linalg.eig(S)  #求特征值，特征向量
+    S = np.linalg.inv(Sw) * SB
+    eigVals, eigVects = np.linalg.eig(S)  # 求特征值，特征向量
     eigValInd = np.argsort(eigVals)
-    eigValInd = eigValInd[:(-n_dim-1):-1]
-    w = eigVects[:,eigValInd]
+    eigValInd = eigValInd[:(-n_dim - 1):-1]
+    w = eigVects[:, eigValInd]
     # print(eigVects, eigValInd)
     data_ndim = np.dot(data, w)
 

@@ -1,15 +1,14 @@
 import json
+import datetime
 import traceback
-
-import numpy as np
 from django.http import HttpResponse
 from django.shortcuts import render
 
 from services import common
 from services.service import get_relation_person_by_name, get_topics_by_person_ids, get_person_by_ranges, \
-    get_init_ranges, \
-    get_address_by_address_ids, get_community_by_num_node_links, add_topic_weights, get_person_by_draws, \
-    get_similar_person
+    get_init_ranges, get_address_by_address_ids, get_community_by_num_node_links, add_topic_weights, \
+    get_person_by_draws, get_similar_person
+from tools import json_utils
 
 
 def init_ranges(request):
@@ -43,6 +42,8 @@ def search_relation_person_by_name(request):
         except Exception as e:
             traceback.print_exc()
             result['bug'] = '发给后端调试问题。输入为 name:{}'.format(name)
+            _name = 'error_relation_person_by_name_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
+            json_utils.save_json(request.POST, _name)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
 
@@ -75,6 +76,8 @@ def search_person_by_ranges(request):
         traceback.print_exc()
         result['bug'] = '发给后端调试问题。输入为 dynasty_ids:{} min_year:{} max_year:{} is_female:{} statu_ids:{} address_ids:{}' \
             .format(dynasty_ids, min_year, max_year, is_female, statu_ids, address_ids)
+        _name = 'error_search_person_by_ranges_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
+        json_utils.save_json(request.POST, _name)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
 
@@ -93,6 +96,8 @@ def search_address_by_address_ids(request):
         except Exception as e:
             traceback.print_exc()
             result['bug'] = '发给后端调试问题。输入为 address_ids:{}'.format(address_ids)
+            _name = 'error_address_by_address_ids_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
+            json_utils.save_json(request.POST, _name)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
 
@@ -148,6 +153,7 @@ def search_topics_by_person_ids(request):
                 _sentence_id = ' '.join(_sentence_id)
                 all_sentence_dict_json[_sentence_id] = _name
             result['all_sentence_dict'] = all_sentence_dict_json
+
             topic_id2sentence_ids2vector_json = {}
             for _topic_id, _item in topic_id2sentence_ids2vector.items():
                 _topic_id = [str(_id) for _id in _topic_id]
@@ -156,20 +162,20 @@ def search_topics_by_person_ids(request):
                 for _sentence_id, _value in _item.items():
                     _sentence = [str(_id) for _id in _sentence_id]
                     _sentence = ' '.join(_sentence)
-                    topic_id2sentence_ids2vector_json[_topic_id][_sentence] = {}
-                    for _s, _f in _value.items():
-                        _s = [str(_id) for _id in _s]
-                        _s = ' '.join(_s)
-                        topic_id2sentence_ids2vector_json[_topic_id][_sentence][_s] = float(_f)
-            result['topic_id2sentence_ids2vector'] = topic_id2sentence_ids2vector_json
-            person_id2sentence_ids = {_person_id: list(_sentence_id) for _person_id, _sentence_id in
+                    topic_id2sentence_ids2vector_json[_topic_id][_sentence] = [float(_v) for _v in _value]
+            person_id2sentence_ids = {str(_person_id): list(_sentence_id) for _person_id, _sentence_id in
                                       person_id2sentence_ids.items()}
-            result['person_id2sentence_ids'] = person_id2sentence_ids
+            _name = 'temp_'+str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
+            json_utils.save_json({'topic_id2sentence_ids2vector': topic_id2sentence_ids2vector_json,
+                                  'person_id2sentence_ids': person_id2sentence_ids}, _name)
+            result['adjust_topic_weights_params'] = _name
             result['is_success'] = True
         except Exception as e:
             traceback.print_exc()
             result['bug'] = '发给后端调试问题。输入为 populate_ratio:{} max_topix:{} min_sentence:{} person_ids:{}'.format(
                 populate_ratio, max_topic, min_sentence, person_ids)
+            _name = 'error_topics_by_person_ids_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
+            json_utils.save_json(request.POST, _name)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
 
@@ -179,23 +185,20 @@ def adjust_topic_weights(request):
     result = {'is_success': False}
     request_json = json.loads(request.body)
     if 'topic_weights' in request_json and request_json['topic_weights'] and \
-            'topic_id2sentence_ids2vector' in request_json and request_json['topic_id2sentence_ids2vector'] and \
-            'person_id2sentence_ids' in request_json and request_json['person_id2sentence_ids']:
+            'adjust_topic_weights_params' in request_json and request_json['adjust_topic_weights_params']:
         try:
+            _data = json_utils.load_json(request_json['adjust_topic_weights_params'])
             topic_weights = {tuple([int(_id) for _id in _topic_id.split(' ')]): _weight for _topic_id, _weight in
                              request_json['topic_weights'].items()}
             topic_id2sentence_ids2vector_json = {}
-            for _topic_id, _items in request_json['topic_id2sentence_ids2vector'].items():
+            for _topic_id, _items in _data['topic_id2sentence_ids2vector'].items():
                 _topic_id = tuple([int(_id) for _id in _topic_id.split(' ')])
                 topic_id2sentence_ids2vector_json[_topic_id] = {}
                 for _sentence_id, _value in _items.items():
                     _sentence = tuple([int(_id) for _id in _sentence_id.split(' ')])
-                    topic_id2sentence_ids2vector_json[_topic_id][_sentence] = {}
-                    for _s, _f in _value.items():
-                        _s = tuple([int(_id) for _id in _s.split(' ')])
-                        topic_id2sentence_ids2vector_json[_topic_id][_sentence][_s] = _f
+                    topic_id2sentence_ids2vector_json[_topic_id][_sentence] = [float(_v) for _v in _value]
             person_id2sentence_ids = {int(_person_id): [tuple(_sentence_id) for _sentence_id in _sentence_ids] for
-                                      _person_id, _sentence_ids in request_json['person_id2sentence_ids'].items()}
+                                      _person_id, _sentence_ids in _data['person_id2sentence_ids'].items()}
             person_id2position2d, person_dict = add_topic_weights(topic_weights,
                                                                   topic_id2sentence_ids2vector_json,
                                                                   person_id2sentence_ids)
@@ -205,6 +208,8 @@ def adjust_topic_weights(request):
         except Exception as e:
             traceback.print_exc()
             result['bug'] = '发给后端调试问题。输入为 {}'.format(request_json)
+            _name = 'error_adjust_topic_weights_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
+            json_utils.save_json(request_json, _name)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
 
@@ -226,6 +231,8 @@ def search_all_similar_person(request):
         except Exception as e:
             traceback.print_exc()
             result['bug'] = '发给后端调试问题。输入为 json:{}'.format(request_json)
+            _name = 'error_search_all_similar_person_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
+            json_utils.save_json(request_json, _name)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
 
@@ -241,6 +248,8 @@ def search_person_ids_by_draws(request):
         except Exception as e:
             traceback.print_exc()
             result['bug'] = '发给后端调试问题,请检查neo4j数据库是否开启。输入为 draws:{}'.format(draws)
+            _name = 'error_search_person_ids_by_draws_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
+            json_utils.save_json(request.POST, _name)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type='application/json')
 
@@ -259,6 +268,8 @@ def search_community_by_links(request):
         except Exception as e:
             traceback.print_exc()
             result['bug'] = '发给后端调试问题。输入为 num:{},links:{}'.format(num_node, links)
+            _name = 'error_search_community_by_links_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
+            json_utils.save_json(request.POST, _name)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
 

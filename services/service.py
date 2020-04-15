@@ -77,8 +77,9 @@ def get_relation_person_by_name(person_name, ranges):
         raise Exception('get_relation_person_by_name({})'.format(person_name))
 
     person_ids = GRAPH_DAO.get_node_ids_by_name(person_name)
-    person_dict = defaultdict(dict)
+    all_person_dict = list()
     for _id in person_ids:
+        person_dict = defaultdict(dict)
         for _key, _items in ranges.items():
             all_paths = MetaPaths[_key].get_all_paths_by_node_id(_id)
             for _path in all_paths:
@@ -99,17 +100,21 @@ def get_relation_person_by_name(person_name, ranges):
                 if len(person_ids) == 1 and len(relation_ids) == 1:
                     person_id = person_ids[0]
                     relation_id = relation_ids[0]
-                    person_dict[person_id] = {'name': GRAPH_DAO.get_node_name_by_id(person_id),
-                                              'en_name': GRAPH_DAO.get_node_en_name_by_id(person_id),
-                                              'relation': {'name': search_name(relation_id),
-                                                           'en_name': search_en_name(relation_id)}}
+                    if person_id not in person_dict:
+                        person_dict[person_id] = {'name': GRAPH_DAO.get_node_name_by_id(person_id),
+                                                  'en_name': GRAPH_DAO.get_node_en_name_by_id(person_id),
+                                                  'relation': list()}
+                    person_dict[person_id]['relation'].append({'name': search_name(relation_id),
+                                                               'en_name': search_en_name(relation_id),
+                                                               'type': _key})
                 else:
                     print(_path)
         person_dict[_id] = {'name': GRAPH_DAO.get_node_name_by_id(_id),
                             'en_name': GRAPH_DAO.get_node_en_name_by_id(_id),
-                            'relation': {'name': '自己', 'en_name': 'me'}}
+                            'relation': [{'name': '自己', 'en_name': 'me'}]}
+        all_person_dict.append(person_dict)
     GRAPH_DAO.close_connect()
-    return person_dict
+    return all_person_dict
 
 
 def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids, address_ids):
@@ -191,33 +196,36 @@ def get_address_by_address_ids(address_ids):
     CBDB_DAO.close_connect()
     return address
 
+
 # 用于对比的
-def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=1000, min_sentence=5, max_topic=15, populate_ratio=0.4):
+def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=1000, min_sentence=5, max_topic=15,
+                                      populate_ratio=0.4):
     person_ids = list(set(person_ids1 + person_ids2))
-    
+
     print('查询topic的所有人数:{}'.format(len(person_ids)))
     start = timeit.default_timer()
     GRAPH_DAO = common.GRAPH_DAO
     GRAPH_DAO.start_connect()
 
-
     def process(pids):
-        person_id2sentence_ids, sentence_id2person_id, all_sentence_dict = get_sentence_dict(pids, random_epoch=random_epoch,min_sentence=min_sentence)
+        person_id2sentence_ids, sentence_id2person_id, all_sentence_dict = get_sentence_dict(pids,
+                                                                                             random_epoch=random_epoch,
+                                                                                             min_sentence=min_sentence)
         print('所有的描述:{}'.format(len(all_sentence_dict)))
 
         node_label2ids, node_id2relevancy, node_id2sentence_ids = get_node_relevancy(person_id2sentence_ids)
         topic_ids2person_ids, topic_ids2sentence_ids, all_topic_ids = get_topic_dict(node_label2ids, node_id2relevancy,
-                                                                                    sentence_id2person_id,
-                                                                                    node_id2sentence_ids, len(person_ids),
-                                                                                    len(all_sentence_dict),
-                                                                                    min_sentences=min_sentence,
-                                                                                    max_topic=max_topic,
-                                                                                    populate_ratio=populate_ratio)
+                                                                                     sentence_id2person_id,
+                                                                                     node_id2sentence_ids,
+                                                                                     len(person_ids),
+                                                                                     len(all_sentence_dict),
+                                                                                     min_sentences=min_sentence,
+                                                                                     max_topic=max_topic,
+                                                                                     populate_ratio=populate_ratio)
         return topic_ids2person_ids, topic_ids2sentence_ids, all_topic_ids, person_id2sentence_ids, all_sentence_dict
-        
+
     t2p1, t2s1, at1, p2s1, as1 = process(person_ids1)
     t2p2, t2s2, at2, p2s2, as2 = process(person_ids2)
-    
 
     # 合并的、
     as1.update(as2)
@@ -238,13 +246,11 @@ def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=100
     print('1:{}'.format(timeit.default_timer() - start))
     # sentence_id2vector
     start = timeit.default_timer()
-    dim2topic_id2sentence_ids2vector, topic_id2sentence_dist = get_sentence_id2vector(all_topic_ids,
-                                                                                      topic_ids2sentence_ids,
-                                                                                      num_dims=[2])  # , 5
+    dim2topic_id2sentence_ids2vector = get_sentence_id2vector(all_topic_ids, topic_ids2sentence_ids, num_dims=[2, 5])
     print('2:{}'.format(timeit.default_timer() - start))
     start = timeit.default_timer()
-    # dim2topic_id2sentence_ids2vector[5], 
-    person_id2position2d = person_tool.get_person_id2vector2d(topic_id2sentence_dist, person_id2sentence_ids, num_dim=5)
+    person_id2position2d = person_tool.get_person_id2vector2d(dim2topic_id2sentence_ids2vector[5],
+                                                              person_id2sentence_ids, num_dim=5)
     print('3:{}'.format(timeit.default_timer() - start))
     start = timeit.default_timer()
     # topic_pmi = get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_ids2sentence_ids, len(all_sentence_dict))
@@ -258,11 +264,12 @@ def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=100
     # topic_id2lrs = getTopicWeights(all_topic_ids, person_ids)
     # print(topic_id2lrs)
 
-    topic_id2lrs = {_id: compared_lrs(_id, person_ids1, person_ids2) for _id in all_topic_ids} 
+    topic_id2lrs = {_id: compared_lrs(_id, person_ids1, person_ids2) for _id in all_topic_ids}
     print('6:{}'.format(timeit.default_timer() - start))
     GRAPH_DAO.close_connect()
 
-    return all_topic_ids, dim2topic_id2sentence_ids2vector[2], topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_dist, person_id2sentence_ids
+    return all_topic_ids, dim2topic_id2sentence_ids2vector[2], topic_pmi, person_id2position2d, node_dict, edge_dict, \
+           topic_id2lrs, all_sentence_dict, dim2topic_id2sentence_ids2vector[5], person_id2sentence_ids
 
 
 def get_topics_by_person_ids(person_ids, random_epoch=1000, min_sentence=5, max_topic=15, populate_ratio=0.4):
@@ -323,13 +330,13 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, min_sentence=5, max_
     print('1:{}'.format(timeit.default_timer() - start))
     # sentence_id2vector
     start = timeit.default_timer()
-    dim2topic_id2sentence_ids2vector, topic_id2sentence_dist = get_sentence_id2vector(all_topic_ids,
-                                                                                      topic_ids2sentence_ids,
-                                                                                      num_dims=[2])  # , 5
+    dim2topic_id2sentence_ids2vector = get_sentence_id2vector(all_topic_ids, topic_ids2sentence_ids,
+                                                              num_dims=[2, 5])  # , 5
     print('2:{}'.format(timeit.default_timer() - start))
     start = timeit.default_timer()
     # dim2topic_id2sentence_ids2vector[5], 
-    person_id2position2d = person_tool.get_person_id2vector2d(topic_id2sentence_dist, person_id2sentence_ids, num_dim=5)
+    person_id2position2d = person_tool.get_person_id2vector2d(dim2topic_id2sentence_ids2vector[5],
+                                                              person_id2sentence_ids, num_dim=5)
     print('3:{}'.format(timeit.default_timer() - start))
     start = timeit.default_timer()
     # topic_pmi = get_topic_pmi(all_topic_ids, person_id2sentence_ids, topic_ids2sentence_ids, len(all_sentence_dict))
@@ -343,12 +350,12 @@ def get_topics_by_person_ids(person_ids, random_epoch=1000, min_sentence=5, max_
     # topic_id2lrs = getTopicWeights(all_topic_ids, person_ids)
     # print(topic_id2lrs)
 
-    topic_id2lrs = {_id: lrs(_id, person_ids) for _id in all_topic_ids} 
+    topic_id2lrs = {_id: lrs(_id, person_ids) for _id in all_topic_ids}
     print('6:{}'.format(timeit.default_timer() - start))
     GRAPH_DAO.close_connect()
 
     return all_topic_ids, dim2topic_id2sentence_ids2vector[2], topic_pmi, person_id2position2d, node_dict, edge_dict, \
-           topic_id2lrs, all_sentence_dict, topic_id2sentence_dist, person_id2sentence_ids
+           topic_id2lrs, all_sentence_dict, dim2topic_id2sentence_ids2vector[5], person_id2sentence_ids
 
 
 def get_top_topic_by_sentence_ids(all_sentence_ids, min_sentence=5, max_topic=15, populate_ratio=0.6):
