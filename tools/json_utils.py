@@ -1,6 +1,7 @@
 import glob
 import json
 import os
+from pathlib import Path
 
 
 def save_json(data, name):
@@ -21,6 +22,7 @@ def delete_json(name):
 
 
 def delete_all_temps():
+    Path('temp/').mkdir(parents=True, exist_ok=True)
     temps = glob.glob('temp/temp_*.json')
     for temp in temps:
         os.remove(temp)
