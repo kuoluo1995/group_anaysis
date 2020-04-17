@@ -10,6 +10,7 @@ from services.service import get_relation_person_by_name, get_topics_by_person_i
     get_address_by_address_ids, get_all_similar_person, add_topic_weights, get_similar_person, \
     get_top_topic_by_sentence_ids
 from services.tools.person_tool import get_person_all_dict
+from tools import json_utils
 from tools.sort_utils import sort_dict2list
 
 # linux去除中文乱码
@@ -26,21 +27,41 @@ if __name__ == '__main__':
     MetaPaths = common.MetaPaths
 
     GRAPH_DAO.start_connect()
-    # dynasties, status, address = get_init_ranges()
-    #
-    # start = timeit.default_timer()
-    # dynastie_id = 716  # 明朝
-    # person = get_person_by_ranges([dynastie_id], None, None, None, None, list(address.keys())[:30])
-    # print('查询范围内的所有人耗时:{}'.format(timeit.default_timer() - start))
-    # CBDB_DAO = common.CBDB_DAO
-    # CBDB_DAO.start_connect()
-    # person_dict = get_person_all_dict([_id for _id, values in person.items()])
-    # person_dict = {key: values for key, values in person_dict.items() if 633615 in values.keys()}
-    # person_ids = [_id for _id, values in person.items()][:30]
+    dynasties, status, address, post_type, post_address, office, office_types, entry, entry_type = get_init_ranges()
+    start = timeit.default_timer()
+    dynastie_id = 716  # 明朝
+    # post_type 733099 正授, 733134 赠 733242追赠
+    person = get_person_by_ranges([dynastie_id], None, None, None, None, None, None, None, None,
+                                  None, None, None)
+    print(len(person))
+    # person = get_person_by_ranges([dynastie_id], None, None, None, None, None,
+    #                               list(post_type.keys())[:1], None, None, None, None, None)
+    # print(len(person))
+    # person = get_person_by_ranges([dynastie_id], None, None, None, None, None,
+    #                               None, list(post_address.keys())[:30], None, None, None, None)
+    # print(len(person))
+    person = get_person_by_ranges([dynastie_id], None, None, None, None, None,
+                                  None, None, list(office.keys())[:1000], None, None, None)
+    print(len(person))
+    # person = get_person_by_ranges([dynastie_id], None, None, None, None, None,
+    #                               None, None, None, list(office_types.keys())[:30], None, None)
+    # print(len(person))
+    # person = get_person_by_ranges([dynastie_id], None, None, None, None, None,
+    #                               None, None, None, None, list(entry.keys())[:30], None)
+    # print(len(person))
+    # person = get_person_by_ranges([dynastie_id], None, None, None, None, None,
+    #                               None, None, None, None, None, list(entry_type.keys())[:30])
+    # print(len(person))
+    print('查询范围内的所有人耗时:{}'.format(timeit.default_timer() - start))
+    CBDB_DAO = common.CBDB_DAO
+    CBDB_DAO.start_connect()
+    person_dict = get_person_all_dict([_id for _id, values in person.items()])
+    person_dict = {key: values for key, values in person_dict.items() if 633615 in values.keys()}
+    person_ids = [_id for _id, values in person.items()][:30]
 
     start = timeit.default_timer()
     ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
-    person = get_relation_person_by_name('蔡京', ranges)[0]
+    person = get_relation_person_by_name('吕祖谦', ranges)[0]
     # print(person)
     print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
     all_relation_person = [_person_id for _person_id, types in person.items()]
@@ -56,6 +77,11 @@ if __name__ == '__main__':
     person_ids = [_id[0] for _id in person_id2relation]
     print('查询的人:{}'.format(person_ids))
     start = timeit.default_timer()
+    _json = json_utils.load_json('error_search_topic_2020-04-16-14_05_58.427338')
+    person_ids = _json['person_ids[]']
+    person_ids = [int(_id) for _id in person_ids]
+    populate_ratio = float(_json['populate_ratio'])
+    max_topic = int(_json['max_topic'])
     all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
         person_ids, populate_ratio=0.3, max_topic=10)
     print(len(all_topic_ids))
@@ -66,7 +92,6 @@ if __name__ == '__main__':
     all_topic_ids = get_top_topic_by_sentence_ids(all_sentence_ids, min_sentence=1, max_topic=15, populate_ratio=0.1)
     print(all_topic_ids)
 
-    
     # similar_person = get_similar_person(person_ids, topic_id2lrs)
 
     # address_ids = [_id for _id, _item in node_dict.items() if _item['label'] == NodeLabels['address']]

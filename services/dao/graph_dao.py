@@ -23,6 +23,12 @@ class GraphDAO(SqliteDAO):
         self.out_edge_cache = {}
 
         self.node_id2has_topic_person_cache = {}
+        self.post_type_id2person_ids_cache = {}
+        self.post_address_id2person_ids_cache = {}
+        self.office_id2person_ids_cache = {}
+        self.office_type_id2person_ids_cache = {}
+        self.entry_id2person_ids_cache = {}
+        self.entry_type_id2person_ids_cache = {}
         # if self.use_cache:  # todo 如果电脑性能允许的话，为了加快运行速度可以考虑提前载入数据
         #     self.start_connect()
         #     self.__import_all_data()
@@ -41,6 +47,36 @@ class GraphDAO(SqliteDAO):
             self.edge_id2label_cache[int(cols['id'])] = str(cols['label'])
             self.edge_id2name_cache[int(cols['id'])] = str(cols['name'])
             self.edge_id2en_name_cache[int(cols['id'])] = str(cols['en_name'])
+
+    def get_all_post_types(self):
+        sql_str = '''SELECT DISTINCT post_type_id FROM post_type2person_ids'''
+        rows = self._select(sql_str, ['post_type_id'], ())
+        return [int(cols['post_type_id']) for cols in rows]
+
+    def get_all_post_address(self):
+        sql_str = '''SELECT DISTINCT post_address_id FROM post_address2person_ids'''
+        rows = self._select(sql_str, ['post_address_id'], ())
+        return [int(cols['post_address_id']) for cols in rows]
+
+    def get_all_offices(self):
+        sql_str = '''SELECT DISTINCT office_id FROM office2person_ids'''
+        rows = self._select(sql_str, ['office_id'], ())
+        return [int(cols['office_id']) for cols in rows]
+
+    def get_all_office_types(self):
+        sql_str = '''SELECT DISTINCT office_type_id FROM office_type2person_ids'''
+        rows = self._select(sql_str, ['office_type_id'], ())
+        return [int(cols['office_type_id']) for cols in rows]
+
+    def get_all_entries(self):
+        sql_str = '''SELECT DISTINCT entry_id FROM entry2person_ids'''
+        rows = self._select(sql_str, ['entry_id'], ())
+        return [int(cols['entry_id']) for cols in rows]
+
+    def get_all_entry_types(self):
+        sql_str = '''SELECT DISTINCT entry_type_id FROM entry_type2person_ids'''
+        rows = self._select(sql_str, ['entry_type_id'], ())
+        return [int(cols['entry_type_id']) for cols in rows]
 
     def get_node_ids_by_label_codes(self, node_label, node_codes):  # label里不包含年份，因为年份没有code
         if len(node_codes) > 0:
@@ -127,7 +163,6 @@ class GraphDAO(SqliteDAO):
     def get_person_ids_by_node_id(self, node_id):
         if node_id not in self.node_id2has_topic_person_cache:
             sql_str = '''SELECT person_id2count FROM node2person2count WHERE node_id = ?'''
-            # sql_str = '''SELECT pids FROM reverse_index_person_5 WHERE name = ?'''
             rows = self._select(sql_str, ['person_id2count'], (node_id,))
             if len(rows) == 0:
                 print(node_id, self.get_node_name_by_id(node_id), '没有对应的person_id2count')
@@ -139,6 +174,96 @@ class GraphDAO(SqliteDAO):
                 return person_ids
             self.node_id2has_topic_person_cache[node_id] = person_ids
         return self.node_id2has_topic_person_cache[node_id]
+
+    def get_person_ids_by_post_type_id(self, post_type_id):
+        if post_type_id not in self.post_type_id2person_ids_cache:
+            sql_str = '''SELECT person_ids FROM post_type2person_ids WHERE post_type_id = ?'''
+            rows = self._select(sql_str, ['person_ids'], (post_type_id,))
+            if len(rows) == 0:
+                print(post_type_id, self.get_node_name_by_id(post_type_id), '没有对应的person_id')
+                person_ids = set()
+            else:
+                person_ids = json.loads(rows[0]['person_ids'])
+                person_ids = set([int(_id) for _id in person_ids])
+            if not self.use_cache:
+                return person_ids
+            self.post_type_id2person_ids_cache[post_type_id] = person_ids
+        return self.post_type_id2person_ids_cache[post_type_id]
+
+    def get_person_ids_by_post_address_id(self, post_address_id):
+        if post_address_id not in self.post_address_id2person_ids_cache:
+            sql_str = '''SELECT person_ids FROM post_address2person_ids WHERE post_address_id = ?'''
+            rows = self._select(sql_str, ['person_ids'], (post_address_id,))
+            if len(rows) == 0:
+                print(post_address_id, self.get_node_name_by_id(post_address_id), '没有对应的person_id')
+                person_ids = set()
+            else:
+                person_ids = json.loads(rows[0]['person_ids'])
+                person_ids = set([int(_id) for _id in person_ids])
+            if not self.use_cache:
+                return person_ids
+            self.post_address_id2person_ids_cache[post_address_id] = person_ids
+        return self.post_address_id2person_ids_cache[post_address_id]
+
+    def get_person_ids_by_office_id(self, office_id):
+        if office_id not in self.office_id2person_ids_cache:
+            sql_str = '''SELECT person_ids FROM office2person_ids WHERE office_id = ?'''
+            rows = self._select(sql_str, ['person_ids'], (office_id,))
+            if len(rows) == 0:
+                print(office_id, self.get_node_name_by_id(office_id), '没有对应的person_id')
+                person_ids = set()
+            else:
+                person_ids = json.loads(rows[0]['person_ids'])
+                person_ids = set([int(_id) for _id in person_ids])
+            if not self.use_cache:
+                return person_ids
+            self.office_id2person_ids_cache[office_id] = person_ids
+        return self.office_id2person_ids_cache[office_id]
+
+    def get_person_ids_by_office_type_id(self, office_type_id):
+        if office_type_id not in self.office_type_id2person_ids_cache:
+            sql_str = '''SELECT person_ids FROM office_type2person_ids WHERE office_type_id = ?'''
+            rows = self._select(sql_str, ['person_ids'], (office_type_id,))
+            if len(rows) == 0:
+                print(office_type_id, self.get_node_name_by_id(office_type_id), '没有对应的person_id')
+                person_ids = set()
+            else:
+                person_ids = json.loads(rows[0]['person_ids'])
+                person_ids = set([int(_id) for _id in person_ids])
+            if not self.use_cache:
+                return person_ids
+            self.office_type_id2person_ids_cache[office_type_id] = person_ids
+        return self.office_type_id2person_ids_cache[office_type_id]
+
+    def get_person_ids_by_entry_id(self, entry_id):
+        if entry_id not in self.entry_id2person_ids_cache:
+            sql_str = '''SELECT person_ids FROM entry2person_ids WHERE entry_id = ?'''
+            rows = self._select(sql_str, ['person_ids'], (entry_id,))
+            if len(rows) == 0:
+                print(entry_id, self.get_node_name_by_id(entry_id), '没有对应的person_id')
+                person_ids = set()
+            else:
+                person_ids = json.loads(rows[0]['person_ids'])
+                person_ids = set([int(_id) for _id in person_ids])
+            if not self.use_cache:
+                return person_ids
+            self.entry_id2person_ids_cache[entry_id] = person_ids
+        return self.entry_id2person_ids_cache[entry_id]
+
+    def get_person_ids_by_entry_type_id(self, entry_type_id):
+        if entry_type_id not in self.entry_type_id2person_ids_cache:
+            sql_str = '''SELECT person_ids FROM entry_type2person_ids WHERE entry_type_id = ?'''
+            rows = self._select(sql_str, ['person_ids'], (entry_type_id,))
+            if len(rows) == 0:
+                print(entry_type_id, self.get_node_name_by_id(entry_type_id), '没有对应的person_id')
+                person_ids = set()
+            else:
+                person_ids = json.loads(rows[0]['person_ids'])
+                person_ids = set([int(_id) for _id in person_ids])
+            if not self.use_cache:
+                return person_ids
+            self.entry_type_id2person_ids_cache[entry_type_id] = person_ids
+        return self.entry_type_id2person_ids_cache[entry_type_id]
 
     def get_edge_label_by_id(self, edge_id):
         if edge_id == -1:

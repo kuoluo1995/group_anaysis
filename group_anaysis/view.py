@@ -16,10 +16,16 @@ def init_ranges(request):
     request.encoding = 'utf-8'
     result = {'is_success': False}
     try:
-        dynasties, status, address = get_init_ranges()
+        dynasties, status, address, post_type, post_address, office, office_type, entry, entry_type = get_init_ranges()
         result[NodeLabels['dynasty']] = dynasties
         result[NodeLabels['status']] = status
         result[NodeLabels['address']] = address
+        result[NodeLabels['post_type']] = post_type
+        result['post_address'] = post_address
+        result[NodeLabels['office']] = office
+        result[NodeLabels['office_type']] = office_type
+        result[NodeLabels['entry']] = entry
+        result[NodeLabels['entry_type']] = entry_type
         result['is_success'] = True
     except Exception as e:
         traceback.print_exc()
@@ -52,7 +58,7 @@ def search_person_by_ranges(request):
     NodeLabels = common.NodeLabels
     request.encoding = 'utf-8'
     result = {'is_success': False}
-    dynasty_ids = min_year = max_year = is_female = statu_ids = address_ids = None
+    dynasty_ids = min_year = max_year = is_female = statu_ids = address_ids = post_type_ids = post_address_ids = office_ids = office_type_ids = entry_ids = entry_type_ids = None
     if 'dynasty_ids[]' in request.POST and request.POST['dynasty_ids[]']:
         dynasty_ids = request.POST.getlist('dynasty_ids[]')
         dynasty_ids = [int(_id) for _id in dynasty_ids]
@@ -68,8 +74,27 @@ def search_person_by_ranges(request):
     if 'address_ids[]' in request.POST and request.POST['address_ids[]']:
         address_ids = request.POST.getlist('address_ids[]')
         address_ids = [int(_id) for _id in address_ids]
+    if 'post_type_ids[]' in request.POST and request.POST['post_type_ids[]']:
+        post_type_ids = request.POST.getlist('post_type_ids[]')
+        post_type_ids = [int(_id) for _id in post_type_ids]
+    if 'post_address_ids[]' in request.POST and request.POST['post_address_ids[]']:
+        post_address_ids = request.POST.getlist('post_address_ids[]')
+        post_address_ids = [int(_id) for _id in post_address_ids]
+    if 'office_ids[]' in request.POST and request.POST['office_ids[]']:
+        office_ids = request.POST.getlist('office_ids[]')
+        office_ids = [int(_id) for _id in office_ids]
+    if 'office_type_ids[]' in request.POST and request.POST['office_type_ids[]']:
+        office_type_ids = request.POST.getlist('office_type_ids[]')
+        office_type_ids = [int(_id) for _id in office_type_ids]
+    if 'entry_ids[]' in request.POST and request.POST['entry_ids[]']:
+        entry_ids = request.POST.getlist('entry_ids[]')
+        entry_ids = [int(_id) for _id in entry_ids]
+    if 'entry_type_ids[]' in request.POST and request.POST['entry_type_ids[]']:
+        entry_type_ids = request.POST.getlist('entry_type_ids[]')
+        entry_type_ids = [int(_id) for _id in entry_type_ids]
     try:
-        person = get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids, address_ids)
+        person = get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids, address_ids, post_type_ids,
+                                      post_address_ids, office_ids, office_type_ids, entry_ids, entry_type_ids)
         result[NodeLabels['person']] = person
         result['is_success'] = True
     except Exception as e:
@@ -165,7 +190,7 @@ def search_topics_by_person_ids(request):
                     topic_id2sentence_ids2vector_json[_topic_id][_sentence] = [float(_v) for _v in _value]
             person_id2sentence_ids = {str(_person_id): list(_sentence_id) for _person_id, _sentence_id in
                                       person_id2sentence_ids.items()}
-            _name = 'temp_'+str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
+            _name = 'temp_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
             json_utils.save_json({'topic_id2sentence_ids2vector': topic_id2sentence_ids2vector_json,
                                   'person_id2sentence_ids': person_id2sentence_ids}, _name)
             result['adjust_topic_weights_params'] = _name
@@ -231,7 +256,8 @@ def search_all_similar_person(request):
         except Exception as e:
             traceback.print_exc()
             result['bug'] = '发给后端调试问题。输入为 json:{}'.format(request_json)
-            _name = 'error_search_all_similar_person_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
+            _name = 'error_search_all_similar_person_' + str(datetime.datetime.now()).replace(' ', '-').replace(':',
+                                                                                                                '_')
             json_utils.save_json(request_json, _name)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
@@ -248,7 +274,8 @@ def search_person_ids_by_draws(request):
         except Exception as e:
             traceback.print_exc()
             result['bug'] = '发给后端调试问题,请检查neo4j数据库是否开启。输入为 draws:{}'.format(draws)
-            _name = 'error_search_person_ids_by_draws_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
+            _name = 'error_search_person_ids_by_draws_' + str(datetime.datetime.now()).replace(' ', '-').replace(':',
+                                                                                                                 '_')
             json_utils.save_json(request.POST, _name)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type='application/json')
@@ -268,7 +295,8 @@ def search_community_by_links(request):
         except Exception as e:
             traceback.print_exc()
             result['bug'] = '发给后端调试问题。输入为 num:{},links:{}'.format(num_node, links)
-            _name = 'error_search_community_by_links_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
+            _name = 'error_search_community_by_links_' + str(datetime.datetime.now()).replace(' ', '-').replace(':',
+                                                                                                                '_')
             json_utils.save_json(request.POST, _name)
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")

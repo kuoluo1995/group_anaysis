@@ -119,12 +119,6 @@ def save2sqlite(graph, node2data, rel2data, db_path):
                     data TEXT NOT NULL
                 );
             ''')
-    c.execute('''CREATE TABLE node2person2count
-                (
-                    node_id BIGINT PRIMARY KEY,
-                    person_id2count TEXT NOT NULL
-                );
-            ''')
     # 还要加个name的
     c.execute('''CREATE INDEX source_index ON graph (source)''')
     c.execute('''CREATE INDEX target_index ON graph (target)''')
@@ -153,6 +147,7 @@ def save2sqlite(graph, node2data, rel2data, db_path):
 
 def insert_node2person2count(db_path):
     # 建立反向查询表
+    print('create node2person2count start')
     GRAPH_DAO = common.GRAPH_DAO
     NodeLabels = common.NodeLabels
     GRAPH_DAO.start_connect()
@@ -160,8 +155,7 @@ def insert_node2person2count(db_path):
     person_ids = GRAPH_DAO.get_node_ids_by_label(NodeLabels['person'])
     num_persons = len(person_ids)
     for _i, person_id in enumerate(person_ids):
-        if (_i + 1) % 1000 == 0:
-            print('{}/{}'.format(_i + 1, num_persons))
+        print('\r node2person2count {}/{}'.format(_i + 1, num_persons), end='')
         person_id2sentence_ids, _, _ = get_sentence_dict([person_id], random_epoch=1000)
         sentence_ids = person_id2sentence_ids[person_id]
         if len(sentence_ids) < 10:
@@ -173,17 +167,117 @@ def insert_node2person2count(db_path):
     GRAPH_DAO.close_connect()
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
+    c.execute('''CREATE TABLE node2person2count
+                (
+                    node_id BIGINT PRIMARY KEY,
+                    person_id2count TEXT NOT NULL
+                );
+            ''')
     for node_id, person_id2count in node_id2person_ids.items():
         c.execute("INSERT INTO node2person2count VALUES (?,?)", (int(node_id), json.dumps(person_id2count)))
     conn.commit()
+    print('node2person2count finish')
+
+
+def insert_condition2person(db_path):
+    # 建立反向查询表
+    print('create condition2person start')
+    GRAPH_DAO = common.GRAPH_DAO
+    NodeLabels = common.NodeLabels
+    MetaPaths = common.MetaPaths
+    GRAPH_DAO.start_connect()
+    person_ids = GRAPH_DAO.get_node_ids_by_label(NodeLabels['person'])
+    post_type2person_ids = defaultdict(set)
+    post_address2person_ids = defaultdict(set)
+    office2person_ids = defaultdict(set)
+    office_type2person_ids = defaultdict(set)
+    entry2person_ids = defaultdict(set)
+    entry_type2person_ids = defaultdict(set)
+    num_persons = len(person_ids)
+    for _i, _id in enumerate(person_ids):
+        print('\r condition2person {}/{}'.format(_i + 1, num_persons), end='')
+        all_paths = MetaPaths['官职'].get_all_paths_by_node_id(_id)
+        for _path in all_paths:
+            for i, word_id in enumerate(_path):
+                if i % 2 == 0:
+                    if GRAPH_DAO.get_node_label_by_id(word_id) == NodeLabels['post_type']:
+                        post_type2person_ids[word_id].add(_id)
+                    if GRAPH_DAO.get_node_label_by_id(word_id) == NodeLabels['address']:
+                        post_address2person_ids[word_id].add(_id)
+                    if GRAPH_DAO.get_node_label_by_id(word_id) == NodeLabels['office']:
+                        office2person_ids[word_id].add(_id)
+                    if GRAPH_DAO.get_node_label_by_id(word_id) == NodeLabels['office_type']:
+                        office_type2person_ids[word_id].add(_id)
+        all_paths = MetaPaths['入仕'].get_all_paths_by_node_id(_id)
+        for _path in all_paths:
+            for i, word_id in enumerate(_path):
+                if i % 2 == 0:
+                    if GRAPH_DAO.get_node_label_by_id(word_id) == NodeLabels['entry']:
+                        entry2person_ids[word_id].add(_id)
+                    if GRAPH_DAO.get_node_label_by_id(word_id) == NodeLabels['entry_type']:
+                        entry_type2person_ids[word_id].add(_id)
+    GRAPH_DAO.close_connect()
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE post_type2person_ids
+                (
+                    post_type_id BIGINT PRIMARY KEY,
+                    person_ids TEXT NOT NULL
+                );
+            ''')
+    c.execute('''CREATE TABLE post_address2person_ids
+                (
+                    post_address_id BIGINT PRIMARY KEY,
+                    person_ids TEXT NOT NULL
+                );
+            ''')
+    c.execute('''CREATE TABLE office2person_ids
+                (
+                    office_id BIGINT PRIMARY KEY,
+                    person_ids TEXT NOT NULL
+                );
+            ''')
+    c.execute('''CREATE TABLE office_type2person_ids
+                (
+                    office_type_id BIGINT PRIMARY KEY,
+                    person_ids TEXT NOT NULL
+                );
+            ''')
+    c.execute('''CREATE TABLE entry2person_ids
+                (
+                    entry_id BIGINT PRIMARY KEY,
+                    person_ids TEXT NOT NULL
+                );
+            ''')
+    c.execute('''CREATE TABLE entry_type2person_ids
+                (
+                    entry_type_id BIGINT PRIMARY KEY,
+                    person_ids TEXT NOT NULL
+                );
+            ''')
+    for post_type_id, person_ids in post_type2person_ids.items():
+        c.execute("INSERT INTO post_type2person_ids VALUES (?,?)", (int(post_type_id), json.dumps(list(person_ids))))
+    for address_id, person_ids in post_address2person_ids.items():
+        c.execute("INSERT INTO post_address2person_ids VALUES (?,?)", (int(address_id), json.dumps(list(person_ids))))
+    for post_id, person_ids in office2person_ids.items():
+        c.execute("INSERT INTO office2person_ids VALUES (?,?)", (int(post_id), json.dumps(list(person_ids))))
+    for post_id, person_ids in office_type2person_ids.items():
+        c.execute("INSERT INTO office_type2person_ids VALUES (?,?)", (int(post_id), json.dumps(list(person_ids))))
+    for entry_id, person_ids in entry2person_ids.items():
+        c.execute("INSERT INTO entry2person_ids VALUES (?,?)", (int(entry_id), json.dumps(list(person_ids))))
+    for entry_type_id, person_ids in entry_type2person_ids.items():
+        c.execute("INSERT INTO entry_type2person_ids VALUES (?,?)", (int(entry_type_id), json.dumps(list(person_ids))))
+    conn.commit()
+    print('condition2person finish')
 
 
 if __name__ == "__main__":
-    # neo4j = Shell('neo4j.bat console', 'Started')
-    # neo4j.run_background()
+    neo4j = Shell('neo4j.bat console', 'Started')
+    neo4j.run_background()
     whole_g, node2data, rel2data = get_whole_graph()
     sql_dataset = Path('./dataset/graph.db')
     if sql_dataset.exists():
         sql_dataset.unlink()
     save2sqlite(whole_g, node2data, rel2data, str(sql_dataset))
     insert_node2person2count(str(sql_dataset))
+    insert_condition2person(str(sql_dataset))

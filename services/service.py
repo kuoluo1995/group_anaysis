@@ -13,6 +13,7 @@ from services.tools.sentence_topic_tool import get_sentence_dict, get_sentence_i
 from tools.sort_utils import sort_dict2list
 import numpy as np
 
+
 def get_init_ranges():
     """得到初始化的环境参数，目前需要的只是
 
@@ -45,9 +46,27 @@ def get_init_ranges():
     address_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['address'], address.keys())
     address = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for
                _id in address_ids}
+    post_type_ids = GRAPH_DAO.get_all_post_types()
+    post_type = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for
+                 _id in post_type_ids}
+    post_address_ids = GRAPH_DAO.get_all_post_address()
+    post_address = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id),
+                          'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for _id in post_address_ids}
+    office_ids = GRAPH_DAO.get_all_offices()
+    office = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for
+              _id in office_ids}
+    office_type_ids = GRAPH_DAO.get_all_office_types()
+    office_type = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)}
+                   for _id in office_type_ids}
+    entry_ids = GRAPH_DAO.get_all_entries()
+    entry = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for
+             _id in entry_ids}
+    entry_type_ids = GRAPH_DAO.get_all_entry_types()
+    entry_type = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)}
+                  for _id in entry_type_ids}
     GRAPH_DAO.close_connect()
     CBDB_DAO.close_connect()
-    return dynasties, status, address
+    return dynasties, status, address, post_type, post_address, office, office_type, entry, entry_type
 
 
 def get_relation_person_by_name(person_name, ranges):
@@ -111,13 +130,14 @@ def get_relation_person_by_name(person_name, ranges):
                     print(_path)
         person_dict[_id] = {'name': GRAPH_DAO.get_node_name_by_id(_id),
                             'en_name': GRAPH_DAO.get_node_en_name_by_id(_id),
-                            'relation': [{'name': '自己', 'en_name': 'me'}]}
+                            'relation': [{'name': 'Y(自己)', 'en_name': 'Y()'}]}
         all_person_dict.append(person_dict)
     GRAPH_DAO.close_connect()
     return all_person_dict
 
 
-def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids, address_ids):
+def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids, address_ids, post_type_ids,
+                         post_address_ids, office_ids, office_type_ids, entry_ids, entry_type_ids):
     """根据范围查询到所有的人群
 
     Notes
@@ -154,7 +174,37 @@ def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids, 
         for i, _id in enumerate(address_ids):
             address_ids[i] = GRAPH_DAO.get_node_code_by_id(_id)
     person = CBDB_DAO.get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids, address_ids)
-    person_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['person'], person.keys())
+    person_ids = set(GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['person'], person.keys()))
+    if post_type_ids is not None:
+        _person_ids = set()
+        for post_type_id in post_type_ids:
+            _person_ids.update(GRAPH_DAO.get_person_ids_by_post_type_id(post_type_id))
+        person_ids.intersection_update(_person_ids)
+    if post_address_ids is not None:
+        _person_ids = set()
+        for post_address_id in post_address_ids:
+            _person_ids.update(GRAPH_DAO.get_person_ids_by_post_address_id(post_address_id))
+        person_ids.intersection_update(_person_ids)
+    if office_ids is not None:
+        _person_ids = set()
+        for office_id in office_ids:
+            _person_ids.update(GRAPH_DAO.get_person_ids_by_office_id(office_id))
+        person_ids.intersection_update(_person_ids)
+    if office_type_ids is not None:
+        _person_ids = set()
+        for office_type_id in office_type_ids:
+            _person_ids.update(GRAPH_DAO.get_person_ids_by_office_type_id(office_type_id))
+        person_ids.intersection_update(_person_ids)
+    if entry_ids is not None:
+        _person_ids = set()
+        for entry_id in entry_ids:
+            _person_ids.update(GRAPH_DAO.get_person_ids_by_entry_id(entry_id))
+        person_ids.intersection_update(_person_ids)
+    if entry_type_ids is not None:
+        _person_ids = set()
+        for entry_type_id in entry_type_ids:
+            _person_ids.update(GRAPH_DAO.get_person_ids_by_entry_type_id(entry_type_id))
+        person_ids.intersection_update(_person_ids)
     person = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for
               _id in person_ids}
     GRAPH_DAO.close_connect()
@@ -358,12 +408,12 @@ def get_topics_by_person_ids(person_ids, random_epoch=1500, min_sentence=5, max_
 
     ada_boost_model = AdaBoost(len(all_topic_ids))
     ada_boost_model.train(person_vec, labels)
-    
+
     topic_w = ada_boost_model.alphas
 
     # 正则化
     max_w, min_w = np.max(topic_w), np.min(topic_w)
-    topic_w = (topic_w-min_w)/(max_w-min_w) + 0.01
+    topic_w = (topic_w - min_w) / (max_w - min_w) + 0.01
 
     topic_id2lrs = {all_topic_ids[index]: w for index, w in enumerate(topic_w)}
 
