@@ -61,7 +61,7 @@ def get_person_id2vector2d(topic_id2sentence_ids2vector, person_id2sentence_ids,
             _vectors = [sentence_id2vector[_sentence_id] for _sentence_id in person_id2sentence_ids[person_id] if
                         _sentence_id in sentence_id2vector]
             if len(_vectors) > 0:
-                max_vector = max(_vectors, key=lambda item: cos_dict(item, _mean))
+                max_vector = np.array(max(_vectors, key=lambda item: cos_dict(item, _mean)))
             # 可以在这里加个维度的权重参数
             if topic_weights is not None and _topic_id in topic_weights:
                 max_vector *= topic_weights[_topic_id]
@@ -76,6 +76,7 @@ def get_person_id2vector2d(topic_id2sentence_ids2vector, person_id2sentence_ids,
         person_id2position2d[_person_id] = (vectors[_i][0], vectors[_i][1])  # x,y
         _i += 1
     return person_id2position2d
+
 
 # def get_person_id2vector2d(topic_id2sentence_dist, person_id2sentence_ids, topic_weights=None, **kwargs):
 #     person_dist = defaultdict(lambda **arg: defaultdict(float))
