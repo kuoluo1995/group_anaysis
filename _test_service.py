@@ -8,7 +8,7 @@ from services import common
 from services.service import get_relation_person_by_name, get_topics_by_person_ids, get_init_ranges, \
     get_person_by_ranges, \
     get_address_by_address_ids, get_all_similar_person, add_topic_weights, get_similar_person, \
-    get_top_topic_by_sentence_ids
+    get_top_topic_by_sentence_ids, get_compared_topics_by_person_ids
 from services.tools.person_tool import get_person_all_dict
 from tools import json_utils
 from tools.sort_utils import sort_dict2list
@@ -26,13 +26,19 @@ if __name__ == '__main__':
     EdgeLabels = common.EdgeLabels
     MetaPaths = common.MetaPaths
 
-    dynasties, status, address, post_type, post_address, office, office_types, entry, entry_type = get_init_ranges()
-    # start = timeit.default_timer()
-    dynastie_ids = [_id for _id, items in dynasties.items() if items['name'] == '西汉']
-    # post_type 733099 正授, 733134 赠 733242追赠
-    person = get_person_by_ranges(dynastie_ids, None, None, None, None, None, None, None, None,
-                                  None, None, None)
-    person_ids = [_id for _id, items in person.items()]
+    # dynasties, status, address, post_type, post_address, office, office_types, entry, entry_type = get_init_ranges()
+    # # start = timeit.default_timer()
+    # dynastie_ids = [_id for _id, items in dynasties.items() if items['name'] == '西汉']
+    # # post_type 733099 正授, 733134 赠 733242追赠
+    # person = get_person_by_ranges(dynastie_ids, None, None, None, None, None, None, None, None,
+    #                               None, None, None)
+    # person_ids = [_id for _id, items in person.items()]
+    _json = json_utils.load_json('error_compare_topic_2020-04-19-15_34_13.341509')
+    person_ids1 = [int(_id) for _id in _json['person_ids1[]']]
+    person_ids2 = [int(_id) for _id in _json['person_ids2[]']]
+    all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_compared_topics_by_person_ids(
+        person_ids1, person_ids2, populate_ratio=0.6, max_topic=10)
+    print(len(all_topic_ids))
     # print(len(person))
     # person = get_person_by_ranges([dynastie_id], None, None, None, None, None,
     #                               list(post_type.keys())[:1], None, None, None, None, None)
@@ -82,9 +88,9 @@ if __name__ == '__main__':
     # person_ids = [int(_id) for _id in person_ids]
     # populate_ratio = float(_json['populate_ratio'])
     # max_topic = int(_json['max_topic'])
-    all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
-        person_ids, populate_ratio=0.3, max_topic=10)
-    print(len(all_topic_ids))
+    # all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
+    #     person_ids, populate_ratio=0.3, max_topic=10)
+    # print(len(all_topic_ids))
 
     # print('查询所有topic的相关性:{}'.format(timeit.default_timer() - start))
     # all_sentence_ids = {_id for _id in all_sentence_dict.keys()}
@@ -97,22 +103,22 @@ if __name__ == '__main__':
     # start = timeit.default_timer()
     # address = get_address_by_address_ids(address_ids)
     # print('查询地址耗时:{}'.format(timeit.default_timer() - start))
-    _json = json_utils.load_json('error_adjust_topic_weights_2020-04-18-18_18_14.142410')
-    topic_weights = _json['topic_weights']
-    topic_weights = {tuple([int(_id) for _id in _topic_id.split(' ')]): _weight for _topic_id, _weight in
-                     topic_weights.items()}
-    _data = json_utils.load_json(_json['adjust_topic_weights_params'])
-    topic_id2sentence_ids2vector_json = {}
-    for _topic_id, _items in _data['topic_id2sentence_ids2vector'].items():
-        _topic_id = tuple([int(_id) for _id in _topic_id.split(' ')])
-        topic_id2sentence_ids2vector_json[_topic_id] = {}
-        for _sentence_id, _value in _items.items():
-            _sentence = tuple([int(_id) for _id in _sentence_id.split(' ')])
-            topic_id2sentence_ids2vector_json[_topic_id][_sentence] = [float(_v) for _v in _value]
-    person_id2sentence_ids = {int(_person_id): [tuple(_sentence_id) for _sentence_id in _sentence_ids] for
-                              _person_id, _sentence_ids in _data['person_id2sentence_ids'].items()}
-    person_id2position2d2, person_dict = add_topic_weights(topic_weights, topic_id2sentence_ids2vector_json,
-                                                           person_id2sentence_ids)
+    # _json = json_utils.load_json('error_adjust_topic_weights_2020-04-18-18_18_14.142410')
+    # topic_weights = _json['topic_weights']
+    # topic_weights = {tuple([int(_id) for _id in _topic_id.split(' ')]): _weight for _topic_id, _weight in
+    #                  topic_weights.items()}
+    # _data = json_utils.load_json(_json['adjust_topic_weights_params'])
+    # topic_id2sentence_ids2vector_json = {}
+    # for _topic_id, _items in _data['topic_id2sentence_ids2vector'].items():
+    #     _topic_id = tuple([int(_id) for _id in _topic_id.split(' ')])
+    #     topic_id2sentence_ids2vector_json[_topic_id] = {}
+    #     for _sentence_id, _value in _items.items():
+    #         _sentence = tuple([int(_id) for _id in _sentence_id.split(' ')])
+    #         topic_id2sentence_ids2vector_json[_topic_id][_sentence] = [float(_v) for _v in _value]
+    # person_id2sentence_ids = {int(_person_id): [tuple(_sentence_id) for _sentence_id in _sentence_ids] for
+    #                           _person_id, _sentence_ids in _data['person_id2sentence_ids'].items()}
+    # person_id2position2d2, person_dict = add_topic_weights(topic_weights, topic_id2sentence_ids2vector_json,
+    #                                                        person_id2sentence_ids)
 
     # # topic 相似矩阵
     # pmi_names = list()

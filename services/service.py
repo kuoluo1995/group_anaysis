@@ -283,15 +283,15 @@ def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=100
 
     topic_ids2person_ids = t2p1
     topic_ids2sentence_ids = t2s1
-    all_topic_ids = set.union(at1, at2)
+    all_topic_ids = set.union(set(at1), set(at2))
     print(len(at1), len(at2), len(all_topic_ids))
     for t in t2p2:
-        topic_ids2person_ids[t] = set.union(t2p2[t], t2p1[t])
-        topic_ids2sentence_ids[t] = set.union(t2s1[t], t2s2[t])
+        topic_ids2person_ids[t] = set.union(set(t2p2[t]), set(t2p1[t]))
+        topic_ids2sentence_ids[t] = set.union(set(t2s1[t]), set(t2s2[t]))
 
     person_id2sentence_ids = p2s1
     for p in p2s2:
-        person_id2sentence_ids[p] = set.union(p2s1[p], p2s2[p])
+        person_id2sentence_ids[p] = set.union(set(p2s1[p]), set(p2s2[p]))
 
     print('1:{}'.format(timeit.default_timer() - start))
     # sentence_id2vector
