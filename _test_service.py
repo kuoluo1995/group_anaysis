@@ -33,11 +33,11 @@ if __name__ == '__main__':
     # person = get_person_by_ranges(dynastie_ids, None, None, None, None, None, None, None, None,
     #                               None, None, None)
     # person_ids = [_id for _id, items in person.items()]
-    _json = json_utils.load_json('error_compare_topic_2020-04-19-15_34_13.341509')
+    _json = json_utils.load_json('error_compare_topic_2020-04-19-16_12_25.455852')
     person_ids1 = [int(_id) for _id in _json['person_ids1[]']]
     person_ids2 = [int(_id) for _id in _json['person_ids2[]']]
     all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_compared_topics_by_person_ids(
-        person_ids1, person_ids2, populate_ratio=0.6, max_topic=10)
+        person_ids1, person_ids2, populate_ratio=0.3, max_topic=10)
     print(len(all_topic_ids))
     # print(len(person))
     # person = get_person_by_ranges([dynastie_id], None, None, None, None, None,

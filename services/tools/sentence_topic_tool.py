@@ -290,7 +290,7 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
                             _topic in all_topic_ids}
     topic_ids2sentence_ids = {_topic: _sentence_ids for _topic, _sentence_ids in topic_ids2sentence_ids.items() if
                               _topic in all_topic_ids}
-    return topic_ids2person_ids, topic_ids2sentence_ids, all_topic_ids
+    return topic_ids2person_ids, topic_ids2sentence_ids, set(all_topic_ids)
 
 
 def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_ids, num_persons, num_sentences,

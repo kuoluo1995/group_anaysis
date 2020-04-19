@@ -279,19 +279,25 @@ def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=100
 
     # 合并的、
     as1.update(as2)
-    all_sentence_dict = as1
+    all_sentence_dict = {**as1, **as2}
+    all_topic_ids = at1.union(at2)
 
     topic_ids2person_ids = t2p1
     topic_ids2sentence_ids = t2s1
-    all_topic_ids = set.union(set(at1), set(at2))
-    print(len(at1), len(at2), len(all_topic_ids))
     for t in t2p2:
-        topic_ids2person_ids[t] = set.union(set(t2p2[t]), set(t2p1[t]))
-        topic_ids2sentence_ids[t] = set.union(set(t2s1[t]), set(t2s2[t]))
+        if t not in topic_ids2person_ids:
+            topic_ids2person_ids[t] = t2p2[t]
+            topic_ids2sentence_ids[t] = t2s2[t]
+        else:
+            topic_ids2person_ids[t].update(t2p2[t])
+            topic_ids2sentence_ids[t].update(t2s2[t])
 
     person_id2sentence_ids = p2s1
     for p in p2s2:
-        person_id2sentence_ids[p] = set.union(set(p2s1[p]), set(p2s2[p]))
+        if p not in p2s1:
+            person_id2sentence_ids[p] = p2s2[p]
+        else:
+            person_id2sentence_ids[p].update(p2s2[p])
 
     print('1:{}'.format(timeit.default_timer() - start))
     # sentence_id2vector
@@ -310,9 +316,6 @@ def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=100
     node_dict, edge_dict = get_graph_dict(all_sentence_dict)
     print('5:{}'.format(timeit.default_timer() - start))
     start = timeit.default_timer()
-
-    # topic_id2lrs = getTopicWeights(all_topic_ids, person_ids)
-    # print(topic_id2lrs)
 
     topic_id2lrs = {_id: compared_lrs(_id, person_ids1, person_ids2) for _id in all_topic_ids}
     print('6:{}'.format(timeit.default_timer() - start))
