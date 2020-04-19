@@ -26,12 +26,13 @@ if __name__ == '__main__':
     EdgeLabels = common.EdgeLabels
     MetaPaths = common.MetaPaths
 
-    # dynasties, status, address, post_type, post_address, office, office_types, entry, entry_type = get_init_ranges()
+    dynasties, status, address, post_type, post_address, office, office_types, entry, entry_type = get_init_ranges()
     # start = timeit.default_timer()
-    # dynastie_id = 716  # 明朝
+    dynastie_ids = [_id for _id, items in dynasties.items() if items['name'] == '西汉']
     # post_type 733099 正授, 733134 赠 733242追赠
-    # person = get_person_by_ranges([dynastie_id], None, None, None, None, None, None, None, None,
-    #                               None, None, None)
+    person = get_person_by_ranges(dynastie_ids, None, None, None, None, None, None, None, None,
+                                  None, None, None)
+    person_ids = [_id for _id, items in person.items()]
     # print(len(person))
     # person = get_person_by_ranges([dynastie_id], None, None, None, None, None,
     #                               list(post_type.keys())[:1], None, None, None, None, None)
@@ -81,9 +82,9 @@ if __name__ == '__main__':
     # person_ids = [int(_id) for _id in person_ids]
     # populate_ratio = float(_json['populate_ratio'])
     # max_topic = int(_json['max_topic'])
-    # all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
-    #     person_ids, populate_ratio=0.3, max_topic=10)
-    # print(len(all_topic_ids))
+    all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
+        person_ids, populate_ratio=0.3, max_topic=10)
+    print(len(all_topic_ids))
 
     # print('查询所有topic的相关性:{}'.format(timeit.default_timer() - start))
     # all_sentence_ids = {_id for _id in all_sentence_dict.keys()}
