@@ -404,21 +404,22 @@ def get_topics_by_person_ids(person_ids, random_epoch=1500, min_sentence=5, max_
     # print(topic_id2lrs)
 
     topic_id2lrs = {_id: lrs(_id, person_ids) for _id in all_topic_ids}
-    all_topic_ids = [item for item, _ in sort_dict2list(topic_id2lrs)]
+    if len(all_topic_ids) > 1:
+        all_topic_ids = [item for item, _ in sort_dict2list(topic_id2lrs)]
 
-    _, person_vec, labels = getPerson2TopicVec(all_topic_ids, person_ids)
-    # print(person_vec[:10], labels[:10] )
+        _, person_vec, labels = getPerson2TopicVec(all_topic_ids, person_ids)
+        # print(person_vec[:10], labels[:10] )
 
-    ada_boost_model = AdaBoost(len(all_topic_ids))
-    ada_boost_model.train(person_vec, labels)
+        ada_boost_model = AdaBoost(len(all_topic_ids))
+        ada_boost_model.train(person_vec, labels)
 
-    topic_w = ada_boost_model.alphas
+        topic_w = ada_boost_model.alphas
 
-    # 正则化
-    max_w, min_w = np.max(topic_w), np.min(topic_w)
-    topic_w = (topic_w - min_w) / (max_w - min_w) + 0.01
+        # 正则化
+        max_w, min_w = np.max(topic_w), np.min(topic_w)
+        topic_w = (topic_w - min_w) / (max_w - min_w) + 0.01
 
-    topic_id2lrs = {all_topic_ids[index]: w for index, w in enumerate(topic_w)}
+        topic_id2lrs = {all_topic_ids[index]: w for index, w in enumerate(topic_w)}
 
     # print(topic_id2lrs)
     # for topic_id, _lrs in topic_id2lrs.items():
