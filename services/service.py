@@ -381,6 +381,10 @@ def get_topics_by_person_ids(person_ids, random_epoch=1500, min_sentence=5, max_
                                                                                  min_sentences=min_sentence,
                                                                                  max_topic=max_topic,
                                                                                  populate_ratio=populate_ratio)
+
+    # 强行过滤
+    topic_ids2sentence_ids = {_t: set(list(ss)[:5000])  for _t, ss in topic_ids2sentence_ids.items()}
+
     print('1:{}'.format(timeit.default_timer() - start))
     # sentence_id2vector
     start = timeit.default_timer()

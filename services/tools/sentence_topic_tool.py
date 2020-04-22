@@ -183,6 +183,7 @@ def get_sentence_id2vector(all_topic_ids, topic_id2sentence_ids, num_dims):
     vectors = {}
     for topic_id in all_topic_ids:
         sentences_ids = list(topic_id2sentence_ids[topic_id])
+        print([common.GRAPH_DAO.get_node_name_by_id(e) for e in topic_id], len(sentences_ids))
         corpus = [set([str(w) for _i, w in enumerate(sentence_id) if _i % 2 == 0]) for sentence_id in sentences_ids]
         dictionary = corpora.Dictionary(corpus)
         corpus = [dictionary.doc2bow(list(_item)) for _item in corpus]
@@ -198,7 +199,7 @@ def get_sentence_id2vector(all_topic_ids, topic_id2sentence_ids, num_dims):
             for _i2, _dist in enumerate(list(sentence_dist[_i])):
                 sentence2sentence_dist[sentence_id][sentences_ids[_i2]] = _dist
         # topic_id2sentence_dist[topic_id] = sentence2sentence_dist
-
+        print('e')
         # sentence_dist太少了降维会失败，应该是函数的问题
         for _dim in num_dims:
             vectors[_dim] = multidimensional_scale(_dim, _dist=sentence_dist)
@@ -261,6 +262,10 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
             if is_need:
                 popular_node_ids.append(_id)
         popular_node_ids = popular_node_ids[:max_topic]
+
+        # for _n in ['著述关系类',]:
+        #     # _n = common.GRAPH_DAO.
+        #     if _n in popular_node_ids
 
         # todo: 可以考虑都显示然后再取前几个
         for _node_id in popular_node_ids:
