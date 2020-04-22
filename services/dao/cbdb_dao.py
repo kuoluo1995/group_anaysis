@@ -94,7 +94,7 @@ class CBDBDAO(SqliteDAO):
         new_address_codes = [_code for _code in address_codes if _code not in self.address_code2address_cache]
         if self.use_cache and len(new_address_codes) > 0:
             sql_str = '''SELECT DISTINCT c_addr_id,x_coord,y_coord,c_name_chn FROM addresses WHERE c_addr_id in {}'''.format(
-                tuple(new_address_codes if len(new_address_codes) > 1 else "({})".format(new_address_codes[0])))
+                tuple(new_address_codes) if len(new_address_codes) > 1 else "({})".format(new_address_codes[0]))
             rows = self._select(sql_str, ['address_id', 'x_coord', 'y_coord', 'address_name'], ())
             for cols in rows:
                 self.address_code2address_cache[cols['address_id']].append(

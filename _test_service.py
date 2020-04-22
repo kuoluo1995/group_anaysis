@@ -22,6 +22,7 @@ plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
 plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 if __name__ == '__main__':
     GRAPH_DAO = common.GRAPH_DAO
+    CBDB_DAO = common.CBDB_DAO
     NodeLabels = common.NodeLabels
     EdgeLabels = common.EdgeLabels
     MetaPaths = common.MetaPaths
@@ -42,9 +43,14 @@ if __name__ == '__main__':
     # 条件查询人群
     # start = timeit.default_timer()
     dynastie_ids = [_id for _id, items in dynasties.items() if items['name'] == '宋']
-    address_ids = [_id for _id, items in address.items() if items['name'] == '眉山']
-    person = get_person_by_ranges(dynastie_ids, None, None, None, None, address_ids, None, None, None,
-                                  None, None, None)
+    GRAPH_DAO.start_connect()
+    address_codes = [GRAPH_DAO.get_node_code_by_id(_id) for _id, items in address.items() if items['name'] == '眉山']
+    GRAPH_DAO.close_connect()
+    CBDB_DAO.start_connect()
+    ids = CBDB_DAO.get_address_by_address_codes(address_codes)
+    CBDB_DAO.close_connect()
+    # person = get_person_by_ranges(dynastie_ids, None, None, None, None, address_ids, None, None, None,
+    #                               None, None, None)
     print()
     # person_ids = [_id for _id, items in person.items()]
     # print(len(person))
