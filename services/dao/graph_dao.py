@@ -21,7 +21,7 @@ class GraphDAO(SqliteDAO):
         self.edge_id2en_name_cache = {}
         self.in_edge_cache = {}
         self.out_edge_cache = {}
-
+        self.address_id2person_ids_cache = {}
         self.node_id2has_topic_person_cache = {}
         self.post_type_id2person_ids_cache = {}
         self.post_address_id2person_ids_cache = {}
@@ -77,6 +77,11 @@ class GraphDAO(SqliteDAO):
         sql_str = '''SELECT DISTINCT entry_type_id FROM entry_type2person_ids'''
         rows = self._select(sql_str, ['entry_type_id'], ())
         return [int(cols['entry_type_id']) for cols in rows]
+
+    def get_all_address(self):
+        sql_str = '''SELECT DISTINCT address_id FROM address2person_ids'''
+        rows = self._select(sql_str, ['address_id'], ())
+        return [int(cols['address_id']) for cols in rows]
 
     def get_node_ids_by_label_codes(self, node_label, node_codes):  # label里不包含年份，因为年份没有code
         if len(node_codes) > 0:
@@ -174,6 +179,21 @@ class GraphDAO(SqliteDAO):
                 return person_ids
             self.node_id2has_topic_person_cache[node_id] = person_ids
         return self.node_id2has_topic_person_cache[node_id]
+
+    def get_person_ids_by_address_id(self, address_id):
+        if address_id not in self.address_id2person_ids_cache:
+            sql_str = '''SELECT person_ids FROM address2person_ids WHERE address_id = ?'''
+            rows = self._select(sql_str, ['person_ids'], (address_id,))
+            if len(rows) == 0:
+                print(address_id, self.get_node_name_by_id(address_id), '没有对应的person_id')
+                person_ids = set()
+            else:
+                person_ids = json.loads(rows[0]['person_ids'])
+                person_ids = set([int(_id) for _id in person_ids])
+            if not self.use_cache:
+                return person_ids
+            self.address_id2person_ids_cache[address_id] = person_ids
+        return self.address_id2person_ids_cache[address_id]
 
     def get_person_ids_by_post_type_id(self, post_type_id):
         if post_type_id not in self.post_type_id2person_ids_cache:

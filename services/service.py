@@ -42,8 +42,7 @@ def get_init_ranges():
     status_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['status'], status.keys())
     status = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for
               _id in status_ids}
-    address = CBDB_DAO.get_all_address()
-    address_ids = GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['address'], address.keys())
+    address_ids = GRAPH_DAO.get_all_address()
     address = {_id: {'name': GRAPH_DAO.get_node_name_by_id(_id), 'en_name': GRAPH_DAO.get_node_en_name_by_id(_id)} for
                _id in address_ids}
     post_type_ids = GRAPH_DAO.get_all_post_types()
@@ -170,11 +169,13 @@ def get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids, 
     if statu_ids is not None:
         for i, _id in enumerate(statu_ids):
             statu_ids[i] = GRAPH_DAO.get_node_code_by_id(_id)
-    if address_ids is not None:
-        for i, _id in enumerate(address_ids):
-            address_ids[i] = GRAPH_DAO.get_node_code_by_id(_id)
-    person = CBDB_DAO.get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids, address_ids)
+    person = CBDB_DAO.get_person_by_ranges(dynasty_ids, min_year, max_year, is_female, statu_ids)
     person_ids = set(GRAPH_DAO.get_node_ids_by_label_codes(NodeLabels['person'], person.keys()))
+    if address_ids is not None:
+        _person_ids = set()
+        for address_id in address_ids:
+            _person_ids.update(GRAPH_DAO.get_person_ids_by_address_id(address_id))
+        person_ids.intersection_update(_person_ids)
     if post_type_ids is not None:
         _person_ids = set()
         for post_type_id in post_type_ids:

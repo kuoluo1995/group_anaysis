@@ -187,6 +187,7 @@ def insert_condition2person(db_path):
     MetaPaths = common.MetaPaths
     GRAPH_DAO.start_connect()
     person_ids = GRAPH_DAO.get_node_ids_by_label(NodeLabels['person'])
+    address2person_ids = defaultdict(set)
     post_type2person_ids = defaultdict(set)
     post_address2person_ids = defaultdict(set)
     office2person_ids = defaultdict(set)
@@ -196,6 +197,10 @@ def insert_condition2person(db_path):
     num_persons = len(person_ids)
     for _i, _id in enumerate(person_ids):
         print('\r condition2person {}/{}'.format(_i + 1, num_persons), end='')
+        all_paths = MetaPaths['籍贯'].get_all_paths_by_node_id(_id)
+        for _path in all_paths:
+            if GRAPH_DAO.get_node_label_by_id(_path[-2]) == NodeLabels['address']:
+                address2person_ids[_path[-2]].add(_id)
         all_paths = MetaPaths['官职'].get_all_paths_by_node_id(_id)
         for _path in all_paths:
             for i, word_id in enumerate(_path):
@@ -255,6 +260,12 @@ def insert_condition2person(db_path):
                     person_ids TEXT NOT NULL
                 );
             ''')
+    c.execute('''CREATE TABLE address2person_ids
+                (
+                    address_id BIGINT PRIMARY KEY,
+                    person_ids TEXT NOT NULL
+                );
+            ''')
     for post_type_id, person_ids in post_type2person_ids.items():
         c.execute("INSERT INTO post_type2person_ids VALUES (?,?)", (int(post_type_id), json.dumps(list(person_ids))))
     for address_id, person_ids in post_address2person_ids.items():
@@ -267,6 +278,8 @@ def insert_condition2person(db_path):
         c.execute("INSERT INTO entry2person_ids VALUES (?,?)", (int(entry_id), json.dumps(list(person_ids))))
     for entry_type_id, person_ids in entry_type2person_ids.items():
         c.execute("INSERT INTO entry_type2person_ids VALUES (?,?)", (int(entry_type_id), json.dumps(list(person_ids))))
+    for address_id, person_ids in address2person_ids.items():
+        c.execute("INSERT INTO address2person_ids VALUES (?,?)", (int(address_id), json.dumps(list(person_ids))))
     conn.commit()
     print('condition2person finish')
 
@@ -274,10 +287,10 @@ def insert_condition2person(db_path):
 if __name__ == "__main__":
     neo4j = Shell('neo4j.bat console', 'Started')
     neo4j.run_background()
-    whole_g, node2data, rel2data = get_whole_graph()
+    # whole_g, node2data, rel2data = get_whole_graph()
     sql_dataset = Path('./dataset/graph.db')
-    if sql_dataset.exists():
-        sql_dataset.unlink()
-    save2sqlite(whole_g, node2data, rel2data, str(sql_dataset))
-    insert_node2person2count(str(sql_dataset))
+    # if sql_dataset.exists():
+    #     sql_dataset.unlink()
+    # save2sqlite(whole_g, node2data, rel2data, str(sql_dataset))
+    # insert_node2person2count(str(sql_dataset))
     insert_condition2person(str(sql_dataset))

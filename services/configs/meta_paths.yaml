@@ -91,3 +91,8 @@ paths:
     朝代:
         person:
             -   dynasty_is: dynasty
+    籍贯:
+        person:
+            -   address_associate_is:
+                        address_type:
+                            -   where: address

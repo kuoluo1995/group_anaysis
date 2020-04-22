@@ -25,14 +25,27 @@ if __name__ == '__main__':
     NodeLabels = common.NodeLabels
     EdgeLabels = common.EdgeLabels
     MetaPaths = common.MetaPaths
+    GRAPH_DAO.start_connect()
+    ids = GRAPH_DAO.get_node_ids_by_name('苏轼')
+    all_paths = MetaPaths['籍贯'].get_all_paths_by_node_id(ids[0])
+    for sentence_id in all_paths:
+        _str = ''
+        for _i, wid in enumerate(sentence_id):
+            if _i % 2 == 0:
+                _str += GRAPH_DAO.get_node_name_by_id(wid)
+            if _i % 2 == 1:
+                _str += GRAPH_DAO.get_edge_name_by_id(wid)
+        print(_str)
+    GRAPH_DAO.close_connect()
     # 初始化部分
-    # dynasties, status, address, post_type, post_address, office, office_types, entry, entry_type = get_init_ranges()
+    dynasties, status, address, post_type, post_address, office, office_types, entry, entry_type = get_init_ranges()
     # 条件查询人群
     # start = timeit.default_timer()
-    # dynastie_ids = [_id for _id, items in dynasties.items() if items['name'] == '西汉']
-    # # post_type 733099 正授, 733134 赠 733242追赠
-    # person = get_person_by_ranges(dynastie_ids, None, None, None, None, None, None, None, None,
-    #                               None, None, None)
+    dynastie_ids = [_id for _id, items in dynasties.items() if items['name'] == '宋']
+    address_ids = [_id for _id, items in address.items() if items['name'] == '眉山']
+    person = get_person_by_ranges(dynastie_ids, None, None, None, None, address_ids, None, None, None,
+                                  None, None, None)
+    print()
     # person_ids = [_id for _id, items in person.items()]
     # print(len(person))
     # person = get_person_by_ranges([dynastie_id], None, None, None, None, None,
@@ -65,7 +78,7 @@ if __name__ == '__main__':
     # _json = json_utils.load_json('error_search_topic_2020-04-16-14_05_58.427338')
     # person_ids = _json['person_ids[]']
     # person_ids = [int(_id) for _id in person_ids]
-    person_ids = [4921,50879,50876]
+    person_ids = [4921, 50879, 50876]
     # populate_ratio = float(_json['populate_ratio'])
     populate_ratio = 0.3
     # max_topic = int(_json['max_topic'])
@@ -97,7 +110,13 @@ if __name__ == '__main__':
     #                           _person_id, _sentence_ids in _data['person_id2sentence_ids'].items()}
     # person_id2position2d2, person_dict = add_topic_weights(topic_weights, topic_id2sentence_ids2vector_json,
     #                                                        person_id2sentence_ids)
-
+    # 对比topic
+    person_ids1 = [4921, 15378, 15379, 43374, 48805, 50876, 50879]
+    person_ids2 = [15378, 15379, 43374, 48805]
+    start = timeit.default_timer()
+    all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_compared_topics_by_person_ids(
+        person_ids1, person_ids2, populate_ratio=0.3, max_topic=10)
+    print(len(all_topic_ids))
     # # topic 相似矩阵
     # pmi_names = list()
     # _len = len(topic_pmi)

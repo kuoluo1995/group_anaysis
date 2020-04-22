@@ -44,7 +44,7 @@ class CBDBDAO(SqliteDAO):
                                       'note': col['address_note']} for col in rows}
         return self.all_status_cache
 
-    def get_person_by_ranges(self, dynasty_codes, min_year, max_year, is_female, status_codes, address_codes):
+    def get_person_by_ranges(self, dynasty_codes, min_year, max_year, is_female, status_codes):
         sql_str = '''SELECT DISTINCT biog_main.c_personid,c_name_chn FROM dynasties,biog_main,status_data,status_codes,biog_addr_data WHERE dynasties.c_dy=biog_main.c_dy AND status_data.c_personid = biog_main.c_personid AND status_data.c_status_code = status_codes.c_status_code AND biog_main.c_personid = biog_addr_data.c_personid'''
         sql_args = []
         if dynasty_codes is not None and len(dynasty_codes) > 0:
@@ -64,10 +64,6 @@ class CBDBDAO(SqliteDAO):
             status_codes = [int(_code) for _code in status_codes]
             sql_str += ''' AND status_codes.c_status_code in {}'''.format(
                 tuple(status_codes) if len(status_codes) > 1 else "({})".format(status_codes[0]))
-        if address_codes is not None and len(address_codes) > 0:
-            address_codes = [int(_code) for _code in address_codes]
-            sql_str += ''' AND c_addr_type in {}'''.format(
-                tuple(address_codes) if len(address_codes) > 1 else "({})".format(address_codes[0]))
         rows = self._select(sql_str, ['person_code', 'name'], sql_args)
         return {cols['person_code']: cols['name'] for cols in rows}
 
