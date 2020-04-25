@@ -262,7 +262,9 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
             if is_need:
                 popular_node_ids.append(_id)
         popular_node_ids = popular_node_ids[:max_topic]
-
+        if _label == 'Nianhao':
+            popular_node_ids = []
+        # print(_label)
         # for _n in ['著述关系类',]:
         #     # _n = common.GRAPH_DAO.
         #     if _n in popular_node_ids
@@ -365,7 +367,7 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_id
                 small_pids = topic_id2person_ids[long_one]
 
                 diff = large_pids.difference(small_pids)
-                if len(diff) / len(large_pids) < 0.1:
+                if len(diff) / len(large_pids) < 0.15:
                     if short_one in temp_all_topic_ids:
                         temp_all_topic_ids.remove(short_one)
                         # def strT(t):

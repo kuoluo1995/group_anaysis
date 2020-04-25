@@ -424,11 +424,11 @@ def get_topics_by_person_ids(person_ids, random_epoch=1500, min_sentence=5, max_
         topic_w = ada_boost_model.alphas
         # print(topic_w)
         # # 正则化
-        # max_w, min_w = np.max(topic_w), np.min(topic_w)
-        # topic_w = (topic_w - min_w) / (max_w - min_w)
+        max_w, min_w = np.max(topic_w), np.min(topic_w)
+        topic_w = (topic_w - min_w) / (max_w - min_w) # + 0.01
         
-        topic_id2lrs = {all_topic_ids[index]: w for index, w in enumerate(topic_w) if w > 0}
-
+        topic_id2lrs = {all_topic_ids[index]: max([0, w])  for index, w in enumerate(topic_w)}
+        
     # print(topic_id2lrs)
     for topic_id, _lrs in topic_id2lrs.items():
         topic_name = [GRAPH_DAO.get_node_name_by_id(n) for n in topic_id]
