@@ -183,6 +183,7 @@ def get_sentence_id2vector(all_topic_ids, topic_id2sentence_ids, num_dims):
     vectors = {}
     for topic_id in all_topic_ids:
         sentences_ids = list(topic_id2sentence_ids[topic_id])
+        print([common.GRAPH_DAO.get_node_name_by_id(e) for e in topic_id], len(sentences_ids))
         corpus = [set([str(w) for _i, w in enumerate(sentence_id) if _i % 2 == 0]) for sentence_id in sentences_ids]
         dictionary = corpora.Dictionary(corpus)
         corpus = [dictionary.doc2bow(list(_item)) for _item in corpus]
@@ -198,7 +199,7 @@ def get_sentence_id2vector(all_topic_ids, topic_id2sentence_ids, num_dims):
             for _i2, _dist in enumerate(list(sentence_dist[_i])):
                 sentence2sentence_dist[sentence_id][sentences_ids[_i2]] = _dist
         # topic_id2sentence_dist[topic_id] = sentence2sentence_dist
-
+        # print('e')
         # sentence_dist太少了降维会失败，应该是函数的问题
         for _dim in num_dims:
             vectors[_dim] = multidimensional_scale(_dim, _dist=sentence_dist)
@@ -261,6 +262,12 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
             if is_need:
                 popular_node_ids.append(_id)
         popular_node_ids = popular_node_ids[:max_topic]
+        if _label == 'Nianhao':
+            popular_node_ids = []
+        # print(_label)
+        # for _n in ['著述关系类',]:
+        #     # _n = common.GRAPH_DAO.
+        #     if _n in popular_node_ids
 
         # todo: 可以考虑都显示然后再取前几个
         for _node_id in popular_node_ids:
@@ -292,7 +299,7 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
                               _topic in all_topic_ids}
     return topic_ids2person_ids, topic_ids2sentence_ids, set(all_topic_ids)
 
-
+# 规则增长
 def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_ids, num_persons, num_sentences,
                         min_sentences, populate_ratio):
     i = 0
@@ -337,6 +344,7 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_id
                     no_used_topic.add(new_topic_id)
 
         i += 1
+        # 已经不在最开始删除了
         print('循环次数:{}, 新增topic数量:{}, 删除topic数量:{}'.format(i, len(new_topic_ids), len(remove_topic_ids)))  #
         all_topic_ids.update(new_topic_ids)
         for topic_id in remove_topic_ids:
@@ -359,17 +367,22 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_id
                 small_pids = topic_id2person_ids[long_one]
 
                 diff = large_pids.difference(small_pids)
-                if len(diff) / len(large_pids) < 0.2:
+                if len(diff) / len(large_pids) < 0.15:
                     if short_one in temp_all_topic_ids:
                         temp_all_topic_ids.remove(short_one)
+                        # def strT(t):
+                        #     return [common.GRAPH_DAO.get_node_name_by_id(elm) for elm in t]
+                        # print('r', strT(long_one), strT(short_one), len(diff), len(large_pids), len(small_pids))
                         # print(short_one, long_one)
     all_topic_ids = temp_all_topic_ids
 
+    # print('topic数目')
     # removed_topic_ids = set(topic_id2sentence_ids.keys())
     # removed_topic_ids.difference_update(all_topic_ids)
     # for _id in remove_topic_ids:
     #     topic_id2sentence_ids.pop(_id)
     #     topic_id2person_ids.pop(_id)
+    # all
     topic_id2person_ids = {tid: topic_id2person_ids[tid] for tid in all_topic_ids}
     return topic_id2sentence_ids, topic_id2person_ids, all_topic_ids
 

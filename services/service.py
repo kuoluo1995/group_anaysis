@@ -1,6 +1,6 @@
 import timeit
 
-import cylouvain
+# import cylouvain
 import networkx as nx
 from collections import defaultdict
 from services import common
@@ -251,6 +251,9 @@ def get_address_by_address_ids(address_ids):
 # 用于对比的
 def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=1000, min_sentence=5, max_topic=15,
                                       populate_ratio=0.4):
+
+    # random_epoch = 2000
+
     person_ids = list(set(person_ids1 + person_ids2))
 
     print('查询topic的所有人数:{}'.format(len(person_ids)))
@@ -381,6 +384,10 @@ def get_topics_by_person_ids(person_ids, random_epoch=1500, min_sentence=5, max_
                                                                                  min_sentences=min_sentence,
                                                                                  max_topic=max_topic,
                                                                                  populate_ratio=populate_ratio)
+
+    # 强行过滤
+    topic_ids2sentence_ids = {_t: set(list(ss)[:3000])  for _t, ss in topic_ids2sentence_ids.items()}
+
     print('1:{}'.format(timeit.default_timer() - start))
     # sentence_id2vector
     start = timeit.default_timer()
@@ -415,17 +422,17 @@ def get_topics_by_person_ids(person_ids, random_epoch=1500, min_sentence=5, max_
         ada_boost_model.train(person_vec, labels)
 
         topic_w = ada_boost_model.alphas
-
-        # 正则化
+        # print(topic_w)
+        # # 正则化
         max_w, min_w = np.max(topic_w), np.min(topic_w)
-        topic_w = (topic_w - min_w) / (max_w - min_w) + 0.01
-
-        topic_id2lrs = {all_topic_ids[index]: w for index, w in enumerate(topic_w)}
-
+        topic_w = (topic_w - min_w) / (max_w - min_w) # + 0.01
+        
+        topic_id2lrs = {all_topic_ids[index]: max([0, w])  for index, w in enumerate(topic_w)}
+        
     # print(topic_id2lrs)
-    # for topic_id, _lrs in topic_id2lrs.items():
-    #     topic_name = [GRAPH_DAO.get_node_name_by_id(n) for n in topic_id]
-    #     print(topic_name, _lrs, lrs(topic_id, person_ids))
+    for topic_id, _lrs in topic_id2lrs.items():
+        topic_name = [GRAPH_DAO.get_node_name_by_id(n) for n in topic_id]
+        print(topic_name, _lrs, lrs(topic_id, person_ids))
 
     print('6:{}'.format(timeit.default_timer() - start))
     GRAPH_DAO.close_connect()

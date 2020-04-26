@@ -181,7 +181,7 @@ class AdaBoost():
 
         for index, classifier_m in enumerate(self.classifiers):
             e_m = classifier_m.train(p_v, labels, w_m) + 1e-5
-            print(e_m, (1 - e_m) / e_m)
+            # print(e_m, (1 - e_m) / e_m)
             alpha_m = 1 / 2 * np.log((1 - e_m) / e_m)
 
             w_m = w_m * np.exp(-alpha_m * labels * classifier_m.predict(p_v))
