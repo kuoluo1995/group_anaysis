@@ -27,16 +27,16 @@ if __name__ == '__main__':
     EdgeLabels = common.EdgeLabels
     MetaPaths = common.MetaPaths
     GRAPH_DAO.start_connect()
-    ids = GRAPH_DAO.get_node_ids_by_name('苏轼')
-    all_paths = MetaPaths['籍贯'].get_all_paths_by_node_id(ids[0])
-    for sentence_id in all_paths:
-        _str = ''
-        for _i, wid in enumerate(sentence_id):
-            if _i % 2 == 0:
-                _str += GRAPH_DAO.get_node_name_by_id(wid)
-            if _i % 2 == 1:
-                _str += GRAPH_DAO.get_edge_name_by_id(wid)
-        print(_str)
+    if '韩侂冑' == '韩侂胄':
+        print()
+    ids = GRAPH_DAO.get_node_ids_by_name('韩侂胄')
+    name = GRAPH_DAO.get_node_name_by_id(3502)
+    all_paths = MetaPaths['关系'].get_all_paths_by_node_id(ids[0])
+    all_paths_dict = []
+    for _path in all_paths:
+        all_paths_dict.append(
+            [{_id: GRAPH_DAO.get_node_name_by_id(_id) if i % 2 == 0 else GRAPH_DAO.get_edge_name_by_id(_id)} for i, _id
+             in enumerate(_path)])
     GRAPH_DAO.close_connect()
     # 初始化部分
     dynasties, status, address, post_type, post_address, office, office_types, entry, entry_type = get_init_ranges()
