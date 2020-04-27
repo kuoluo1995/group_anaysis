@@ -302,7 +302,10 @@ def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=100
             person_id2sentence_ids[p] = p2s2[p]
         else:
             person_id2sentence_ids[p].update(p2s2[p])
-
+    
+    # 强行过滤
+    topic_ids2sentence_ids = {_t: set(list(ss)[:3000])  for _t, ss in topic_ids2sentence_ids.items()}
+    
     print('1:{}'.format(timeit.default_timer() - start))
     # sentence_id2vector
     start = timeit.default_timer()
