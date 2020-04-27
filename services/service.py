@@ -1,6 +1,6 @@
 import timeit
 
-# import cylouvain
+import cylouvain
 import networkx as nx
 from collections import defaultdict
 from services import common
@@ -129,7 +129,28 @@ def get_relation_person_by_name(person_name, ranges):
                     print(_path)
         person_dict[_id] = {'name': GRAPH_DAO.get_node_name_by_id(_id),
                             'en_name': GRAPH_DAO.get_node_en_name_by_id(_id),
-                            'relation': [{'name': 'Y(自己)', 'en_name': 'Y()'}]}
+                            'relation': [{'name': 'Y(自己)', 'en_name': 'Y(me)'}]}
+        dynasty_paths = MetaPaths['朝代'].get_all_paths_by_node_id(_id)
+        if len(dynasty_paths) > 0:
+            dynasty_id = dynasty_paths[0][-2]
+            person_dict[_id]['relation'][0]['dynasty'] = {'name': GRAPH_DAO.get_node_name_by_id(dynasty_id),
+                                                          'en_name': GRAPH_DAO.get_node_en_name_by_id(dynasty_id)}
+        status_paths = MetaPaths['社会区分'].get_all_paths_by_node_id(_id)
+        if len(status_paths) > 0:
+            status_ids = [_path[-2] for _path in status_paths]
+            person_dict[_id]['relation'][0]['status'] = [{'name': GRAPH_DAO.get_node_name_by_id(status_id),
+                                                          'en_name': GRAPH_DAO.get_node_en_name_by_id(status_id)} for
+                                                         status_id in status_ids]
+        address_paths = MetaPaths['籍贯'].get_all_paths_by_node_id(_id)
+        if len(address_paths) > 0:
+            address_id = address_paths[0][-2]
+            person_dict[_id]['relation'][0]['address'] = {'name': GRAPH_DAO.get_node_name_by_id(address_id),
+                                                          'en_name': GRAPH_DAO.get_node_en_name_by_id(address_id)}
+        address_paths = MetaPaths['籍贯'].get_all_paths_by_node_id(_id)
+        if len(address_paths) > 0:
+            address_id = address_paths[0][-2]
+            person_dict[_id]['relation'][0]['address'] = {'name': GRAPH_DAO.get_node_name_by_id(address_id),
+                                                          'en_name': GRAPH_DAO.get_node_en_name_by_id(address_id)}
         all_person_dict.append(person_dict)
     GRAPH_DAO.close_connect()
     return all_person_dict
@@ -251,7 +272,6 @@ def get_address_by_address_ids(address_ids):
 # 用于对比的
 def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=1000, min_sentence=5, max_topic=15,
                                       populate_ratio=0.4):
-
     # random_epoch = 2000
 
     person_ids = list(set(person_ids1 + person_ids2))
@@ -389,7 +409,7 @@ def get_topics_by_person_ids(person_ids, random_epoch=1500, min_sentence=5, max_
                                                                                  populate_ratio=populate_ratio)
 
     # 强行过滤
-    topic_ids2sentence_ids = {_t: set(list(ss)[:3000])  for _t, ss in topic_ids2sentence_ids.items()}
+    topic_ids2sentence_ids = {_t: set(list(ss)[:3000]) for _t, ss in topic_ids2sentence_ids.items()}
 
     print('1:{}'.format(timeit.default_timer() - start))
     # sentence_id2vector
@@ -428,10 +448,10 @@ def get_topics_by_person_ids(person_ids, random_epoch=1500, min_sentence=5, max_
         # print(topic_w)
         # # 正则化
         max_w, min_w = np.max(topic_w), np.min(topic_w)
-        topic_w = (topic_w - min_w) / (max_w - min_w) # + 0.01
-        
-        topic_id2lrs = {all_topic_ids[index]: max([0, w])  for index, w in enumerate(topic_w)}
-        
+        topic_w = (topic_w - min_w) / (max_w - min_w)  # + 0.01
+
+        topic_id2lrs = {all_topic_ids[index]: max([0, w]) for index, w in enumerate(topic_w)}
+
     # print(topic_id2lrs)
     for topic_id, _lrs in topic_id2lrs.items():
         topic_name = [GRAPH_DAO.get_node_name_by_id(n) for n in topic_id]

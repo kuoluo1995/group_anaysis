@@ -26,29 +26,31 @@ if __name__ == '__main__':
     NodeLabels = common.NodeLabels
     EdgeLabels = common.EdgeLabels
     MetaPaths = common.MetaPaths
-    GRAPH_DAO.start_connect()
-    ids = GRAPH_DAO.get_node_ids_by_name('苏轼')
-    all_paths = MetaPaths['籍贯'].get_all_paths_by_node_id(ids[0])
-    for sentence_id in all_paths:
-        _str = ''
-        for _i, wid in enumerate(sentence_id):
-            if _i % 2 == 0:
-                _str += GRAPH_DAO.get_node_name_by_id(wid)
-            if _i % 2 == 1:
-                _str += GRAPH_DAO.get_edge_name_by_id(wid)
-        print(_str)
-    GRAPH_DAO.close_connect()
+    # GRAPH_DAO.start_connect()
+    # if '韩侂冑' == '韩侂胄':
+    #     print()
+    # ids = GRAPH_DAO.get_node_ids_by_name('Zhao Ruyu')
+    # dynastie_id = GRAPH_DAO.get_node_ids_by_name('Song', node_label=NodeLabels['dynasty'])[0]
+    # target_id = []
+    # for id in ids:
+    #     name = GRAPH_DAO.get_node_name_by_id(id)
+    #     all_paths = MetaPaths['朝代'].get_all_paths_by_node_id(id)
+    #     for _path in all_paths:
+    #         for _i, _word in enumerate(_path):
+    #             if _i % 2 == 0 and _word == dynastie_id:
+    #                 target_id.append(id)
+    # GRAPH_DAO.close_connect()
     # 初始化部分
-    dynasties, status, address, post_type, post_address, office, office_types, entry, entry_type = get_init_ranges()
+    # dynasties, status, address, post_type, post_address, office, office_types, entry, entry_type = get_init_ranges()
     # 条件查询人群
     # start = timeit.default_timer()
-    dynastie_ids = [_id for _id, items in dynasties.items() if items['name'] == '宋']
-    GRAPH_DAO.start_connect()
-    address_codes = [GRAPH_DAO.get_node_code_by_id(_id) for _id, items in address.items() if items['name'] == '眉山']
-    GRAPH_DAO.close_connect()
-    CBDB_DAO.start_connect()
-    ids = CBDB_DAO.get_address_by_address_codes(address_codes)
-    CBDB_DAO.close_connect()
+    # dynastie_ids = [_id for _id, items in dynasties.items() if items['name'] == '宋']
+    # GRAPH_DAO.start_connect()
+    # address_codes = [GRAPH_DAO.get_node_code_by_id(_id) for _id, items in address.items() if items['name'] == '眉山']
+    # GRAPH_DAO.close_connect()
+    # CBDB_DAO.start_connect()
+    # ids = CBDB_DAO.get_address_by_address_codes(address_codes)
+    # CBDB_DAO.close_connect()
     # person = get_person_by_ranges(dynastie_ids, None, None, None, None, address_ids, None, None, None,
     #                               None, None, None)
     print()
@@ -74,11 +76,11 @@ if __name__ == '__main__':
     # print(len(person))
     # print('查询范围内的所有人耗时:{}'.format(timeit.default_timer() - start))
     # 通过名字查询
-    # start = timeit.default_timer()
-    # ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
-    # person = get_relation_person_by_name('吕祖谦', ranges)[0]
-    # # print(person)
-    # print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
+    start = timeit.default_timer()
+    ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
+    person = get_relation_person_by_name('Zhao Ruyu', ranges)
+    # print(person)
+    print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
     # 查询topic通过 person_ids
     # start = timeit.default_timer()
     # _json = json_utils.load_json('error_search_topic_2020-04-16-14_05_58.427338')

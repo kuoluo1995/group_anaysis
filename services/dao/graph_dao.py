@@ -154,9 +154,12 @@ class GraphDAO(SqliteDAO):
             self.node_id2en_name_cache[node_id] = str(rows[0]['en_name'])
         return self.node_id2label_cache[node_id]
 
-    def get_node_ids_by_name(self, node_name):  # 非年份的所有结点
-        sql_str = '''SELECT id FROM node2data WHERE name = ?'''
-        rows = self._select(sql_str, ['id'], (node_name,))
+    def get_node_ids_by_name(self, node_name, node_label='Person'):  # 非年份的所有结点
+        sql_str = '''SELECT id FROM node2data WHERE name = ? and label = ?'''
+        rows = self._select(sql_str, ['id'], (node_name, node_label,))
+        if len(rows) == 0:
+            sql_str = '''SELECT id FROM node2data WHERE en_name = ? and label = ?'''
+            rows = self._select(sql_str, ['id'], (node_name, node_label,))
         return [int(cols['id']) for cols in rows]
 
     def get_node_ids_by_label(self, node_label):
