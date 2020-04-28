@@ -11,6 +11,7 @@ from py2neo import Graph
 
 from services import common
 from services.tools.sentence_topic_tool import get_sentence_dict
+from tools import yaml_utils
 from tools.shell_utils import Shell
 
 ip = 'bolt://localhost:7687'
@@ -285,12 +286,12 @@ def insert_condition2person(db_path):
 
 
 if __name__ == "__main__":
-    neo4j = Shell('neo4j.bat console', 'Started')
-    neo4j.run_background()
+    # neo4j = Shell('neo4j.bat console', 'Started')
+    # neo4j.run_background()
     # whole_g, node2data, rel2data = get_whole_graph()
     sql_dataset = Path('./dataset/graph.db')
     # if sql_dataset.exists():
     #     sql_dataset.unlink()
     # save2sqlite(whole_g, node2data, rel2data, str(sql_dataset))
     # insert_node2person2count(str(sql_dataset))
-    insert_condition2person(str(sql_dataset))
+    # insert_condition2person(str(sql_dataset))
