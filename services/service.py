@@ -1,6 +1,6 @@
 import timeit
 
-import cylouvain
+# import cylouvain
 import networkx as nx
 from collections import defaultdict
 from services import common
@@ -344,7 +344,9 @@ def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=100
     print('5:{}'.format(timeit.default_timer() - start))
     start = timeit.default_timer()
 
-    topic_id2lrs = {_id: compared_lrs(_id, person_ids1, person_ids2) for _id in all_topic_ids}
+    new_person_ids1 = person_ids1.difference(person_ids2)
+    new_person_ids2 = person_ids2.difference(person_ids1)
+    topic_id2lrs = {_id: compared_lrs(_id, new_person_ids1, new_person_ids2) for _id in all_topic_ids}
     print('6:{}'.format(timeit.default_timer() - start))
     GRAPH_DAO.close_connect()
 
