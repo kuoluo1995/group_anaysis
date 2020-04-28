@@ -40,13 +40,13 @@ class GraphDAO(SqliteDAO):
         for cols in rows:
             self.node_id2label_cache[int(cols['id'])] = str(cols['label'])
             self.node_id2name_cache[int(cols['id'])] = str(cols['name'])
-            self.node_id2en_name_cache[int(cols['id'])] = str(cols['en_name'])
+            self.node_id2en_name_cache[int(cols['id'])] = self.format_en_name(str(cols['en_name']))
         sql_str = '''SELECT id, label, name, en_name FROM rel2data'''
         rows = self._select(sql_str, ['id', 'label', 'name', 'en_name'], ())
         for cols in rows:
             self.edge_id2label_cache[int(cols['id'])] = str(cols['label'])
             self.edge_id2name_cache[int(cols['id'])] = str(cols['name'])
-            self.edge_id2en_name_cache[int(cols['id'])] = str(cols['en_name'])
+            self.edge_id2en_name_cache[int(cols['id'])] = self.format_en_name(str(cols['en_name']))
 
     def get_all_post_types(self):
         sql_str = '''SELECT DISTINCT post_type_id FROM post_type2person_ids'''
@@ -98,7 +98,7 @@ class GraphDAO(SqliteDAO):
                 self.node_id2code_cache[int(cols['id'])] = int(cols['code'])
                 self.node_id2label_cache[int(cols['id'])] = str(node_label)
                 self.node_id2name_cache[int(cols['id'])] = str(cols['name'])
-                self.node_id2en_name_cache[int(cols['id'])] = str(cols['en_name'])
+                self.node_id2en_name_cache[int(cols['id'])] = self.format_en_name(str(cols['en_name']))
                 self.node_label_code2id_cache[node_label][int(cols['code'])] = int(cols['id'])
 
         return [self.node_label_code2id_cache[node_label][int(_code)] for _code in node_codes if
@@ -114,7 +114,7 @@ class GraphDAO(SqliteDAO):
             self.node_id2code_cache[node_id] = int(rows[0]['code'])
             self.node_id2label_cache[node_id] = str(rows[0]['label'])
             self.node_id2name_cache[node_id] = str(rows[0]['name'])
-            self.node_id2en_name_cache[node_id] = str(rows[0]['en_name'])
+            self.node_id2en_name_cache[node_id] = self.format_en_name(str(rows[0]['en_name']))
             self.node_label_code2id_cache[str(rows[0]['label'])][int(rows[0]['code'])] = node_id
         return self.node_id2code_cache[node_id]
 
@@ -127,7 +127,7 @@ class GraphDAO(SqliteDAO):
                 return str(rows[0]['name'])
             self.node_id2label_cache[node_id] = str(rows[0]['label'])
             self.node_id2name_cache[node_id] = str(rows[0]['name'])
-            self.node_id2en_name_cache[node_id] = str(rows[0]['en_name'])
+            self.node_id2en_name_cache[node_id] = self.format_en_name(str(rows[0]['en_name']))
         return self.node_id2name_cache[node_id]
 
     def get_node_en_name_by_id(self, node_id):
@@ -139,7 +139,7 @@ class GraphDAO(SqliteDAO):
                 return str(rows[0]['en_name'])
             self.node_id2label_cache[node_id] = str(rows[0]['label'])
             self.node_id2name_cache[node_id] = str(rows[0]['name'])
-            self.node_id2en_name_cache[node_id] = str(rows[0]['en_name'])
+            self.node_id2en_name_cache[node_id] = self.format_en_name(str(rows[0]['en_name']))
         return self.node_id2en_name_cache[node_id]
 
     def get_node_label_by_id(self, node_id):
@@ -151,7 +151,7 @@ class GraphDAO(SqliteDAO):
                 return str(rows[0]['label'])
             self.node_id2label_cache[node_id] = str(rows[0]['label'])
             self.node_id2name_cache[node_id] = str(rows[0]['name'])
-            self.node_id2en_name_cache[node_id] = str(rows[0]['en_name'])
+            self.node_id2en_name_cache[node_id] = self.format_en_name(str(rows[0]['en_name']))
         return self.node_id2label_cache[node_id]
 
     def get_node_ids_by_name(self, node_name, node_label='Person'):  # 非年份的所有结点
@@ -298,7 +298,7 @@ class GraphDAO(SqliteDAO):
                 return str(rows[0]['label'])
             self.edge_id2label_cache[edge_id] = str(rows[0]['label'])
             self.edge_id2name_cache[edge_id] = str(rows[0]['name'])
-            self.edge_id2en_name_cache[edge_id] = str(rows[0]['en_name'])
+            self.edge_id2en_name_cache[edge_id] = self.format_en_name(str(rows[0]['en_name']))
         return self.edge_id2label_cache[edge_id]
 
     def get_edge_name_by_id(self, edge_id):
@@ -311,7 +311,7 @@ class GraphDAO(SqliteDAO):
                 return str(rows[0]['name'])
             self.edge_id2label_cache[edge_id] = str(rows[0]['label'])
             self.edge_id2name_cache[edge_id] = str(rows[0]['name'])
-            self.edge_id2en_name_cache[edge_id] = str(rows[0]['en_name'])
+            self.edge_id2en_name_cache[edge_id] = self.format_en_name(str(rows[0]['en_name']))
         return self.edge_id2name_cache[edge_id]
 
     def get_edge_en_name_by_id(self, edge_id):
@@ -324,7 +324,7 @@ class GraphDAO(SqliteDAO):
                 return str(rows[0]['en_name'])
             self.edge_id2label_cache[edge_id] = str(rows[0]['label'])
             self.edge_id2name_cache[edge_id] = str(rows[0]['name'])
-            self.edge_id2en_name_cache[edge_id] = str(rows[0]['en_name'])
+            self.edge_id2en_name_cache[edge_id] = self.format_en_name(str(rows[0]['en_name']))
         return self.edge_id2en_name_cache[edge_id]
 
     def get_in_edges(self, target_id):
@@ -403,6 +403,13 @@ class GraphDAO(SqliteDAO):
         # gc.collect()
         print('时间:{},点数:{}'.format(timeit.default_timer() - start, len(sub_g.nodes)))
         return sub_g
+
+    def format_en_name(self, _en_name):
+        if '(' in _en_name:
+            _i = _en_name.index('(')
+            if _en_name[_i - 1] != ' ':
+                _en_name = _en_name[:_i] + ' ' + _en_name[_i:]
+        return _en_name
 
 
 if __name__ == '__main__':
