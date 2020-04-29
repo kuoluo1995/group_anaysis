@@ -1,15 +1,14 @@
 import timeit
 
-# import cylouvain
+import cylouvain
 import networkx as nx
 from collections import defaultdict
 from services import common
 from services.tools.graph_tool import get_node_relevancy, get_graph_dict
 from services.tools import person_tool
 from services.tools.person_tool import get_all_similar_person
-from services.tools.pruning_tool import lrs, getTopicWeights, compared_lrs, getPerson2TopicVec, AdaBoost
-from services.tools.sentence_topic_tool import get_sentence_dict, get_sentence_id2vector, get_topic_pmi, get_topic_dict, \
-    get_topic_pmi2
+from services.tools.pruning_tool import lrs, compared_lrs, getPerson2TopicVec, AdaBoost
+from services.tools.sentence_topic_tool import get_sentence_dict, get_sentence_id2vector, get_topic_dict, get_topic_pmi2
 from tools.sort_utils import sort_dict2list
 import numpy as np
 
