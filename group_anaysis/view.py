@@ -138,10 +138,13 @@ def search_topics_by_person_ids(request):
         populate_ratio = float(request.POST['populate_ratio'])
         max_topic = int(request.POST['max_topic'])
         min_sentence = int(request.POST['min_sentence'])
+        sub_topic_ratio = float(request.POST['sub_topic_ratio']) if 'sub_topic_ratio' in request.POST else 0.7
+        difficult_ratio = float(request.POST['difficult_ratio']) if 'difficult_ratio' in request.POST else 0.15
         try:
             print('查询的人:{}'.format(person_ids))
             all_topic_ids, topic_id2sentence_ids2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
-                person_ids, populate_ratio=populate_ratio, max_topic=max_topic, min_sentence=min_sentence)
+                person_ids, populate_ratio=populate_ratio, max_topic=max_topic, min_sentence=min_sentence,
+                sub_topic_ratio=sub_topic_ratio, difficult_ratio=difficult_ratio)
             result['all_topic_ids'] = [[int(_id) for _id in _ids] for _ids in all_topic_ids]
             topic_id2sentence_ids2position1d_json = {}
             for _topic_id, _item in topic_id2sentence_ids2position1d.items():

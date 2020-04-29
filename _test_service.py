@@ -6,9 +6,8 @@ import numpy as np
 
 from services import common
 from services.service import get_relation_person_by_name, get_topics_by_person_ids, get_init_ranges, \
-    get_person_by_ranges, \
-    get_address_by_address_ids, get_all_similar_person, add_topic_weights, get_similar_person, \
-    get_top_topic_by_sentence_ids, get_compared_topics_by_person_ids
+    get_person_by_ranges, get_address_by_address_ids, get_all_similar_person, add_topic_weights, get_similar_person, \
+    get_compared_topics_by_person_ids
 from services.tools.person_tool import get_person_all_dict
 from tools import json_utils
 from tools.sort_utils import sort_dict2list
@@ -78,7 +77,7 @@ if __name__ == '__main__':
     # 通过名字查询
     start = timeit.default_timer()
     ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
-    person = get_relation_person_by_name('Zhao Ruyu', ranges)
+    person = get_relation_person_by_name('吕祖谦', ranges)
     # print(person)
     print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
     # 查询topic通过 person_ids
@@ -86,13 +85,12 @@ if __name__ == '__main__':
     # _json = json_utils.load_json('error_search_topic_2020-04-16-14_05_58.427338')
     # person_ids = _json['person_ids[]']
     # person_ids = [int(_id) for _id in person_ids]
-    person_ids = [4921, 50879, 50876]
+    person_ids = list(person[0].keys())
     # populate_ratio = float(_json['populate_ratio'])
-    populate_ratio = 0.3
+
     # max_topic = int(_json['max_topic'])
-    max_topic = 10
     all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
-        person_ids, populate_ratio=0.3, max_topic=10)
+        person_ids, populate_ratio=0.3, max_topic=15, sub_topic_ratio=0.7, difficult_ratio=0.15)
     print(len(all_topic_ids))
     # 查询相似的人
     # similar_person = get_similar_person(person_ids, topic_id2lrs)

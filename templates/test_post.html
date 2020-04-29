@@ -69,12 +69,16 @@
 <div>
     <h2>通过人名id搜索topic</h2>
     <form action="/test_search_topics_by_person_ids/" method="post">
-        <label for="populate_ratio">populate_ratio(推荐0.6)</label>
+        <label for="populate_ratio">populate_ratio (推荐0.6)</label>
         <input type="number" name="populate_ratio" id="populate_ratio" value="0.6">
-        <label for="max_topic">max_topic(推荐 10)</label>
+        <label for="max_topic">max_topic (推荐 10)</label>
         <input type="number" name="max_topic" id="max_topic" value="10">
-        <label for="min_sentence">min_sentence(不要小于5 )</label>
+        <label for="min_sentence">min_sentence (不要小于5 )</label>
         <input type="number" name="min_sentence" id="min_sentence" value="5">
+        <label for="sub_topic_ratio">sub_topic_ratio (推荐0.7)</label>
+        <input type="number" name="sub_topic_ratio" id="sub_topic_ratio" value="0.7">
+        <label for="difficult_ratio">difficult_ratio (推荐0.15)</label>
+        <input type="number" name="difficult_ratio" id="difficult_ratio" value="0.15">
         <label>person_ids:</label>
         <label><input name="person_ids[]" type="checkbox" value="1447">朱明之</label>
         <label><input name="person_ids[]" type="checkbox" value="2287">吕嘉问</label>
@@ -93,6 +97,10 @@
         <input type="number" name="max_topic" id="max_topic" value="10">
         <label for="min_sentence">min_sentence(不要小于5 )</label>
         <input type="number" name="min_sentence" id="min_sentence" value="5">
+        <label for="sub_topic_ratio">sub_topic_ratio (推荐0.7)</label>
+        <input type="number" name="sub_topic_ratio" id="sub_topic_ratio" value="0.7">
+        <label for="difficult_ratio">difficult_ratio (推荐0.15)</label>
+        <input type="number" name="difficult_ratio" id="difficult_ratio" value="0.15">
         <label>person_ids:</label>
         <label><input name="person_ids[]" type="checkbox" value="1447">朱明之</label>
         <label><input name="person_ids[]" type="checkbox" value="2287">吕嘉问</label>
@@ -111,6 +119,10 @@
         <input type="number" name="max_topic" id="max_topic" value="10">
         <label for="min_sentence">min_sentence(不要小于5 )</label>
         <input type="number" name="min_sentence" id="min_sentence" value="5">
+        <label for="sub_topic_ratio">sub_topic_ratio (推荐0.7)</label>
+        <input type="number" name="sub_topic_ratio" id="sub_topic_ratio" value="0.7">
+        <label for="difficult_ratio">difficult_ratio (推荐0.15)</label>
+        <input type="number" name="difficult_ratio" id="difficult_ratio" value="0.15">
         <label>person_ids1:</label>
         <label><input name="person_ids1[]" type="checkbox" value="4921">朱明之</label>
         <label><input name="person_ids1[]" type="checkbox" value="15378">吕嘉问</label>
@@ -205,6 +217,12 @@
         let min_sentence = $("#socket_search_topic input[name=min_sentence]").val();
         if (min_sentence !== undefined && min_sentence !== '')
             _json['min_sentence'] = min_sentence;
+        let sub_topic_ratio = $("#socket_search_topic input[name=sub_topic_ratio]").val();//添加至数组
+        if (sub_topic_ratio !== undefined && sub_topic_ratio !== '')
+            _json['sub_topic_ratio'] = sub_topic_ratio;
+        let difficult_ratio = $("#socket_search_topic input[name=difficult_ratio]").val();//添加至数组
+        if (difficult_ratio !== undefined && difficult_ratio !== '')
+            _json['difficult_ratio'] = difficult_ratio;
         let person_ids = [];
         $("#socket_search_topic input[name='person_ids[]']").each(function () {
             if ($(this).prop('checked'))
@@ -247,6 +265,12 @@
         let min_sentence = $("#socket_compare_topic input[name=min_sentence]").val();
         if (min_sentence !== undefined && min_sentence !== '')
             _json['min_sentence'] = min_sentence;
+        let sub_topic_ratio = $("#socket_compare_topic input[name=sub_topic_ratio]").val();//添加至数组
+        if (sub_topic_ratio !== undefined && sub_topic_ratio !== '')
+            _json['sub_topic_ratio'] = sub_topic_ratio;
+        let difficult_ratio = $("#socket_compare_topic input[name=difficult_ratio]").val();//添加至数组
+        if (difficult_ratio !== undefined && difficult_ratio !== '')
+            _json['difficult_ratio'] = difficult_ratio;
         let person_ids1 = [];
         $("#socket_compare_topic input[name='person_ids1[]']").each(function () {
             if ($(this).prop('checked'))

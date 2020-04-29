@@ -82,8 +82,10 @@ def get_sentence_dict(person_ids, random_epoch=100, min_sentence=5):
         所有的描述，以及描述里所有的id（node_id,edge_id,node_id。。。）
     """
     MetaPaths = common.MetaPaths
+    GRAPH_DAO = common.GRAPH_DAO
+    NodeLabels = common.NodeLabels
     person_id2sentence_ids = defaultdict(set)  # 描述
-    sentence_id2person_id = {}
+    sentence_id2person_ids = {}
     all_sentence_dict = {}
     for person_id in person_ids:
         sentence_ids = set()
@@ -97,10 +99,12 @@ def get_sentence_dict(person_ids, random_epoch=100, min_sentence=5):
         for sentence in all_paths:
             for sentence_id, sentence_type in sentence.items():
                 sentence_ids.add(sentence_id)
-                sentence_id2person_id[sentence_id] = person_id
+                sentence_id2person_ids[sentence_id] = set(
+                    [sentence_id[_n_i] for _n_i in range(0, len(sentence_id), 2) if
+                     GRAPH_DAO.get_node_label_by_id(sentence_id[_n_i]) == NodeLabels['person']])
                 all_sentence_dict[sentence_id] = sentence_type
         person_id2sentence_ids[person_id] = sentence_ids
-    return person_id2sentence_ids, sentence_id2person_id, all_sentence_dict
+    return person_id2sentence_ids, sentence_id2person_ids, all_sentence_dict
 
 
 def get_sentence_ids_by_topic_ids(topic_id1, topic_id2, _topic_id2sentence_ids):
@@ -112,7 +116,11 @@ def get_sentence_ids_by_topic_ids(topic_id1, topic_id2, _topic_id2sentence_ids):
     :param _topic_id2sentence_ids: dict{int: list(list(int))} sentence_id是由node_id, edge_id, node_id。。。组成
     :return: set() 对应的所有的描述
     """
+    GRAPH_DAO = common.GRAPH_DAO
     sentence_ids = _topic_id2sentence_ids[topic_id1].intersection(_topic_id2sentence_ids[topic_id2])
+    _topic = [GRAPH_DAO.get_node_name_by_id(_t) for _t in (topic_id1 + topic_id2)]
+    _sentences = [[GRAPH_DAO.get_node_name_by_id(_w) if i % 2 == 0 else GRAPH_DAO.get_edge_name_by_id(_w) for i, _w in
+                   enumerate(_sentence_id)] for _sentence_id in sentence_ids]
     return sentence_ids
 
 
@@ -216,8 +224,9 @@ Topic
 """
 
 
-def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_id2sentence_ids, num_persons,
-                   num_sentences, min_sentences=5, max_topic=15, populate_ratio=0.4):
+def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_ids, node_id2sentence_ids, num_persons,
+                   num_sentences, min_sentences=5, max_topic=15, populate_ratio=0.4, sub_topic_ratio=0.7,
+                   difficult_ratio=0.15):
     """根据相关的人和描述，得到所有有关的topic， topic其实就是node_name
 
     Parameters
@@ -248,9 +257,9 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
     all_topic_ids: set(int)
         topic其实就是name, 所以就是node_name对应的id集合
     """
-    # GRAPH_DAO = common.GRAPH_DAO
-    topic_id2person_ids, topic_id2sentence_ids, all_topic_ids = defaultdict(set), defaultdict(
-        set), set()  # 不用defaultdict 因为不能直接变成json串
+    GRAPH_DAO = common.GRAPH_DAO
+    topic_id2sentence_ids, all_topic_ids = defaultdict(set), set()  # 不用defaultdict 因为不能直接变成json串
+    topic_id2person_ids = defaultdict(set)
     for _label, _ids in node_label2ids.items():
         _node_id2relevancy = dict()  # node_id2relevancy是个计算当前结点里已有结点的相关性
         for _id in _ids:
@@ -264,27 +273,27 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
         popular_node_ids = popular_node_ids[:max_topic]
         if _label == 'Nianhao':
             popular_node_ids = []
-        # print(_label)
-        # for _n in ['著述关系类',]:
-        #     # _n = common.GRAPH_DAO.
-        #     if _n in popular_node_ids
 
         # todo: 可以考虑都显示然后再取前几个
         for _node_id in popular_node_ids:
             topic_id = (_node_id,)
             sentence_ids = node_id2sentence_ids[_node_id]
-            person_ids = set([sentence_id2person_id[_sentence_id] for _sentence_id in sentence_ids])
+            person_ids = set()
+            for _sentence_id in sentence_ids:
+                person_ids.update(sentence_id2person_ids[_sentence_id])
             if len(person_ids) > num_persons * populate_ratio and len(sentence_ids) > min_sentences:  # 剃掉那些不算不上群体的
                 topic_id2sentence_ids[topic_id] = sentence_ids  # 小圆点
                 topic_id2person_ids[topic_id] = person_ids
                 all_topic_ids.add(topic_id)
     print('单个topic的数量:{}'.format(len(all_topic_ids)))
-    # topic_names = [GRAPH_DAO.get_node_name_by_id(_id[0]) for _id in all_topic_ids]
+
     topic_ids2sentence_ids, topic_ids2person_ids, all_topic_ids = _topic_id2topic_ids(all_topic_ids,
                                                                                       topic_id2sentence_ids,
+                                                                                      sentence_id2person_ids,
                                                                                       topic_id2person_ids, num_persons,
                                                                                       num_sentences, min_sentences,
-                                                                                      populate_ratio)
+                                                                                      populate_ratio, sub_topic_ratio,
+                                                                                      difficult_ratio)
     # topic_ids2sentence_ids, topic_ids2person_ids, all_topic_ids = _topic_id2topic_ids2(all_topic_ids,
     #                                                                                    topic_id2sentence_ids,
     #                                                                                    topic_id2person_ids, num_persons,
@@ -299,15 +308,14 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_id, node_i
                               _topic in all_topic_ids}
     return topic_ids2person_ids, topic_ids2sentence_ids, set(all_topic_ids)
 
-# 规则增长
-def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_ids, num_persons, num_sentences,
-                        min_sentences, populate_ratio):
-    i = 0
 
+# 规则增长
+def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, sentence_id2person_ids, topic_id2person_ids, num_persons,
+                        num_sentences, min_sentences, populate_ratio, sub_topic_ratio=0.7, difficult_ratio=0.15):
+    GRAPH_DAO = common.GRAPH_DAO
+    i = 0
     while True:
-        no_used_topic = set()
-        new_topic_ids = set()
-        remove_topic_ids = set()
+        no_used_topic, new_topic_ids, remove_topic_ids = set(), set(), set()
         for topic_id1 in all_topic_ids:
             for topic_id2 in all_topic_ids:
                 if topic_id1 == topic_id2:
@@ -317,13 +325,16 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_id
                 if new_topic_id in all_topic_ids or new_topic_id in no_used_topic:
                     continue
                 sentence_ids = get_sentence_ids_by_topic_ids(topic_id1, topic_id2, topic_id2sentence_ids)
-
+                # _topic = [GRAPH_DAO.get_node_name_by_id(_t) for _t in new_topic_id]
+                # _sentences = [
+                #     [GRAPH_DAO.get_node_name_by_id(_w) if i % 2 == 0 else GRAPH_DAO.get_edge_name_by_id(_w) for i, _w in
+                #      enumerate(_sentence_id)] for _sentence_id in sentence_ids]
                 if len(sentence_ids) == 0:
                     no_used_topic.add(new_topic_id)
                     continue
-                person_ids = get_person_ids_by_topic_ids(topic_id1, topic_id2, topic_id2person_ids)
-                topic_id2person_ids[new_topic_id] = set(person_ids)
-
+                person_ids = set()
+                for _sentence_id in sentence_ids:
+                    person_ids.update(sentence_id2person_ids[_sentence_id])
                 if len(person_ids) == 0:
                     no_used_topic.add(new_topic_id)
                     continue
@@ -333,13 +344,14 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_id
                 # lift_v = len(topic_id2sentence_ids[new_topic_id]) / num_sentences / support_topic1 / support_topic2
                 if populate_ratio < support_persons and len(sentence_ids) > min_sentences:
                     # 把可以合并的子序列删去
+                    if support_persons > sub_topic_ratio * support_topic1:
+                        remove_topic_ids.add(topic_id1)
+                    if support_persons > sub_topic_ratio * support_topic2:
+                        remove_topic_ids.add(topic_id2)
                     new_topic_ids.add(new_topic_id)
                     topic_id2person_ids[new_topic_id] = person_ids
                     topic_id2sentence_ids[new_topic_id] = sentence_ids
-                    # if support_persons > 0.7 * support_topic1:
-                    #     remove_topic_ids.add(topic_id1)
-                    # if support_persons > 0.7 * support_topic2:
-                    #     remove_topic_ids.add(topic_id2)
+
                 else:
                     no_used_topic.add(new_topic_id)
 
@@ -349,7 +361,6 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_id
         all_topic_ids.update(new_topic_ids)
         for topic_id in remove_topic_ids:
             all_topic_ids.remove(topic_id)
-
         if len(new_topic_ids) == 0:
             break
 
@@ -365,24 +376,11 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, topic_id2person_id
             if set(short_one).issubset(set(long_one)):  # 是子集
                 large_pids = topic_id2person_ids[short_one]
                 small_pids = topic_id2person_ids[long_one]
-
                 diff = large_pids.difference(small_pids)
-                if len(diff) / len(large_pids) < 0.15:
+                if len(diff) / len(large_pids) < difficult_ratio:
                     if short_one in temp_all_topic_ids:
                         temp_all_topic_ids.remove(short_one)
-                        # def strT(t):
-                        #     return [common.GRAPH_DAO.get_node_name_by_id(elm) for elm in t]
-                        # print('r', strT(long_one), strT(short_one), len(diff), len(large_pids), len(small_pids))
-                        # print(short_one, long_one)
     all_topic_ids = temp_all_topic_ids
-
-    # print('topic数目')
-    # removed_topic_ids = set(topic_id2sentence_ids.keys())
-    # removed_topic_ids.difference_update(all_topic_ids)
-    # for _id in remove_topic_ids:
-    #     topic_id2sentence_ids.pop(_id)
-    #     topic_id2person_ids.pop(_id)
-    # all
     topic_id2person_ids = {tid: topic_id2person_ids[tid] for tid in all_topic_ids}
     return topic_id2sentence_ids, topic_id2person_ids, all_topic_ids
 

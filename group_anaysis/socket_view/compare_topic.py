@@ -29,10 +29,12 @@ class ComparedTopicsByPersonIds(WebsocketConsumer):
             populate_ratio = float(request['populate_ratio'])
             max_topic = int(request['max_topic'])
             min_sentence = int(request['min_sentence'])
+            sub_topic_ratio = float(request['sub_topic_ratio']) if 'sub_topic_ratio' in request else 0.7
+            difficult_ratio = float(request['difficult_ratio']) if 'difficult_ratio' in request else 0.15
             try:
                 all_topic_ids, topic_id2sentence_ids2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_compared_topics_by_person_ids(
                     person_ids1, person_ids2, populate_ratio=populate_ratio, max_topic=max_topic,
-                    min_sentence=min_sentence)
+                    min_sentence=min_sentence, sub_topic_ratio=sub_topic_ratio, difficult_ratio=difficult_ratio)
                 result['all_topic_ids'] = [[int(_id) for _id in _ids] for _ids in all_topic_ids]
                 topic_id2sentence_ids2position1d_json = {}
                 for _topic_id, _item in topic_id2sentence_ids2position1d.items():

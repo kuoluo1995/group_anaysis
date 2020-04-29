@@ -271,9 +271,7 @@ def get_address_by_address_ids(address_ids):
 
 # 用于对比的
 def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=1000, min_sentence=5, max_topic=15,
-                                      populate_ratio=0.4):
-    # random_epoch = 2000
-
+                                      populate_ratio=0.4, sub_topic_ratio=0.7, difficult_ratio=0.15):
     person_ids = list(set(person_ids1 + person_ids2))
 
     print('查询topic的所有人数:{}'.format(len(person_ids)))
@@ -295,7 +293,9 @@ def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=100
                                                                                      len(all_sentence_dict),
                                                                                      min_sentences=min_sentence,
                                                                                      max_topic=max_topic,
-                                                                                     populate_ratio=populate_ratio)
+                                                                                     populate_ratio=populate_ratio,
+                                                                                     sub_topic_ratio=sub_topic_ratio,
+                                                                                     difficult_ratio=difficult_ratio)
         return topic_ids2person_ids, topic_ids2sentence_ids, all_topic_ids, person_id2sentence_ids, all_sentence_dict
 
     t2p1, t2s1, at1, p2s1, as1 = process(person_ids1)
@@ -322,10 +322,10 @@ def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=100
             person_id2sentence_ids[p] = p2s2[p]
         else:
             person_id2sentence_ids[p].update(p2s2[p])
-    
+
     # 强行过滤
-    topic_ids2sentence_ids = {_t: set(list(ss)[:3000])  for _t, ss in topic_ids2sentence_ids.items()}
-    
+    topic_ids2sentence_ids = {_t: set(list(ss)[:3000]) for _t, ss in topic_ids2sentence_ids.items()}
+
     print('1:{}'.format(timeit.default_timer() - start))
     # sentence_id2vector
     start = timeit.default_timer()
@@ -349,8 +349,9 @@ def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=100
 
     new_person_ids1 = person_ids1.difference(person_ids2)
     new_person_ids2 = person_ids2.difference(person_ids1)
-    topic_id2lrs = {_id: compared_lrs(_id, new_person_ids1, new_person_ids2) + compared_lrs(_id, new_person_ids2, new_person_ids1) for _id in all_topic_ids}
-
+    topic_id2lrs = {
+        _id: compared_lrs(_id, new_person_ids1, new_person_ids2) + compared_lrs(_id, new_person_ids2, new_person_ids1)
+        for _id in all_topic_ids}
 
     # print(topic_id2lrs)
     for topic_id, _lrs in topic_id2lrs.items():
@@ -364,7 +365,8 @@ def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=100
            topic_id2lrs, all_sentence_dict, dim2topic_id2sentence_ids2vector[5], person_id2sentence_ids
 
 
-def get_topics_by_person_ids(person_ids, random_epoch=1500, min_sentence=5, max_topic=15, populate_ratio=0.4):
+def get_topics_by_person_ids(person_ids, random_epoch=1500, min_sentence=5, max_topic=15, populate_ratio=0.4,
+                             sub_topic_ratio=0.7, difficult_ratio=0.15):
     # populate_ratio = 0.3
     """根据人的id查询所有的topic
 
@@ -405,20 +407,22 @@ def get_topics_by_person_ids(person_ids, random_epoch=1500, min_sentence=5, max_
     GRAPH_DAO = common.GRAPH_DAO
     GRAPH_DAO.start_connect()
 
-    person_id2sentence_ids, sentence_id2person_id, all_sentence_dict = get_sentence_dict(person_ids,
-                                                                                         random_epoch=random_epoch,
-                                                                                         min_sentence=min_sentence)
+    person_id2sentence_ids, sentence_id2person_ids, all_sentence_dict = get_sentence_dict(person_ids,
+                                                                                          random_epoch=random_epoch,
+                                                                                          min_sentence=min_sentence)
     print('所有的描述:{}'.format(len(all_sentence_dict)))
 
     node_label2ids, node_id2relevancy, node_id2sentence_ids = get_node_relevancy(person_id2sentence_ids)
 
     topic_ids2person_ids, topic_ids2sentence_ids, all_topic_ids = get_topic_dict(node_label2ids, node_id2relevancy,
-                                                                                 sentence_id2person_id,
+                                                                                 sentence_id2person_ids,
                                                                                  node_id2sentence_ids, len(person_ids),
                                                                                  len(all_sentence_dict),
                                                                                  min_sentences=min_sentence,
                                                                                  max_topic=max_topic,
-                                                                                 populate_ratio=populate_ratio)
+                                                                                 populate_ratio=populate_ratio,
+                                                                                 sub_topic_ratio=sub_topic_ratio,
+                                                                                 difficult_ratio=difficult_ratio)
 
     # 强行过滤
     topic_ids2sentence_ids = {_t: set(list(ss)[:3000]) for _t, ss in topic_ids2sentence_ids.items()}
@@ -474,25 +478,6 @@ def get_topics_by_person_ids(person_ids, random_epoch=1500, min_sentence=5, max_
 
     return all_topic_ids, dim2topic_id2sentence_ids2vector[2], topic_pmi, person_id2position2d, node_dict, edge_dict, \
            topic_id2lrs, all_sentence_dict, dim2topic_id2sentence_ids2vector[5], person_id2sentence_ids
-
-
-def get_top_topic_by_sentence_ids(all_sentence_ids, min_sentence=5, max_topic=15, populate_ratio=0.6):
-    GRAPH_DAO = common.GRAPH_DAO
-    GRAPH_DAO.start_connect()
-    person_id2sentence_ids, sentence_id2person_id = person_tool.get_person2sentence_by_sentence(all_sentence_ids)
-    node_label2ids, node_id2relevancy, node_id2sentence_ids = get_node_relevancy(person_id2sentence_ids)
-    topic_ids2person_ids, topic_ids2sentence_ids, all_topic_ids = get_topic_dict(node_label2ids, node_id2relevancy,
-                                                                                 sentence_id2person_id,
-                                                                                 node_id2sentence_ids,
-                                                                                 len(person_id2sentence_ids.keys()),
-                                                                                 len(all_sentence_ids),
-                                                                                 min_sentences=min_sentence,
-                                                                                 max_topic=max_topic,
-                                                                                 populate_ratio=populate_ratio)
-    topic_ids = sort_dict2list(topic_ids2person_ids)
-    topic_ids = [_id[0] for _id in topic_ids]
-    GRAPH_DAO.close_connect()
-    return topic_ids
 
 
 # 我改了get_person_id2vector2d这里有问题了
