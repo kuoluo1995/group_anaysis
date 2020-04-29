@@ -129,7 +129,7 @@ def get_relation_person_by_name(person_name, ranges):
                     print(_path)
         person_dict[_id] = {'name': GRAPH_DAO.get_node_name_by_id(_id),
                             'en_name': GRAPH_DAO.get_node_en_name_by_id(_id),
-                            'relation': [{'name': 'Y(自己)', 'en_name': 'Y(me)'}]}
+                            'relation': [{'name': 'Y(自己)', 'en_name': 'Y(self)'}]}
         dynasty_paths = MetaPaths['朝代'].get_all_paths_by_node_id(_id)
         if len(dynasty_paths) > 0:
             dynasty_id = dynasty_paths[0][-2]
