@@ -344,9 +344,19 @@ def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=100
     print('5:{}'.format(timeit.default_timer() - start))
     start = timeit.default_timer()
 
+    person_ids2 = set(person_ids2)
+    person_ids1 = set(person_ids1)
+
     new_person_ids1 = person_ids1.difference(person_ids2)
     new_person_ids2 = person_ids2.difference(person_ids1)
-    topic_id2lrs = {_id: compared_lrs(_id, new_person_ids1, new_person_ids2) for _id in all_topic_ids}
+    topic_id2lrs = {_id: compared_lrs(_id, new_person_ids1, new_person_ids2) + compared_lrs(_id, new_person_ids2, new_person_ids1) for _id in all_topic_ids}
+
+
+    # print(topic_id2lrs)
+    for topic_id, _lrs in topic_id2lrs.items():
+        topic_name = [GRAPH_DAO.get_node_name_by_id(n) for n in topic_id]
+        print(topic_name, _lrs)
+
     print('6:{}'.format(timeit.default_timer() - start))
     GRAPH_DAO.close_connect()
 

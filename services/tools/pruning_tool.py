@@ -88,9 +88,9 @@ def compared_lrs(topic_id, person_ids1, person_ids2, smooth=0.01):
     :param person_ids: list(int)
     :return:
     '''
-    all_person_ids = set(person_ids1 + person_ids2)
-    person_ids1 = set(person_ids1)
-    person_ids2 = set(person_ids2)
+    all_person_ids = person_ids1.union(person_ids2)
+    # person_ids1 = set(person_ids1)
+    # person_ids2 = set(person_ids2)
 
     z_person_ids = set([pid for pid in person_ids1 if pid not in person_ids2])
 
@@ -104,7 +104,8 @@ def compared_lrs(topic_id, person_ids1, person_ids2, smooth=0.01):
     has_topic_person_ids_len = len(has_topic_person_ids)
     if has_topic_person_ids_len == 0:
         return smooth
-    m_gz = len([_id for _id in z_person_ids if _id in has_topic_person_ids]) / has_topic_person_ids_len
+    m_gz = has_topic_person_ids_len / len(all_person_ids)
+    # len([_id for _id in z_person_ids if _id in has_topic_person_ids]) / has_topic_person_ids_len
     m_gf = 1 - m_gz
 
     if m_gz == 0 or m_z == 0 or m_f == 0 or m_gf == 0:
