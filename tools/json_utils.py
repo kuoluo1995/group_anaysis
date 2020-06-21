@@ -17,6 +17,19 @@ def load_json(name):
         return json.load(file_obj)
 
 
+def exist_json(name):
+    input_file = 'temp/{}.json'.format(name)  # 输入的json
+    if Path(input_file).exists():
+        return True
+    else:
+        return False
+
+
+def get_size(name):
+    input_file = 'temp/{}.json'.format(name)  # 输入的json
+    return os.path.getsize(input_file)
+
+
 def delete_json(name):
     os.remove('temp/{}.json'.format(name))
 

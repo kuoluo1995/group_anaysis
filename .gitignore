@@ -8,3 +8,5 @@
 .vscode
 __pychache__/
 temp/*
+build
+dist

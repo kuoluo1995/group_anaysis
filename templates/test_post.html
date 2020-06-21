@@ -67,7 +67,7 @@
     </form>
 </div>
 <div>
-    <h2>通过人名id搜索topic</h2>
+    <h2>异步通过人名id搜索topic</h2>
     <form action="/test_search_topics_by_person_ids/" method="post">
         <label for="populate_ratio">populate_ratio (推荐0.6)</label>
         <input type="number" name="populate_ratio" id="populate_ratio" value="0.6">
@@ -111,6 +111,35 @@
     </div>
 </div>
 <div>
+    <h2>异步通过人名id比较topic</h2>
+    <form action="/test_compared_topics_by_person_ids/" method="post">
+        <label for="populate_ratio">populate_ratio(推荐0.6)</label>
+        <input type="number" name="populate_ratio" id="populate_ratio" value="0.3">
+        <label for="max_topic">max_topic(推荐 10)</label>
+        <input type="number" name="max_topic" id="max_topic" value="10">
+        <label for="min_sentence">min_sentence(不要小于5 )</label>
+        <input type="number" name="min_sentence" id="min_sentence" value="5">
+        <label for="sub_topic_ratio">sub_topic_ratio (推荐0.7)</label>
+        <input type="number" name="sub_topic_ratio" id="sub_topic_ratio" value="0.7">
+        <label for="difficult_ratio">difficult_ratio (推荐0.15)</label>
+        <input type="number" name="difficult_ratio" id="difficult_ratio" value="0.15">
+        <label>person_ids1:</label>
+        <label><input name="person_ids1[]" type="checkbox" value="4921">朱明之</label>
+        <label><input name="person_ids1[]" type="checkbox" value="15378">吕嘉问</label>
+        <label><input name="person_ids1[]" type="checkbox" value="15379">王安礼</label>
+        <label><input name="person_ids1[]" type="checkbox" value="43374">吕嘉问</label>
+        <label><input name="person_ids1[]" type="checkbox" value="48805">王安礼</label>
+        <label><input name="person_ids1[]" type="checkbox" value="50876">吕嘉问</label>
+        <label><input name="person_ids1[]" type="checkbox" value="50879">王安礼</label>
+        <label>person_ids2:</label>
+        <label><input name="person_ids2[]" type="checkbox" value="15378">吕嘉问</label>
+        <label><input name="person_ids2[]" type="checkbox" value="15379">王安礼</label>
+        <label><input name="person_ids2[]" type="checkbox" value="43374">吕嘉问</label>
+        <label><input name="person_ids2[]" type="checkbox" value="48805">王安礼</label>
+        <input type="submit" value="搜索">
+    </form>
+</div>
+<div>
     <h2>Socket通过人名id比较topic</h2>
     <div id='socket_compare_topic'>
         <label for="populate_ratio">populate_ratio(推荐0.6)</label>
@@ -138,6 +167,14 @@
         <label><input name="person_ids2[]" type="checkbox" value="48805">王安礼</label>
         <button type='button' onclick="socket_compare_topics_by_person_ids()">socket搜索</button>
     </div>
+</div>
+<div>
+    <h2>长轮询检查</h2>
+    <form action="/test_are_you_ok_by_file_name/" method="post">
+        <label for="draws">文件名字</label>
+        <textarea id="draws" name="file_name" rows="1" cols="100"></textarea>
+        <input type="submit" value="搜索">
+    </form>
 </div>
 <div>
     <h2>搜索相似的人</h2>
@@ -205,7 +242,8 @@
 
     function socket_search_topics_by_person_ids() {
         // 新建WebSocket连接
-        let websocket = new WebSocket("ws://localhost:8000/socket_search_topics_by_person_ids/");
+        let ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
+        let websocket = new WebSocket(ws_scheme+"://"+window.location.host+"/socket_search_topics_by_person_ids/");
         // 连接打开事件，打开连接后发送数据
         _json = {};
         let populate_ratio = $("#socket_search_topic input[name=populate_ratio]").val();//添加至数组
@@ -253,7 +291,8 @@
     }
     function socket_compare_topics_by_person_ids() {
         // 新建WebSocket连接
-        let websocket = new WebSocket("ws://localhost:8000/socket_compare_topics_by_person_ids/");
+        let ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
+        let websocket = new WebSocket(ws_scheme+"://"+window.location.host+"/socket_compare_topics_by_person_ids/");
         // 连接打开事件，打开连接后发送数据
         _json = {};
         let populate_ratio = $("#socket_compare_topic input[name=populate_ratio]").val();//添加至数组

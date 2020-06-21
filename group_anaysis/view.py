@@ -1,13 +1,18 @@
 import json
 import datetime
+import os
+import threading
 import traceback
+from pathlib import Path
+from time import sleep
+
 from django.http import HttpResponse
 from django.shortcuts import render
 
 from services import common
 from services.service import get_relation_person_by_name, get_topics_by_person_ids, get_person_by_ranges, \
     get_init_ranges, get_address_by_address_ids, get_community_by_num_node_links, add_topic_weights, \
-    get_person_by_draws, get_similar_person
+    get_person_by_draws, get_similar_person, get_compared_topics_by_person_ids
 from tools import json_utils
 
 
@@ -127,6 +132,76 @@ def search_address_by_address_ids(request):
     return HttpResponse(json_result, content_type="application/json")
 
 
+def _search_topics_by_person_ids(person_ids, populate_ratio, max_topic, min_sentence, sub_topic_ratio, difficult_ratio,
+                                 name):
+    result = {'is_success': False}
+    try:
+        print('查询的人:{}'.format(person_ids))
+        all_topic_ids, topic_id2sentence_ids2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
+            person_ids, populate_ratio=populate_ratio, max_topic=max_topic, min_sentence=min_sentence,
+            sub_topic_ratio=sub_topic_ratio, difficult_ratio=difficult_ratio)
+        result['all_topic_ids'] = [[int(_id) for _id in _ids] for _ids in all_topic_ids]
+        topic_id2sentence_ids2position1d_json = {}
+        for _topic_id, _item in topic_id2sentence_ids2position1d.items():
+            _topic_id = [str(_id) for _id in _topic_id]
+            _topic_id = ' '.join(_topic_id)
+            topic_id2sentence_ids2position1d_json[_topic_id] = {}
+            for _sentence_id, _value in _item.items():
+                _sentence = [str(_id) for _id in _sentence_id]
+                _sentence = ' '.join(_sentence)
+                topic_id2sentence_ids2position1d_json[_topic_id][_sentence] = [v for v in _value]
+        result['topic_id2sentence_id2position1d'] = topic_id2sentence_ids2position1d_json
+        topic_pmi_json = {}
+        for _xs, _item in topic_pmi.items():
+            _xs = [str(_id) for _id in _xs]
+            _xs = ' '.join(_xs)
+            topic_pmi_json[_xs] = {}
+            for _ys, _pmi in _item.items():
+                _ys = [str(_id) for _id in _ys]
+                _ys = ' '.join(_ys)
+                topic_pmi_json[_xs][_ys] = _pmi
+        result['topic_pmi'] = topic_pmi_json
+        result['person_id2position2d'] = person_id2position2d
+        result['node_dict'] = node_dict
+        result['edge_dict'] = edge_dict
+        topic_id2lrs_json = {}
+        for _topic_id, _lrs in topic_id2lrs.items():
+            _topic_id = [str(_id) for _id in _topic_id]
+            _topic_id = ' '.join(_topic_id)
+            topic_id2lrs_json[_topic_id] = _lrs
+        result['topic_id2lrs'] = topic_id2lrs_json
+        all_sentence_dict_json = {}
+        for _sentence_id, _name in all_sentence_dict.items():
+            _sentence_id = [str(_id) for _id in _sentence_id]
+            _sentence_id = ' '.join(_sentence_id)
+            all_sentence_dict_json[_sentence_id] = _name
+        result['all_sentence_dict'] = all_sentence_dict_json
+
+        topic_id2sentence_ids2vector_json = {}
+        for _topic_id, _item in topic_id2sentence_ids2vector.items():
+            _topic_id = [str(_id) for _id in _topic_id]
+            _topic_id = ' '.join(_topic_id)
+            topic_id2sentence_ids2vector_json[_topic_id] = {}
+            for _sentence_id, _value in _item.items():
+                _sentence = [str(_id) for _id in _sentence_id]
+                _sentence = ' '.join(_sentence)
+                topic_id2sentence_ids2vector_json[_topic_id][_sentence] = [float(_v) for _v in _value]
+        person_id2sentence_ids = {str(_person_id): list(_sentence_id) for _person_id, _sentence_id in
+                                  person_id2sentence_ids.items()}
+        _name = 'temp_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
+        json_utils.save_json({'topic_id2sentence_ids2vector': topic_id2sentence_ids2vector_json,
+                              'person_id2sentence_ids': person_id2sentence_ids}, _name)
+        result['adjust_topic_weights_params'] = _name
+        result['is_success'] = True
+        json_utils.save_json(result, name)
+    except Exception as e:
+        traceback.print_exc()
+        result[
+            'bug'] = '发给后端调试问题。输入为 populate_ratio:{} max_topix:{} min_sentence:{} sub_topic_ratio:{} difficult_ratio:{} person_ids:{}'.format(
+            populate_ratio, max_topic, min_sentence, sub_topic_ratio, difficult_ratio, person_ids)
+        json_utils.save_json(result, name)
+
+
 def search_topics_by_person_ids(request):
     request.encoding = 'utf-8'
     result = {'is_success': False}
@@ -140,70 +215,129 @@ def search_topics_by_person_ids(request):
         min_sentence = int(request.POST['min_sentence'])
         sub_topic_ratio = float(request.POST['sub_topic_ratio']) if 'sub_topic_ratio' in request.POST else 0.7
         difficult_ratio = float(request.POST['difficult_ratio']) if 'difficult_ratio' in request.POST else 0.15
-        try:
-            print('查询的人:{}'.format(person_ids))
-            all_topic_ids, topic_id2sentence_ids2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
-                person_ids, populate_ratio=populate_ratio, max_topic=max_topic, min_sentence=min_sentence,
-                sub_topic_ratio=sub_topic_ratio, difficult_ratio=difficult_ratio)
-            result['all_topic_ids'] = [[int(_id) for _id in _ids] for _ids in all_topic_ids]
-            topic_id2sentence_ids2position1d_json = {}
-            for _topic_id, _item in topic_id2sentence_ids2position1d.items():
-                _topic_id = [str(_id) for _id in _topic_id]
-                _topic_id = ' '.join(_topic_id)
-                topic_id2sentence_ids2position1d_json[_topic_id] = {}
-                for _sentence_id, _value in _item.items():
-                    _sentence = [str(_id) for _id in _sentence_id]
-                    _sentence = ' '.join(_sentence)
-                    topic_id2sentence_ids2position1d_json[_topic_id][_sentence] = [v for v in _value]
-            result['topic_id2sentence_id2position1d'] = topic_id2sentence_ids2position1d_json
-            topic_pmi_json = {}
-            for _xs, _item in topic_pmi.items():
-                _xs = [str(_id) for _id in _xs]
-                _xs = ' '.join(_xs)
-                topic_pmi_json[_xs] = {}
-                for _ys, _pmi in _item.items():
-                    _ys = [str(_id) for _id in _ys]
-                    _ys = ' '.join(_ys)
-                    topic_pmi_json[_xs][_ys] = _pmi
-            result['topic_pmi'] = topic_pmi_json
-            result['person_id2position2d'] = person_id2position2d
-            result['node_dict'] = node_dict
-            result['edge_dict'] = edge_dict
-            topic_id2lrs_json = {}
-            for _topic_id, _lrs in topic_id2lrs.items():
-                _topic_id = [str(_id) for _id in _topic_id]
-                _topic_id = ' '.join(_topic_id)
-                topic_id2lrs_json[_topic_id] = _lrs
-            result['topic_id2lrs'] = topic_id2lrs_json
-            all_sentence_dict_json = {}
-            for _sentence_id, _name in all_sentence_dict.items():
-                _sentence_id = [str(_id) for _id in _sentence_id]
-                _sentence_id = ' '.join(_sentence_id)
-                all_sentence_dict_json[_sentence_id] = _name
-            result['all_sentence_dict'] = all_sentence_dict_json
+        _name = 'temp_search_topics_by_person_ids_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
+        t = threading.Thread(target=_search_topics_by_person_ids, args=(
+            person_ids, populate_ratio, max_topic, min_sentence, sub_topic_ratio, difficult_ratio, _name))
+        t.start()
+        result['is_success'] = True
+        result['file_name'] = _name
+    json_result = json.dumps(result)
+    return HttpResponse(json_result, content_type="application/json")
 
-            topic_id2sentence_ids2vector_json = {}
-            for _topic_id, _item in topic_id2sentence_ids2vector.items():
-                _topic_id = [str(_id) for _id in _topic_id]
-                _topic_id = ' '.join(_topic_id)
-                topic_id2sentence_ids2vector_json[_topic_id] = {}
-                for _sentence_id, _value in _item.items():
-                    _sentence = [str(_id) for _id in _sentence_id]
-                    _sentence = ' '.join(_sentence)
-                    topic_id2sentence_ids2vector_json[_topic_id][_sentence] = [float(_v) for _v in _value]
-            person_id2sentence_ids = {str(_person_id): list(_sentence_id) for _person_id, _sentence_id in
-                                      person_id2sentence_ids.items()}
-            _name = 'temp_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
-            json_utils.save_json({'topic_id2sentence_ids2vector': topic_id2sentence_ids2vector_json,
-                                  'person_id2sentence_ids': person_id2sentence_ids}, _name)
-            result['adjust_topic_weights_params'] = _name
+
+def _compared_topics_by_person_ids(person_ids1, person_ids2, populate_ratio, max_topic, min_sentence, sub_topic_ratio,
+                                   difficult_ratio, name):
+    result = {'is_success': False}
+    try:
+        all_topic_ids, topic_id2sentence_ids2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_compared_topics_by_person_ids(
+            person_ids1, person_ids2, populate_ratio=populate_ratio, max_topic=max_topic, min_sentence=min_sentence,
+            sub_topic_ratio=sub_topic_ratio, difficult_ratio=difficult_ratio)
+        result['all_topic_ids'] = [[int(_id) for _id in _ids] for _ids in all_topic_ids]
+        topic_id2sentence_ids2position1d_json = {}
+        for _topic_id, _item in topic_id2sentence_ids2position1d.items():
+            _topic_id = [str(_id) for _id in _topic_id]
+            _topic_id = ' '.join(_topic_id)
+            topic_id2sentence_ids2position1d_json[_topic_id] = {}
+            for _sentence_id, _value in _item.items():
+                _sentence = [str(_id) for _id in _sentence_id]
+                _sentence = ' '.join(_sentence)
+                topic_id2sentence_ids2position1d_json[_topic_id][_sentence] = [v for v in _value]
+        result['topic_id2sentence_id2position1d'] = topic_id2sentence_ids2position1d_json
+        topic_pmi_json = {}
+        for _xs, _item in topic_pmi.items():
+            _xs = [str(_id) for _id in _xs]
+            _xs = ' '.join(_xs)
+            topic_pmi_json[_xs] = {}
+            for _ys, _pmi in _item.items():
+                _ys = [str(_id) for _id in _ys]
+                _ys = ' '.join(_ys)
+                topic_pmi_json[_xs][_ys] = _pmi
+        result['topic_pmi'] = topic_pmi_json
+        result['person_id2position2d'] = person_id2position2d
+        result['node_dict'] = node_dict
+        result['edge_dict'] = edge_dict
+        topic_id2lrs_json = {}
+        for _topic_id, _lrs in topic_id2lrs.items():
+            _topic_id = [str(_id) for _id in _topic_id]
+            _topic_id = ' '.join(_topic_id)
+            topic_id2lrs_json[_topic_id] = _lrs
+        result['topic_id2lrs'] = topic_id2lrs_json
+        all_sentence_dict_json = {}
+        for _sentence_id, _name in all_sentence_dict.items():
+            _sentence_id = [str(_id) for _id in _sentence_id]
+            _sentence_id = ' '.join(_sentence_id)
+            all_sentence_dict_json[_sentence_id] = _name
+        result['all_sentence_dict'] = all_sentence_dict_json
+
+        topic_id2sentence_ids2vector_json = {}
+        for _topic_id, _item in topic_id2sentence_ids2vector.items():
+            _topic_id = [str(_id) for _id in _topic_id]
+            _topic_id = ' '.join(_topic_id)
+            topic_id2sentence_ids2vector_json[_topic_id] = {}
+            for _sentence_id, _value in _item.items():
+                _sentence = [str(_id) for _id in _sentence_id]
+                _sentence = ' '.join(_sentence)
+                topic_id2sentence_ids2vector_json[_topic_id][_sentence] = [float(_v) for _v in _value]
+        person_id2sentence_ids = {str(_person_id): list(_sentence_id) for _person_id, _sentence_id in
+                                  person_id2sentence_ids.items()}
+        _name = 'temp_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
+        json_utils.save_json({'topic_id2sentence_ids2vector': topic_id2sentence_ids2vector_json,
+                              'person_id2sentence_ids': person_id2sentence_ids}, _name)
+        result['adjust_topic_weights_params'] = _name
+        result['is_success'] = True
+        json_utils.save_json(result, name)
+    except Exception as e:
+        traceback.print_exc()
+        result[
+            'bug'] = '发给后端调试问题。输入为 populate_ratio:{} max_topix:{} min_sentence:{} sub_topic_ratio:{} difficult_ratio:{} person_ids1:{} person_ids2:{}'.format(
+            populate_ratio, max_topic, min_sentence, sub_topic_ratio, difficult_ratio, person_ids1, person_ids2)
+        json_utils.save_json(result, name)
+
+
+def compared_topics_by_person_ids(request):
+    request.encoding = 'utf-8'
+    result = {'is_success': False}
+    if 'person_ids1[]' in request.POST and request.POST['person_ids1[]'] and 'person_ids2[]' in request.POST and \
+            request.POST['person_ids2[]'] and 'populate_ratio' in request.POST and request.POST['populate_ratio'] and \
+            'max_topic' in request.POST and request.POST['max_topic'] and 'min_sentence' in request.POST and \
+            request.POST['min_sentence']:
+        person_ids1 = request.POST.getlist('person_ids1[]')
+        person_ids1 = [int(_id) for _id in person_ids1]
+        person_ids2 = request.POST.getlist('person_ids2[]')
+        person_ids2 = [int(_id) for _id in person_ids2]
+        populate_ratio = float(request.POST['populate_ratio'])
+        max_topic = int(request.POST['max_topic'])
+        min_sentence = int(request.POST['min_sentence'])
+        sub_topic_ratio = float(request.POST['sub_topic_ratio']) if 'sub_topic_ratio' in request.POST else 0.7
+        difficult_ratio = float(request.POST['difficult_ratio']) if 'difficult_ratio' in request.POST else 0.15
+        _name = 'temp_compared_topics_by_person_ids_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
+        t = threading.Thread(target=_compared_topics_by_person_ids, args=(
+            person_ids1, person_ids2, populate_ratio, max_topic, min_sentence, sub_topic_ratio, difficult_ratio, _name))
+        t.start()
+        result['is_success'] = True
+        result['file_name'] = _name
+    json_result = json.dumps(result)
+    return HttpResponse(json_result, content_type="application/json")
+
+
+def are_you_ok_by_file_name(request):
+    request.encoding = 'utf-8'
+    result = {'is_success': False}
+    if 'file_name' in request.POST and request.POST['file_name']:
+        if json_utils.exist_json(request.POST['file_name']):
+            pre_size = json_utils.get_size(request.POST['file_name'])
+            while True:
+                sleep(1)
+                cur_size = json_utils.get_size(request.POST['file_name'])
+                if pre_size == cur_size:
+                    break
+                else:
+                    pre_size = cur_size
+            result = json_utils.load_json(request.POST['file_name'])
+            result['answer'] = True
+        else:
             result['is_success'] = True
-        except Exception as e:
-            traceback.print_exc()
-            result['bug'] = '发给后端调试问题。输入为 populate_ratio:{} max_topix:{} min_sentence:{} person_ids:{}'.format(
-                populate_ratio, max_topic, min_sentence, person_ids)
-            _name = 'error_topics_by_person_ids_' + str(datetime.datetime.now()).replace(' ', '-').replace(':', '_')
-            json_utils.save_json(request.POST, _name)
+            result['answer'] = None
     json_result = json.dumps(result)
     return HttpResponse(json_result, content_type="application/json")
 
@@ -335,6 +469,12 @@ def test_search_topics_by_person_ids(request):
     return render(request, 'test_post.html', {'response': content})
 
 
+def test_compared_topics_by_person_ids(request):
+    response = compared_topics_by_person_ids(request)
+    content = str(response.content, 'utf-8')
+    return render(request, 'test_post.html', {'response': content})
+
+
 def test_adjust_topic_weights(request):
     response = adjust_topic_weights(request)
     return response
@@ -347,5 +487,11 @@ def test_search_all_similar_person(request):
 
 def test_search_person_ids_by_draws(request):
     response = search_person_ids_by_draws(request)
+    content = str(response.content, 'utf-8')
+    return render(request, 'test_post.html', {'response': content})
+
+
+def test_are_you_ok_by_file_name(request):
+    response = are_you_ok_by_file_name(request)
     content = str(response.content, 'utf-8')
     return render(request, 'test_post.html', {'response': content})

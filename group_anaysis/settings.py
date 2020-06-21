@@ -38,7 +38,7 @@ ROOT_URLCONF = 'group_anaysis.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR + '/templates', ],  # 修改位置
+        'DIRS': [BASE_DIR + '/templates', 'templates'],  # 修改位置
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

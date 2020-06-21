@@ -9,17 +9,21 @@ urlpatterns = [
     path('test_search_person_by_ranges/', view.test_search_person_by_ranges),
     path('test_search_address_by_address_ids/', view.test_search_address_by_address_ids),
     path('test_search_topics_by_person_ids/', view.test_search_topics_by_person_ids),
+    path('test_compared_topics_by_person_ids/', view.test_compared_topics_by_person_ids),
     path('test_adjust_topic_weights/', view.test_adjust_topic_weights),
     path('test_search_all_similar_person/', view.test_search_all_similar_person),
     path('test_search_person_ids_by_draws/', view.test_search_person_ids_by_draws),
+    path('test_are_you_ok_by_file_name/', view.test_are_you_ok_by_file_name),
     # online
     path('init_ranges/', view.init_ranges),
     path('search_relation_person_by_name/', view.search_relation_person_by_name),
     path('search_person_by_ranges/', view.search_person_by_ranges),
     path('search_address_by_address_ids/', view.search_address_by_address_ids),
     path('search_topics_by_person_ids/', view.search_topics_by_person_ids),
+    path('compared_topics_by_person_ids/', view.compared_topics_by_person_ids),
     path('search_community_by_links/', view.search_community_by_links),
     path('adjust_topic_weights/', view.adjust_topic_weights),
     path('search_all_similar_person/', view.search_all_similar_person),
-    path('search_person_ids_by_draws/', view.search_person_ids_by_draws)
+    path('search_person_ids_by_draws/', view.search_person_ids_by_draws),
+    path('are_you_ok_by_file_name/', view.are_you_ok_by_file_name)
 ]
