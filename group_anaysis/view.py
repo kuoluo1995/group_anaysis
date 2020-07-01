@@ -3,7 +3,6 @@ import datetime
 import os
 import threading
 import traceback
-from pathlib import Path
 from time import sleep
 
 from django.http import HttpResponse

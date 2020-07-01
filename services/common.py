@@ -23,4 +23,4 @@ GRAPH_DAO.close_connect()
 
 MetaPaths = build_meta_paths('./services/configs/meta_paths.yaml')
 Model = models.TfidfModel
-json_utils.delete_all_temps()  # 每次执行前先清除上一次没用的缓冲数据
+# json_utils.delete_all_temps()  # 每次执行前先清除上一次没用的缓冲数据

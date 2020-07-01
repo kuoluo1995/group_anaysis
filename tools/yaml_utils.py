@@ -1,15 +1,14 @@
 import yaml
-from pathlib import Path
 
 
 def read(path):
-    with Path(path).open('r', encoding='UTF-8') as file:
+    with open(path, 'r', encoding='UTF-8') as file:
         params = yaml.load(file, Loader=yaml.SafeLoader)
     return params
 
 
 def write(path, data):
-    with Path(path).open('w') as file:
+    with open(path, 'w') as file:
         yaml.dump(data, file)
 
 # def _dict2object(_dict):

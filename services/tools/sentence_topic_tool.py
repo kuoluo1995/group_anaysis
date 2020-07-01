@@ -281,7 +281,8 @@ def get_topic_dict(node_label2ids, relevancy_dict, sentence_id2person_ids, node_
             person_ids = set()
             for _sentence_id in sentence_ids:
                 person_ids.update(sentence_id2person_ids[_sentence_id])
-            if len(person_ids) > num_persons * populate_ratio and len(sentence_ids) > min_sentences:  # 剃掉那些不算不上群体的
+            person_ids = person_ids.intersection(num_persons) # todo test
+            if len(person_ids) > len(num_persons) * populate_ratio and len(sentence_ids) > min_sentences:  # 剃掉那些不算不上群体的
                 topic_id2sentence_ids[topic_id] = sentence_ids  # 小圆点
                 topic_id2person_ids[topic_id] = person_ids
                 all_topic_ids.add(topic_id)
@@ -334,11 +335,20 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, sentence_id2person
                     continue
                 person_ids = set()
                 for _sentence_id in sentence_ids:
+                    if 3962 in new_topic_id and 733400 in new_topic_id and 951604 in new_topic_id:
+                        __s = ''
+                        for __i, __word in enumerate(_sentence_id):
+                            if __i%2==0:
+                                __s+=GRAPH_DAO.get_node_name_by_id(__word)
+                            else:
+                                __s+=GRAPH_DAO.get_edge_name_by_id(__word)
+                        print(__s)
                     person_ids.update(sentence_id2person_ids[_sentence_id])
+                person_ids = person_ids.intersection(num_persons)
                 if len(person_ids) == 0:
                     no_used_topic.add(new_topic_id)
                     continue
-                support_persons = len(person_ids) / num_persons
+                support_persons = len(person_ids) / len(num_persons)
                 support_topic1 = len(topic_id2sentence_ids[topic_id1]) / num_sentences
                 support_topic2 = len(topic_id2sentence_ids[topic_id2]) / num_sentences
                 # lift_v = len(topic_id2sentence_ids[new_topic_id]) / num_sentences / support_topic1 / support_topic2
@@ -349,6 +359,9 @@ def _topic_id2topic_ids(all_topic_ids, topic_id2sentence_ids, sentence_id2person
                     if support_persons > sub_topic_ratio * support_topic2:
                         remove_topic_ids.add(topic_id2)
                     new_topic_ids.add(new_topic_id)
+                    name = [GRAPH_DAO.get_node_name_by_id(_id) for _id in new_topic_id]
+                    if '苏轼' in name and  '记咏文字' in name and '著述关系类' in name:
+                        print(11)
                     topic_id2person_ids[new_topic_id] = person_ids
                     topic_id2sentence_ids[new_topic_id] = sentence_ids
 

@@ -288,7 +288,7 @@ def get_compared_topics_by_person_ids(person_ids1, person_ids2, random_epoch=100
         topic_ids2person_ids, topic_ids2sentence_ids, all_topic_ids = get_topic_dict(node_label2ids, node_id2relevancy,
                                                                                      sentence_id2person_id,
                                                                                      node_id2sentence_ids,
-                                                                                     len(person_ids),
+                                                                                     person_ids,
                                                                                      len(all_sentence_dict),
                                                                                      min_sentences=min_sentence,
                                                                                      max_topic=max_topic,
@@ -415,7 +415,7 @@ def get_topics_by_person_ids(person_ids, random_epoch=1500, min_sentence=5, max_
 
     topic_ids2person_ids, topic_ids2sentence_ids, all_topic_ids = get_topic_dict(node_label2ids, node_id2relevancy,
                                                                                  sentence_id2person_ids,
-                                                                                 node_id2sentence_ids, len(person_ids),
+                                                                                 node_id2sentence_ids, person_ids,
                                                                                  len(all_sentence_dict),
                                                                                  min_sentences=min_sentence,
                                                                                  max_topic=max_topic,

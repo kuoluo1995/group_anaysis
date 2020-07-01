@@ -25,11 +25,11 @@ if __name__ == '__main__':
     NodeLabels = common.NodeLabels
     EdgeLabels = common.EdgeLabels
     MetaPaths = common.MetaPaths
-    # GRAPH_DAO.start_connect()
+    GRAPH_DAO.start_connect()
     # if '韩侂冑' == '韩侂胄':
     #     print()
     # ids = GRAPH_DAO.get_node_ids_by_name('Zhao Ruyu')
-    # dynastie_id = GRAPH_DAO.get_node_ids_by_name('Song', node_label=NodeLabels['dynasty'])[0]
+    # dynastie_id = GRAPH_DAO.get_node_ids_by_name('宋', node_label=NodeLabels['dynasty'])
     # target_id = []
     # for id in ids:
     #     name = GRAPH_DAO.get_node_name_by_id(id)
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     # GRAPH_DAO.start_connect()
     # address_codes = [GRAPH_DAO.get_node_code_by_id(_id) for _id, items in address.items() if items['name'] == '眉山']
     # GRAPH_DAO.close_connect()
-    # CBDB_DAO.start_connect()
+    CBDB_DAO.start_connect()
     # ids = CBDB_DAO.get_address_by_address_codes(address_codes)
     # CBDB_DAO.close_connect()
     # person = get_person_by_ranges(dynastie_ids, None, None, None, None, address_ids, None, None, None,
@@ -70,27 +70,28 @@ if __name__ == '__main__':
     # person = get_person_by_ranges([dynastie_id], None, None, None, None, None,
     #                               None, None, None, None, list(entry.keys())[:30], None)
     # print(len(person))
-    # person = get_person_by_ranges([dynastie_id], None, None, None, None, None,
-    #                               None, None, None, None, None, list(entry_type.keys())[:30])
+    person = get_person_by_ranges([575], None, None, None, [633479], None,
+                                  None, None, None, None, None, None)
     # print(len(person))
     # print('查询范围内的所有人耗时:{}'.format(timeit.default_timer() - start))
     # 通过名字查询
-    start = timeit.default_timer()
-    ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
-    person = get_relation_person_by_name('吕祖谦', ranges)
+    # start = timeit.default_timer()
+    # ranges = {'关系': {NodeLabels['association']: 0}, '亲属': {EdgeLabels['kin']: 1}}
+    # person = get_relation_person_by_name('吕祖谦', ranges)
     # print(person)
-    print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
+    # print('查询王安石耗时:{}'.format(timeit.default_timer() - start))
     # 查询topic通过 person_ids
     # start = timeit.default_timer()
     # _json = json_utils.load_json('error_search_topic_2020-04-16-14_05_58.427338')
     # person_ids = _json['person_ids[]']
     # person_ids = [int(_id) for _id in person_ids]
-    person_ids = list(person[0].keys())
+    person_ids = [int(_id) for _id, _item in person.items()]
     # populate_ratio = float(_json['populate_ratio'])
 
     # max_topic = int(_json['max_topic'])
     all_topic_ids, topic_id2sentence_id2position1d, topic_pmi, person_id2position2d, node_dict, edge_dict, topic_id2lrs, all_sentence_dict, topic_id2sentence_ids2vector, person_id2sentence_ids = get_topics_by_person_ids(
         person_ids, populate_ratio=0.3, max_topic=15, sub_topic_ratio=0.7, difficult_ratio=0.15)
+
     print(len(all_topic_ids))
     # 查询相似的人
     # similar_person = get_similar_person(person_ids, topic_id2lrs)

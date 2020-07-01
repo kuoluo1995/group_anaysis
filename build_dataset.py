@@ -5,8 +5,6 @@ import time
 from collections import defaultdict
 
 import networkx as nx
-from pathlib import Path
-
 from py2neo import Graph
 
 from services import common
@@ -286,10 +284,11 @@ def insert_condition2person(db_path):
 
 
 if __name__ == "__main__":
+    pass
     # neo4j = Shell('neo4j.bat console', 'Started')
     # neo4j.run_background()
     # whole_g, node2data, rel2data = get_whole_graph()
-    sql_dataset = Path('./dataset/graph.db')
+    # sql_dataset = Path('./dataset/graph.db')
     # if sql_dataset.exists():
     #     sql_dataset.unlink()
     # save2sqlite(whole_g, node2data, rel2data, str(sql_dataset))

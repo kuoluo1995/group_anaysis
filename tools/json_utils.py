@@ -1,7 +1,6 @@
 import glob
 import json
 import os
-from pathlib import Path
 
 
 def save_json(data, name):
@@ -19,7 +18,7 @@ def load_json(name):
 
 def exist_json(name):
     input_file = 'temp/{}.json'.format(name)  # 输入的json
-    if Path(input_file).exists():
+    if os.path.exists(input_file):
         return True
     else:
         return False
@@ -35,7 +34,9 @@ def delete_json(name):
 
 
 def delete_all_temps():
-    Path('temp/').mkdir(parents=True, exist_ok=True)
+    folder = os.path.exists('temp/')
+    if not folder:  # 判断是否存在文件夹如果不存在则创建为文件夹
+        os.makedirs('temp/')  # make dirs 创建文件时如果路径不存在会创建这个路径
     temps = glob.glob('temp/temp_*.json')
     for temp in temps:
         os.remove(temp)
